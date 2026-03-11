@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jott-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: jott_attendance
+      POSTGRES_USER: jott_user
+      POSTGRES_PASSWORD: jott_secret_2026
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jott_user -d jott_attendance"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jott-app
+    restart: unless-stopped
+    ports:
+      - "3456:3456"
+    env_file:
+      - .env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

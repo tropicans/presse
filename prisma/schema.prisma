@@ -1,0 +1,21 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Attendance {
+  id          Int      @id @default(autoincrement())
+  namaLengkap String   @map("nama_lengkap")
+  nipNrp      String   @unique @map("nip_nrp")
+  jabatan     String
+  unitKerja   String   @map("unit_kerja")
+  sebagai     String
+  signature   String   @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("attendances")
+}
