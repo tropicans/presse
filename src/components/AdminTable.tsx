@@ -38,10 +38,14 @@ export default function AdminTable() {
         ...(search && { search }),
       })
       const res = await fetch(`/api/attendance?${params}`)
+      if (!res.ok) {
+        console.error('API error:', res.status)
+        return
+      }
       const json: ApiResponse = await res.json()
-      setData(json.data)
-      setTotal(json.total)
-      setTotalPages(json.totalPages)
+      setData(json.data ?? [])
+      setTotal(json.total ?? 0)
+      setTotalPages(json.totalPages ?? 1)
     } catch (err) {
       console.error('Error fetching:', err)
     } finally {
