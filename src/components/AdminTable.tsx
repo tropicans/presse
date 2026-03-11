@@ -72,6 +72,23 @@ export default function AdminTable() {
     return <span className={`sebagai-badge ${cls}`}>{sebagai}</span>
   }
 
+  const handleDelete = async (id: number, nama: string) => {
+    if (!confirm(`Hapus data "${nama}"? Tindakan ini tidak bisa dibatalkan.`)) {
+      return
+    }
+    try {
+      const res = await fetch(`/api/attendance?id=${id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json()
+        alert(data.error || 'Gagal menghapus')
+        return
+      }
+      fetchData()
+    } catch {
+      alert('Gagal menghapus data')
+    }
+  }
+
   return (
     <div className="admin-wrapper">
       <div className="admin-header">
@@ -138,6 +155,7 @@ export default function AdminTable() {
                   <th>Sebagai</th>
                   <th>Tanda Tangan</th>
                   <th>Waktu</th>
+                  <th>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -167,6 +185,15 @@ export default function AdminTable() {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => handleDelete(item.id, item.namaLengkap)}
+                        className="delete-btn"
+                        title="Hapus"
+                      >
+                        🗑️
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -724,6 +724,27 @@ body {
   color: #5b21b6;
 }
 
+/* Delete Button */
+.delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+  opacity: 0.4;
+}
+
+.delete-btn:hover {
+  opacity: 1;
+  background: var(--error-100);
+}
+
+.admin-table tbody tr:hover .delete-btn {
+  opacity: 0.7;
+}
+
 /* Pagination */
 .admin-pagination {
   display: flex;

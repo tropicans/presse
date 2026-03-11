@@ -210,3 +210,38 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+// DELETE - Admin only
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getAdminSession()
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id || isNaN(Number(id))) {
+      return NextResponse.json(
+        { error: 'ID tidak valid' },
+        { status: 400 }
+      )
+    }
+
+    await prisma.attendance.delete({
+      where: { id: Number(id) },
+    })
+
+    return NextResponse.json({ message: 'Data berhasil dihapus' })
+  } catch (error) {
+    console.error('Error deleting attendance:', error)
+    return NextResponse.json(
+      { error: 'Gagal menghapus data' },
+      { status: 500 }
+    )
+  }
+}
