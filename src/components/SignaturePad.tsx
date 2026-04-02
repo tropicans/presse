@@ -1,15 +1,19 @@
 'use client'
 
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import SignaturePadLib from 'signature_pad'
 
 interface SignaturePadProps {
+  inputId: string
   onSignatureChange: (dataUrl: string | null) => void
+  ariaDescribedBy?: string
 }
 
-export default function SignaturePad({ onSignatureChange }: SignaturePadProps) {
+export default function SignaturePad({ inputId, onSignatureChange, ariaDescribedBy }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const signaturePadRef = useRef<SignaturePadLib | null>(null)
+  const [typedSignature, setTypedSignature] = useState('')
+  const [textError, setTextError] = useState<string | null>(null)
 
   const resizeCanvas = useCallback(() => {
     const canvas = canvasRef.current
@@ -33,6 +37,38 @@ export default function SignaturePad({ onSignatureChange }: SignaturePadProps) {
       signaturePadRef.current.clear()
     }
   }, [])
+
+  const applyTypedSignature = useCallback(() => {
+    const canvas = canvasRef.current
+    const signaturePad = signaturePadRef.current
+    const value = typedSignature.trim()
+
+    if (!canvas || !signaturePad) {
+      return
+    }
+
+    if (!value) {
+      setTextError('Ketik nama terlebih dahulu untuk membuat tanda tangan teks.')
+      return
+    }
+
+    const context = canvas.getContext('2d')
+
+    if (!context) {
+      return
+    }
+
+    signaturePad.clear()
+    context.fillStyle = '#ffffff'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    context.fillStyle = '#111827'
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
+    context.font = 'italic 28px Georgia, serif'
+    context.fillText(value, canvas.width / 2, canvas.height / 2)
+    setTextError(null)
+    onSignatureChange(canvas.toDataURL('image/png'))
+  }, [onSignatureChange, typedSignature])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -67,6 +103,8 @@ export default function SignaturePad({ onSignatureChange }: SignaturePadProps) {
       signaturePadRef.current.clear()
       onSignatureChange(null)
     }
+    setTypedSignature('')
+    setTextError(null)
   }
 
   return (
@@ -74,13 +112,40 @@ export default function SignaturePad({ onSignatureChange }: SignaturePadProps) {
       <canvas
         ref={canvasRef}
         className="signature-canvas"
+        aria-label="Area tanda tangan"
+        aria-describedby={ariaDescribedBy}
       />
       <div className="signature-actions">
         <button type="button" onClick={handleClear} className="signature-clear-btn">
           Hapus Tanda Tangan
         </button>
       </div>
-      <p className="signature-hint">Tanda tangan di area di atas</p>
+      <div className="signature-fallback">
+        <label className="signature-fallback-label" htmlFor={inputId}>
+          Atau gunakan tanda tangan teks
+        </label>
+        <div className="signature-fallback-controls">
+          <input
+            id={inputId}
+            type="text"
+            value={typedSignature}
+            onChange={(event) => {
+              setTypedSignature(event.target.value)
+              if (textError) {
+                setTextError(null)
+              }
+            }}
+            className="signature-fallback-input"
+            placeholder="Ketik nama lengkap"
+            aria-describedby={ariaDescribedBy}
+          />
+          <button type="button" onClick={applyTypedSignature} className="signature-apply-btn">
+            Gunakan
+          </button>
+        </div>
+        {textError && <p className="field-error">{textError}</p>}
+      </div>
+      <p className="signature-hint">Tanda tangan di area di atas atau gunakan fallback teks.</p>
     </div>
   )
 }

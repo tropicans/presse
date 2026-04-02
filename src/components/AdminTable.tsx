@@ -152,39 +152,39 @@ export default function AdminTable() {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>No</th>
-                  <th>Nama Lengkap</th>
-                  <th>NIP/NRP</th>
-                  <th>Jabatan</th>
-                  <th>Unit Kerja</th>
-                  <th>Sebagai</th>
-                  <th>Tanda Tangan</th>
-                  <th>Waktu</th>
-                  <th>Aksi</th>
+                  <th scope="col">No</th>
+                  <th scope="col">Nama Lengkap</th>
+                  <th scope="col">NIP/NRP</th>
+                  <th scope="col">Jabatan</th>
+                  <th scope="col">Unit Kerja</th>
+                  <th scope="col">Sebagai</th>
+                  <th scope="col">Tanda Tangan</th>
+                  <th scope="col">Waktu</th>
+                  <th scope="col">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {data.map((item, index) => (
                   <tr key={item.id}>
-                    <td>{(page - 1) * 20 + index + 1}</td>
-                    <td style={{ fontWeight: 600 }}>{item.namaLengkap}</td>
-                    <td>{item.nipNrp}</td>
-                    <td>{item.jabatan}</td>
-                    <td>{item.unitKerja}</td>
-                    <td>{getSebagaiBadge(item.sebagai)}</td>
-                      <td>
-                        {item.signature && (
-                          <Image
-                            src={item.signature}
-                            alt="Signature"
-                            width={80}
-                            height={40}
-                            unoptimized
-                            className="signature-thumb"
-                          />
-                        )}
-                      </td>
-                    <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                    <td data-label="No">{(page - 1) * 20 + index + 1}</td>
+                    <td data-label="Nama Lengkap" style={{ fontWeight: 600 }}>{item.namaLengkap}</td>
+                    <td data-label="NIP/NRP">{item.nipNrp}</td>
+                    <td data-label="Jabatan">{item.jabatan}</td>
+                    <td data-label="Unit Kerja">{item.unitKerja}</td>
+                    <td data-label="Sebagai">{getSebagaiBadge(item.sebagai)}</td>
+                    <td data-label="Tanda Tangan">
+                      {item.signature && (
+                        <Image
+                          src={item.signature}
+                          alt="Signature"
+                          width={80}
+                          height={40}
+                          unoptimized
+                          className="signature-thumb"
+                        />
+                      )}
+                    </td>
+                    <td data-label="Waktu" style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                       {new Date(item.createdAt).toLocaleString('id-ID', {
                         timeZone: 'Asia/Jakarta',
                         day: '2-digit',
@@ -194,7 +194,7 @@ export default function AdminTable() {
                         minute: '2-digit',
                       })}
                     </td>
-                    <td>
+                    <td data-label="Aksi">
                       <button
                         onClick={() => handleDelete(item.id, item.namaLengkap)}
                         className="delete-btn"

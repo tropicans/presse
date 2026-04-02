@@ -38,12 +38,14 @@ COPY --from=builder /app/package.json ./package.json
 
 # Copy ALL production node_modules (ensures pg, @prisma/adapter-pg are included)
 COPY --from=builder /app/node_modules ./node_modules
+COPY start.sh ./start.sh
 
 # Set ownership
-RUN chown -R nextjs:nodejs /app
+RUN chmod +x /app/start.sh && \
+    chown -R nextjs:nodejs /app
 
 USER nextjs
 
 EXPOSE 3456
 
-CMD ["node", "server.js"]
+CMD ["./start.sh"]

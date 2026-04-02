@@ -1,37 +1,35 @@
 import Image from 'next/image'
-import AttendanceForm from '@/components/AttendanceForm'
-import { getPublicFormBySlug } from '@/lib/forms'
+import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
-
-export default async function HomePage() {
-  const form = await getPublicFormBySlug('attendance-template')
-
-  if (!form) {
-    throw new Error('Default attendance form is unavailable')
-  }
-
+export default function HomePage() {
   return (
-    <div className="page-wrapper">
-      <div className="form-card">
-        <div className="form-header">
-          <Image
-            src="/garuda.png"
-            alt="Garuda Pancasila"
-            width={80}
-            height={80}
-            className="header-logo"
-            priority
-          />
-          <h1 className="header-title">{form.title}</h1>
-          <p className="header-subtitle">
-            {form.description}
-          </p>
+    <main className="success-wrapper">
+      <section className="success-card landing-card">
+        <Image
+          src="/garuda.png"
+          alt="Garuda Pancasila"
+          width={88}
+          height={88}
+          className="header-logo landing-logo"
+          priority
+        />
+
+        <p className="landing-eyebrow">JOTT Form Builder</p>
+        <h1 className="success-title">Portal Form dan Dashboard Admin</h1>
+        <p className="success-message">
+          Gunakan halaman ini sebagai pintu masuk ke form kehadiran publik atau ke area admin untuk
+          mengelola form, submission, export CSV, dan ringkasan webinar.
+        </p>
+
+        <div className="landing-actions">
+          <Link href="/admin/login" className="landing-btn-secondary">
+            Login Admin
+          </Link>
+          <Link href="/admin/forms" className="landing-btn-secondary">
+            Daftar Form
+          </Link>
         </div>
-        <div className="form-body">
-          <AttendanceForm form={form} />
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }

@@ -3,12 +3,17 @@ import { prisma } from '@/lib/prisma'
 
 const MAX_TEXT_LENGTH = 500
 const MAX_SIGNATURE_LENGTH = 500000
+const DEFAULT_QUIZ_PASS_PERCENTAGE = 70
 const ATTENDANCE_FORM_SLUG = 'attendance-template'
 const ATTENDANCE_FORM_ID = 'attendance-template-form'
+const ATTENDANCE_PARTICIPANT_TYPE_OPTIONS = ['Internal', 'Eksternal'] as const
+const WEBINAR_CORE_FIELD_ID_PREFIX = 'webinar-core-'
 
 type FieldType = 'SHORT_TEXT' | 'LONG_TEXT' | 'RADIO' | 'SELECT' | 'YES_NO' | 'SIGNATURE'
+export type FormWorkflow = 'STANDARD' | 'WEBINAR'
+export type FormMode = 'STANDARD' | 'QUIZ' | 'ATTENDANCE'
 
-export type FormFieldType = 'text' | 'textarea' | 'radio' | 'signature'
+export type FormFieldType = 'text' | 'textarea' | 'radio' | 'likert' | 'signature'
 
 interface BaseField {
   id: string
@@ -26,7 +31,7 @@ export interface TextField extends BaseField {
 }
 
 export interface RadioField extends BaseField {
-  type: 'radio'
+  type: 'radio' | 'likert'
   options: string[]
 }
 
@@ -36,9 +41,46 @@ export interface SignatureField extends BaseField {
 
 export type FormField = TextField | RadioField | SignatureField
 
+export interface FormPageDefinition {
+  id: string
+  title: string
+  description?: string | null
+  fieldIds: string[]
+}
+
+interface FormConditionalRoute {
+  fieldId: string
+  optionLabel: string
+  nextPageId: string
+}
+
 export interface FormSettings {
+  workflow: FormWorkflow
   uniqueFields?: string[]
   legacyTarget?: 'attendance'
+  branching?: FormBranchingConfig
+  quiz?: QuizSettings
+  pages?: FormPageDefinition[]
+  conditionalRoutes?: FormConditionalRoute[]
+}
+
+export interface QuizSettings {
+  passingPercentage: number
+}
+
+export interface FormStepDefinition {
+  id: string
+  title: string
+  description?: string | null
+  fieldNames: string[]
+}
+
+export interface FormBranchingConfig {
+  participantTypeFieldName: string
+  internalValue: string
+  externalValue: string
+  internalOnlyFieldNames: string[]
+  steps: FormStepDefinition[]
 }
 
 export interface PublicFormDefinition {
@@ -46,6 +88,7 @@ export interface PublicFormDefinition {
   slug: string
   title: string
   description: string | null
+  successMessage: string | null
   submitLabel: string
   fields: FormField[]
   settings: FormSettings
@@ -57,9 +100,23 @@ export interface AdminFormListItem {
   title: string
   description: string | null
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
-  mode: 'STANDARD' | 'QUIZ'
+  mode: FormMode
   submissionCount: number
+  quizSummary: {
+    totalQuizSubmissions: number
+    passedCount: number
+    failedCount: number
+    passRate: number | null
+    averageScorePercentage: number | null
+  } | null
   updatedAt: string
+}
+
+export interface AdminEditableFieldOption {
+  label: string
+  isCorrect: boolean
+  points: number
+  nextPageId?: string
 }
 
 export interface AdminEditableField {
@@ -69,7 +126,14 @@ export interface AdminEditableField {
   type: FormFieldType
   required: boolean
   placeholder: string
-  options: string[]
+  pageId: string
+  options: AdminEditableFieldOption[]
+}
+
+export interface AdminFormPage {
+  id: string
+  title: string
+  description: string
 }
 
 export interface AdminFormDetail {
@@ -79,7 +143,10 @@ export interface AdminFormDetail {
   description: string | null
   successMessage: string | null
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
-  mode: 'STANDARD' | 'QUIZ'
+  mode: FormMode
+  workflow: FormWorkflow
+  quizSettings: QuizSettings
+  pages: AdminFormPage[]
   fields: AdminEditableField[]
 }
 
@@ -87,10 +154,38 @@ export interface AdminFormSubmissionItem {
   id: string
   createdAt: string
   answers: Record<string, string>
+  meta: {
+    participantType: 'internal' | 'external' | null
+    quiz: {
+      score: number
+      maxScore: number
+      correctAnswers: number
+      totalQuestions: number
+      passingScore: number
+      passed: boolean
+    } | null
+  }
+}
+
+export interface PublicSubmissionSummary {
+  submissionId: string
+  formTitle: string
+  participantType: 'internal' | 'external' | null
+  quiz: {
+    score: number
+    maxScore: number
+    correctAnswers: number
+    totalQuestions: number
+    passingScore: number
+    passed: boolean
+  } | null
 }
 
 export interface AdminFormSubmissionsResult {
   form: Pick<AdminFormDetail, 'id' | 'slug' | 'title' | 'status'>
+  totalItems: number
+  hasParticipantType: boolean
+  hasQuiz: boolean
   columns: Array<{
     id: string
     name: string
@@ -100,6 +195,12 @@ export interface AdminFormSubmissionsResult {
   items: AdminFormSubmissionItem[]
 }
 
+export interface AdminSubmissionFilters {
+  participantType: 'all' | 'internal' | 'external'
+  quizStatus: 'all' | 'passed' | 'failed' | 'ungraded'
+  sortBy: 'newest' | 'oldest' | 'score-desc' | 'score-asc'
+}
+
 interface FormRow {
   id: string
   slug: string
@@ -107,7 +208,8 @@ interface FormRow {
   description: string | null
   successMessage: string | null
   status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
-  mode?: 'STANDARD' | 'QUIZ'
+  mode?: FormMode
+  settingsJson?: Prisma.JsonValue | null
   updatedAt?: Date
   submissionCount?: number
 }
@@ -127,6 +229,8 @@ interface FieldOptionRow {
   label: string
   value: string
   order: number
+  isCorrect: boolean
+  points: number
 }
 
 interface SubmissionRow {
@@ -134,6 +238,7 @@ interface SubmissionRow {
   createdAt: Date
   fieldId: string
   valueText: string | null
+  pathJson: Prisma.JsonValue | null
 }
 
 interface SubmissionAnswerRow {
@@ -141,13 +246,31 @@ interface SubmissionAnswerRow {
   valueText: string | null
 }
 
+interface QuizSummaryRow {
+  formId: string
+  totalQuizSubmissions: number
+  passedCount: number
+  failedCount: number
+  averageScorePercentage: number | null
+}
+
 const defaultAttendanceFields = [
+  {
+    id: 'attendance-field-0',
+    name: 'participantType',
+    label: 'Tipe Peserta',
+    type: 'RADIO' as const,
+    order: 1,
+    required: true,
+    placeholder: null,
+    options: [...ATTENDANCE_PARTICIPANT_TYPE_OPTIONS],
+  },
   {
     id: 'attendance-field-1',
     name: 'namaLengkap',
     label: 'Nama Lengkap',
     type: 'SHORT_TEXT' as const,
-    order: 1,
+    order: 2,
     required: true,
     placeholder: null,
     options: [] as string[],
@@ -157,7 +280,7 @@ const defaultAttendanceFields = [
     name: 'nipNrp',
     label: 'NIP/NRP',
     type: 'SHORT_TEXT' as const,
-    order: 2,
+    order: 3,
     required: true,
     placeholder: null,
     options: [] as string[],
@@ -167,7 +290,7 @@ const defaultAttendanceFields = [
     name: 'jabatan',
     label: 'Jabatan',
     type: 'LONG_TEXT' as const,
-    order: 3,
+    order: 4,
     required: true,
     placeholder: null,
     options: [] as string[],
@@ -177,7 +300,7 @@ const defaultAttendanceFields = [
     name: 'unitKerja',
     label: 'Unit Kerja',
     type: 'LONG_TEXT' as const,
-    order: 4,
+    order: 5,
     required: true,
     placeholder: null,
     options: [] as string[],
@@ -187,7 +310,7 @@ const defaultAttendanceFields = [
     name: 'sebagai',
     label: 'Sebagai',
     type: 'RADIO' as const,
-    order: 5,
+    order: 6,
     required: true,
     placeholder: null,
     options: ['Penguji', 'Coach', 'Mentor'],
@@ -197,7 +320,7 @@ const defaultAttendanceFields = [
     name: 'signature',
     label: 'Tanda Tangan',
     type: 'SIGNATURE' as const,
-    order: 6,
+    order: 7,
     required: true,
     placeholder: null,
     options: [] as string[],
@@ -205,6 +328,7 @@ const defaultAttendanceFields = [
 ]
 
 const fieldNameByLabel: Record<string, string> = {
+  'tipe peserta': 'participantType',
   'nama lengkap': 'namaLengkap',
   'nip/nrp': 'nipNrp',
   jabatan: 'jabatan',
@@ -213,15 +337,6 @@ const fieldNameByLabel: Record<string, string> = {
   'tanda tangan': 'signature',
   signature: 'signature',
 }
-
-const attendanceProtectedFieldNames = new Set([
-  'namaLengkap',
-  'nipNrp',
-  'jabatan',
-  'unitKerja',
-  'sebagai',
-  'signature',
-])
 
 const attendanceFieldNameById: Record<string, string> = defaultAttendanceFields.reduce((acc, field) => {
   acc[field.id] = field.name
@@ -266,7 +381,31 @@ function mapFieldType(type: FieldType): FormFieldType | null {
   }
 }
 
+function isLikertOptionSet<T extends { isCorrect: boolean }>(options: T[]) {
+  return options.length === 5 && options.every((option) => option.isCorrect !== true)
+}
+
+function resolveFormFieldType<T extends { isCorrect: boolean }>(
+  type: FieldType,
+  options: T[]
+): FormFieldType | null {
+  const mappedType = mapFieldType(type)
+
+  if (mappedType === 'radio' && isLikertOptionSet(options)) {
+    return 'likert'
+  }
+
+  return mappedType
+}
+
 function mapFieldName(field: Pick<FieldRow, 'id' | 'label' | 'order'>) {
+  if (field.id.startsWith(WEBINAR_CORE_FIELD_ID_PREFIX)) {
+    const encodedName = field.id.slice(WEBINAR_CORE_FIELD_ID_PREFIX.length).split('-')[0]
+    if (encodedName) {
+      return encodedName
+    }
+  }
+
   return attendanceFieldNameById[field.id]
     ?? fieldNameByLabel[normalizeLabel(field.label)]
     ?? `field_${field.order}`
@@ -276,19 +415,586 @@ function randomId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, '')}`
 }
 
+function sameChoice(left: string, right: string) {
+  return left.trim().toLowerCase() === right.trim().toLowerCase()
+}
+
+function createConditionalRouteKey(fieldId: string, optionLabel: string) {
+  return `${fieldId}::${normalizeLabel(optionLabel)}`
+}
+
+function normalizePassingPercentage(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return DEFAULT_QUIZ_PASS_PERCENTAGE
+  }
+
+  return Math.min(100, Math.max(1, Math.round(value)))
+}
+
+function readFormWorkflow(
+  slug: string,
+  settingsJson: Prisma.JsonValue | null
+): FormWorkflow {
+  if (slug === ATTENDANCE_FORM_SLUG) {
+    return 'WEBINAR'
+  }
+
+  if (!settingsJson || typeof settingsJson !== 'object' || Array.isArray(settingsJson)) {
+    return 'STANDARD'
+  }
+
+  const workflow = (settingsJson as Record<string, unknown>).workflow
+  return workflow === 'WEBINAR' ? 'WEBINAR' : 'STANDARD'
+}
+
+function readQuizSettings(settingsJson: Prisma.JsonValue | null): QuizSettings {
+  if (!settingsJson || typeof settingsJson !== 'object' || Array.isArray(settingsJson)) {
+    return {
+      passingPercentage: DEFAULT_QUIZ_PASS_PERCENTAGE,
+    }
+  }
+
+  const settings = settingsJson as Record<string, unknown>
+  const quiz = settings.quiz
+
+  if (!quiz || typeof quiz !== 'object' || Array.isArray(quiz)) {
+    return {
+      passingPercentage: DEFAULT_QUIZ_PASS_PERCENTAGE,
+    }
+  }
+
+  return {
+    passingPercentage: normalizePassingPercentage((quiz as Record<string, unknown>).passingPercentage),
+  }
+}
+
+function createDefaultFormPages(fieldIds: string[]): FormPageDefinition[] {
+  return [{
+    id: 'page-1',
+    title: 'Halaman 1',
+    description: null,
+    fieldIds,
+  }]
+}
+
+function readFormPages(
+  settingsJson: Prisma.JsonValue | null,
+  fieldIds: string[]
+): FormPageDefinition[] {
+  if (!settingsJson || typeof settingsJson !== 'object' || Array.isArray(settingsJson)) {
+    return createDefaultFormPages(fieldIds)
+  }
+
+  const settings = settingsJson as Record<string, unknown>
+  const rawPages = settings.pages
+
+  if (!Array.isArray(rawPages) || rawPages.length === 0) {
+    return createDefaultFormPages(fieldIds)
+  }
+
+  const availableIds = new Set(fieldIds)
+  const seenFieldIds = new Set<string>()
+  const pages = rawPages.flatMap<FormPageDefinition>((rawPage, index) => {
+    if (!rawPage || typeof rawPage !== 'object' || Array.isArray(rawPage)) {
+      return []
+    }
+
+    const page = rawPage as Record<string, unknown>
+    const id = typeof page.id === 'string' && page.id.trim()
+      ? page.id.trim()
+      : `page-${index + 1}`
+    const title = typeof page.title === 'string' && page.title.trim()
+      ? page.title.trim()
+      : `Halaman ${index + 1}`
+    const description = typeof page.description === 'string' && page.description.trim()
+      ? page.description.trim()
+      : null
+    const fieldIdsForPage = Array.isArray(page.fieldIds)
+      ? page.fieldIds
+        .filter((fieldId): fieldId is string => typeof fieldId === 'string' && availableIds.has(fieldId))
+        .filter((fieldId) => {
+          if (seenFieldIds.has(fieldId)) {
+            return false
+          }
+
+          seenFieldIds.add(fieldId)
+          return true
+        })
+      : []
+
+    return [{
+      id,
+      title,
+      description,
+      fieldIds: fieldIdsForPage,
+    }]
+  })
+
+  const unassignedFieldIds = fieldIds.filter((fieldId) => !seenFieldIds.has(fieldId))
+
+  if (pages.length === 0) {
+    return createDefaultFormPages(fieldIds)
+  }
+
+  if (unassignedFieldIds.length > 0) {
+    pages[0] = {
+      ...pages[0],
+      fieldIds: [...pages[0].fieldIds, ...unassignedFieldIds],
+    }
+  }
+
+  return pages.filter((page) => page.fieldIds.length > 0)
+}
+
+function readFormConditionalRoutes(
+  settingsJson: Prisma.JsonValue | null,
+  fieldIds: string[],
+  pageIds: string[]
+): FormConditionalRoute[] {
+  if (!settingsJson || typeof settingsJson !== 'object' || Array.isArray(settingsJson)) {
+    return []
+  }
+
+  const settings = settingsJson as Record<string, unknown>
+  const rawRoutes = settings.conditionalRoutes
+
+  if (!Array.isArray(rawRoutes) || rawRoutes.length === 0) {
+    return []
+  }
+
+  const availableFieldIds = new Set(fieldIds)
+  const availablePageIds = new Set(pageIds)
+  const seenKeys = new Set<string>()
+
+  return rawRoutes.flatMap<FormConditionalRoute>((rawRoute) => {
+    if (!rawRoute || typeof rawRoute !== 'object' || Array.isArray(rawRoute)) {
+      return []
+    }
+
+    const route = rawRoute as Record<string, unknown>
+    const fieldId = typeof route.fieldId === 'string' ? route.fieldId.trim() : ''
+    const optionLabel = typeof route.optionLabel === 'string' ? route.optionLabel.trim() : ''
+    const nextPageId = typeof route.nextPageId === 'string' ? route.nextPageId.trim() : ''
+
+    if (!fieldId || !optionLabel || !nextPageId) {
+      return []
+    }
+
+    if (!availableFieldIds.has(fieldId) || !availablePageIds.has(nextPageId)) {
+      return []
+    }
+
+    const key = createConditionalRouteKey(fieldId, optionLabel)
+    if (seenKeys.has(key)) {
+      return []
+    }
+
+    seenKeys.add(key)
+    return [{
+      fieldId,
+      optionLabel,
+      nextPageId,
+    }]
+  })
+}
+
+function serializeFormSettings(
+  workflow: FormWorkflow,
+  quizSettings: QuizSettings,
+  pages?: FormPageDefinition[],
+  conditionalRoutes?: FormConditionalRoute[]
+) {
+  return JSON.stringify({
+    workflow,
+    quiz: {
+      passingPercentage: normalizePassingPercentage(quizSettings.passingPercentage),
+    },
+    pages: pages?.map((page) => ({
+      id: page.id,
+      title: page.title,
+      description: page.description ?? null,
+      fieldIds: page.fieldIds,
+    })),
+    conditionalRoutes: conditionalRoutes?.map((route) => ({
+      fieldId: route.fieldId,
+      optionLabel: route.optionLabel,
+      nextPageId: route.nextPageId,
+    })),
+  })
+}
+
+function buildAttendanceBranching(fields: FormField[]): FormBranchingConfig | undefined {
+  const fieldNames = new Set(fields.map((field) => field.name))
+
+  if (!fieldNames.has('participantType')) {
+    return undefined
+  }
+
+  const sharedFieldNames = fields
+    .map((field) => field.name)
+    .filter((name) => name !== 'participantType' && name !== 'nipNrp')
+
+  const steps: FormStepDefinition[] = [
+    {
+      id: 'participant-type',
+      title: 'Tipe Peserta',
+      description: 'Pilih kategori peserta webinar sebelum melanjutkan presensi.',
+      fieldNames: ['participantType'],
+    },
+  ]
+
+  if (fieldNames.has('nipNrp')) {
+    steps.push({
+      id: 'internal-identity',
+      title: 'Data Internal',
+      description: 'Lengkapi identitas pegawai internal untuk presensi webinar.',
+      fieldNames: ['nipNrp'],
+    })
+  }
+
+  if (sharedFieldNames.length > 0) {
+    steps.push({
+      id: 'shared-attendance',
+      title: 'Data Presensi',
+      description: 'Lengkapi data presensi dan identitas umum peserta webinar.',
+      fieldNames: sharedFieldNames,
+    })
+  }
+
+  return {
+    participantTypeFieldName: 'participantType',
+    internalValue: ATTENDANCE_PARTICIPANT_TYPE_OPTIONS[0],
+    externalValue: ATTENDANCE_PARTICIPANT_TYPE_OPTIONS[1],
+    internalOnlyFieldNames: ['nipNrp'],
+    steps,
+  }
+}
+
+function hasLegacyAttendanceShape(form: PublicFormDefinition) {
+  const fieldNames = new Set(form.fields.map((field) => field.name))
+
+  return [
+    'participantType',
+    'namaLengkap',
+    'nipNrp',
+    'jabatan',
+    'unitKerja',
+    'sebagai',
+    'signature',
+  ].every((fieldName) => fieldNames.has(fieldName))
+}
+
+function getVisibleFieldNames(form: PublicFormDefinition, payload: Record<string, unknown>) {
+  const visible = new Set(form.fields.map((field) => field.name))
+  const branching = form.settings.branching
+
+  if (!branching) {
+    return visible
+  }
+
+  const participantType = getStringValue(payload[branching.participantTypeFieldName])
+
+  if (sameChoice(participantType, branching.externalValue)) {
+    for (const fieldName of branching.internalOnlyFieldNames) {
+      visible.delete(fieldName)
+    }
+  }
+
+  return visible
+}
+
+function buildSubmissionPath(form: PublicFormDefinition, values: Record<string, string>) {
+  const branching = form.settings.branching
+
+  if (!branching) {
+    return null
+  }
+
+  const participantType = values[branching.participantTypeFieldName] ?? ''
+  if (!participantType) {
+    return null
+  }
+
+  const completedStepIds = ['participant-type']
+
+  if (sameChoice(participantType, branching.internalValue)) {
+    completedStepIds.push('internal-identity')
+  }
+
+  if (branching.steps.some((step) => step.id === 'shared-attendance')) {
+    completedStepIds.push('shared-attendance')
+  }
+
+  return {
+    workflow: 'attendance-webinar',
+    participantType: sameChoice(participantType, branching.internalValue) ? 'internal' : 'external',
+    completedStepIds,
+  }
+}
+
+function buildPublicOptionsByField(options: FieldOptionRow[]) {
+  return options.reduce<Record<string, string[]>>((acc, option) => {
+    acc[option.fieldId] ??= []
+    acc[option.fieldId].push(option.value || option.label)
+    return acc
+  }, {})
+}
+
+function buildAdminOptionsByField(options: FieldOptionRow[]) {
+  return options.reduce<Record<string, AdminEditableFieldOption[]>>((acc, option) => {
+    acc[option.fieldId] ??= []
+    acc[option.fieldId].push({
+      label: option.value || option.label,
+      isCorrect: option.isCorrect,
+      points: option.points,
+    })
+    return acc
+  }, {})
+}
+
+function buildFormSettings(form: Pick<FormRow, 'slug' | 'settingsJson'>, fields: FormField[]): FormSettings {
+  const workflow = readFormWorkflow(form.slug, form.settingsJson ?? null)
+  const pages = workflow === 'STANDARD'
+    ? readFormPages(form.settingsJson ?? null, fields.map((field) => field.id))
+    : undefined
+
+  return {
+    workflow,
+    uniqueFields: workflow === 'WEBINAR' ? ['nipNrp'] : undefined,
+    legacyTarget: form.slug === ATTENDANCE_FORM_SLUG ? 'attendance' : undefined,
+    branching: workflow === 'WEBINAR' ? buildAttendanceBranching(fields) : undefined,
+    quiz: readQuizSettings(form.settingsJson ?? null),
+    pages,
+    conditionalRoutes: workflow === 'STANDARD' && pages
+      ? readFormConditionalRoutes(
+          form.settingsJson ?? null,
+          fields.map((field) => field.id),
+          pages.map((page) => page.id)
+        )
+      : undefined,
+  }
+}
+
+function evaluateQuizSubmission(
+  form: PublicFormDefinition,
+  rows: NonNullable<Awaited<ReturnType<typeof getPublicFormRows>>>,
+  values: Record<string, string>
+) {
+  const optionsByField = rows.options.reduce<Record<string, FieldOptionRow[]>>((acc, option) => {
+    acc[option.fieldId] ??= []
+    acc[option.fieldId].push(option)
+    return acc
+  }, {})
+
+  let totalQuestions = 0
+  let correctAnswers = 0
+  let score = 0
+  let maxScore = 0
+
+  for (const field of rows.fields) {
+    const options = optionsByField[field.id] ?? []
+    const correctOptions = options.filter((option) => option.isCorrect)
+
+    if (correctOptions.length === 0) {
+      continue
+    }
+
+    totalQuestions += 1
+
+    const bestPoints = Math.max(
+      ...correctOptions.map((option) => (option.points > 0 ? option.points : 1)),
+      1
+    )
+    maxScore += bestPoints
+
+    const selectedValue = values[mapFieldName(field)] ?? ''
+    const matchedOption = correctOptions.find((option) => sameChoice(option.value || option.label, selectedValue))
+
+    if (matchedOption) {
+      correctAnswers += 1
+      score += matchedOption.points > 0 ? matchedOption.points : 1
+    }
+  }
+
+  if (totalQuestions === 0) {
+    return null
+  }
+
+  const passingPercentage = normalizePassingPercentage(form.settings.quiz?.passingPercentage)
+  const passingScore = Math.max(1, Math.ceil((maxScore * passingPercentage) / 100))
+
+  return {
+    score,
+    maxScore,
+    correctAnswers,
+    totalQuestions,
+    passingPercentage,
+    passingScore,
+    passed: score >= passingScore,
+  }
+}
+
+function buildSubmissionMeta(
+  form: PublicFormDefinition,
+  rows: NonNullable<Awaited<ReturnType<typeof getPublicFormRows>>>,
+  values: Record<string, string>
+) {
+  const path = buildSubmissionPath(form, values) ?? {}
+  const quiz = evaluateQuizSubmission(form, rows, values)
+
+  return {
+    ...path,
+    quiz,
+  }
+}
+
+function readSubmissionMeta(pathJson: Prisma.JsonValue | null): AdminFormSubmissionItem['meta'] {
+  if (!pathJson || typeof pathJson !== 'object' || Array.isArray(pathJson)) {
+    return {
+      participantType: null,
+      quiz: null,
+    }
+  }
+
+  const record = pathJson as Record<string, unknown>
+  const participantType = record.participantType
+  const rawQuiz = record.quiz
+
+  const normalizedParticipantType =
+    participantType === 'internal' || participantType === 'external' ? participantType : null
+
+  if (!rawQuiz || typeof rawQuiz !== 'object' || Array.isArray(rawQuiz)) {
+    return {
+      participantType: normalizedParticipantType,
+      quiz: null,
+    }
+  }
+
+  const quiz = rawQuiz as Record<string, unknown>
+
+  return {
+    participantType: normalizedParticipantType,
+    quiz: {
+      score: typeof quiz.score === 'number' ? quiz.score : 0,
+      maxScore: typeof quiz.maxScore === 'number' ? quiz.maxScore : 0,
+      correctAnswers: typeof quiz.correctAnswers === 'number' ? quiz.correctAnswers : 0,
+      totalQuestions: typeof quiz.totalQuestions === 'number' ? quiz.totalQuestions : 0,
+      passingScore: typeof quiz.passingScore === 'number' ? quiz.passingScore : 0,
+      passed: quiz.passed === true,
+    },
+  }
+}
+
+function getDefaultAdminSubmissionFilters(): AdminSubmissionFilters {
+  return {
+    participantType: 'all',
+    quizStatus: 'all',
+    sortBy: 'newest',
+  }
+}
+
+export function normalizeAdminSubmissionFilters(
+  filters?: Partial<AdminSubmissionFilters>
+): AdminSubmissionFilters {
+  const defaults = getDefaultAdminSubmissionFilters()
+
+  return {
+    participantType:
+      filters?.participantType === 'internal' || filters?.participantType === 'external'
+        ? filters.participantType
+        : defaults.participantType,
+    quizStatus:
+      filters?.quizStatus === 'passed'
+      || filters?.quizStatus === 'failed'
+      || filters?.quizStatus === 'ungraded'
+        ? filters.quizStatus
+        : defaults.quizStatus,
+    sortBy:
+      filters?.sortBy === 'oldest'
+      || filters?.sortBy === 'score-desc'
+      || filters?.sortBy === 'score-asc'
+        ? filters.sortBy
+        : defaults.sortBy,
+  }
+}
+
+function getQuizScoreRatio(item: AdminFormSubmissionItem) {
+  const quiz = item.meta.quiz
+
+  if (!quiz || quiz.maxScore <= 0) {
+    return null
+  }
+
+  return quiz.score / quiz.maxScore
+}
+
+function applyAdminSubmissionFilters(
+  items: AdminFormSubmissionItem[],
+  filters?: Partial<AdminSubmissionFilters>
+) {
+  const normalizedFilters = normalizeAdminSubmissionFilters(filters)
+
+  return [...items]
+    .filter((item) => {
+      if (
+        normalizedFilters.participantType !== 'all'
+        && item.meta.participantType !== normalizedFilters.participantType
+      ) {
+        return false
+      }
+
+      if (normalizedFilters.quizStatus === 'passed' && item.meta.quiz?.passed !== true) {
+        return false
+      }
+
+      if (normalizedFilters.quizStatus === 'failed' && (!item.meta.quiz || item.meta.quiz.passed !== false)) {
+        return false
+      }
+
+      if (normalizedFilters.quizStatus === 'ungraded' && item.meta.quiz) {
+        return false
+      }
+
+      return true
+    })
+    .sort((left, right) => {
+      if (normalizedFilters.sortBy === 'oldest') {
+        return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()
+      }
+
+      if (normalizedFilters.sortBy === 'score-desc') {
+        return (getQuizScoreRatio(right) ?? -1) - (getQuizScoreRatio(left) ?? -1)
+      }
+
+      if (normalizedFilters.sortBy === 'score-asc') {
+        return (getQuizScoreRatio(left) ?? Number.MAX_SAFE_INTEGER)
+          - (getQuizScoreRatio(right) ?? Number.MAX_SAFE_INTEGER)
+      }
+
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+    })
+}
+
 async function seedAttendanceTemplateIfNeeded() {
   const existingRows = await prisma.$queryRaw<FormRow[]>`
-    SELECT id, slug, title, description, success_message AS "successMessage"
+    SELECT
+      id,
+      slug,
+      title,
+      description,
+      success_message AS "successMessage",
+      settings_json AS "settingsJson"
     FROM forms
     WHERE slug = ${ATTENDANCE_FORM_SLUG}
     LIMIT 1
   `
 
   let formId = existingRows[0]?.id
+  const quizSettings = readQuizSettings(existingRows[0]?.settingsJson ?? null)
 
   if (!formId) {
     await prisma.$executeRaw`
-      INSERT INTO forms (id, slug, title, description, status, mode, success_message, created_at, updated_at)
+      INSERT INTO forms (id, slug, title, description, status, mode, success_message, settings_json, created_at, updated_at)
       VALUES (
         ${ATTENDANCE_FORM_ID},
         ${ATTENDANCE_FORM_SLUG},
@@ -297,6 +1003,7 @@ async function seedAttendanceTemplateIfNeeded() {
         'PUBLISHED'::"FormStatus",
         'STANDARD'::"FormMode",
         ${'Kehadiran Anda telah berhasil dicatat.'},
+        ${serializeFormSettings('WEBINAR', quizSettings)}::jsonb,
         NOW(),
         NOW()
       )
@@ -304,6 +1011,7 @@ async function seedAttendanceTemplateIfNeeded() {
         title = EXCLUDED.title,
         description = EXCLUDED.description,
         success_message = EXCLUDED.success_message,
+        settings_json = COALESCE(forms.settings_json, EXCLUDED.settings_json),
         updated_at = NOW()
     `
 
@@ -315,6 +1023,7 @@ async function seedAttendanceTemplateIfNeeded() {
         title = ${'Daftar Hadir'},
         description = ${'Seminar Evaluasi Rancangan Aktualisasi Pelatihan Dasar CPNS Golongan II Angkatan V dan Golongan III Angkatan X Kemensetneg Tahun 2026'},
         success_message = ${'Kehadiran Anda telah berhasil dicatat.'},
+        settings_json = ${serializeFormSettings('WEBINAR', quizSettings)}::jsonb,
         updated_at = NOW()
       WHERE id = ${formId}
     `
@@ -334,8 +1043,47 @@ async function seedAttendanceTemplateIfNeeded() {
     ORDER BY "order" ASC
   `
 
-  if (existingFields.length === 0) {
-    for (const field of defaultAttendanceFields) {
+  const existingFieldsById = new Map(existingFields.map((field) => [field.id, field]))
+  const existingFieldsByName = new Map(existingFields.map((field) => [mapFieldName(field), field]))
+  const needsBranchingShift = !existingFieldsById.has('attendance-field-0')
+  const attendanceFieldIds = new Set(defaultAttendanceFields.map((field) => field.id))
+
+  if (existingFields.length > 0) {
+    await prisma.$executeRaw`
+      UPDATE form_fields
+      SET "order" = "order" + 1000, updated_at = NOW()
+      WHERE form_id = ${formId}
+    `
+  }
+
+  for (const field of existingFields) {
+    if (attendanceFieldIds.has(field.id)) {
+      continue
+    }
+
+    await prisma.$executeRaw`
+      UPDATE form_fields
+      SET "order" = ${needsBranchingShift ? field.order + 1 : field.order}, updated_at = NOW()
+      WHERE id = ${field.id}
+    `
+  }
+
+  for (const field of defaultAttendanceFields) {
+    const existingField = existingFieldsById.get(field.id) ?? existingFieldsByName.get(field.name)
+
+    if (existingField) {
+      await prisma.$executeRaw`
+        UPDATE form_fields
+        SET
+          type = ${field.type}::"FieldType",
+          "order" = ${field.order},
+          required = ${field.required},
+          placeholder = ${existingField.placeholder ?? field.placeholder},
+          is_active = ${true},
+          updated_at = NOW()
+        WHERE id = ${field.id}
+      `
+    } else {
       await prisma.$executeRaw`
         INSERT INTO form_fields (
           id,
@@ -363,6 +1111,12 @@ async function seedAttendanceTemplateIfNeeded() {
           NOW()
         )
       `
+    }
+
+    const shouldRefreshOptions = field.type === 'RADIO' && (field.id === 'attendance-field-0' || !existingField)
+
+    if (shouldRefreshOptions) {
+      await prisma.$executeRaw`DELETE FROM field_options WHERE field_id = ${field.id}`
 
       for (let index = 0; index < field.options.length; index += 1) {
         const option = field.options[index]
@@ -386,7 +1140,6 @@ async function seedAttendanceTemplateIfNeeded() {
             ${0},
             NOW()
           )
-          ON CONFLICT (field_id, value) DO NOTHING
         `
       }
     }
@@ -399,7 +1152,13 @@ async function getPublicFormRows(slug: string) {
   }
 
   const forms = await prisma.$queryRaw<FormRow[]>`
-    SELECT id, slug, title, description, success_message AS "successMessage"
+    SELECT
+      id,
+      slug,
+      title,
+      description,
+      success_message AS "successMessage",
+      settings_json AS "settingsJson"
     FROM forms
     WHERE slug = ${slug} AND status = 'PUBLISHED'::"FormStatus"
     LIMIT 1
@@ -426,7 +1185,13 @@ async function getPublicFormRows(slug: string) {
   `
 
   const options = await prisma.$queryRaw<FieldOptionRow[]>`
-    SELECT field_id AS "fieldId", label, value, "order"
+    SELECT
+      field_id AS "fieldId",
+      label,
+      value,
+      "order",
+      is_correct AS "isCorrect",
+      points
     FROM field_options
     WHERE field_id IN (
       SELECT id FROM form_fields WHERE form_id = ${form.id} AND is_active = true
@@ -438,6 +1203,10 @@ async function getPublicFormRows(slug: string) {
 }
 
 async function getFormRowsById(id: string) {
+  if (id === ATTENDANCE_FORM_ID) {
+    await seedAttendanceTemplateIfNeeded()
+  }
+
   const forms = await prisma.$queryRaw<FormRow[]>`
     SELECT
       id,
@@ -447,6 +1216,7 @@ async function getFormRowsById(id: string) {
       success_message AS "successMessage",
       status::text AS status,
       mode::text AS mode,
+      settings_json AS "settingsJson",
       updated_at AS "updatedAt"
     FROM forms
     WHERE id = ${id}
@@ -474,7 +1244,13 @@ async function getFormRowsById(id: string) {
   `
 
   const options = await prisma.$queryRaw<FieldOptionRow[]>`
-    SELECT field_id AS "fieldId", label, value, "order"
+    SELECT
+      field_id AS "fieldId",
+      label,
+      value,
+      "order",
+      is_correct AS "isCorrect",
+      points
     FROM field_options
     WHERE field_id IN (
       SELECT id FROM form_fields WHERE form_id = ${form.id} AND is_active = true
@@ -492,14 +1268,11 @@ export async function getPublicFormBySlug(slug: string): Promise<PublicFormDefin
     return null
   }
 
-  const optionsByField = rows.options.reduce<Record<string, string[]>>((acc, option) => {
-    acc[option.fieldId] ??= []
-    acc[option.fieldId].push(option.value || option.label)
-    return acc
-  }, {})
+  const optionsByField = buildPublicOptionsByField(rows.options)
 
   const fields = rows.fields.flatMap<FormField>((field) => {
-    const mappedType = mapFieldType(field.type)
+    const fieldOptions = rows.options.filter((option) => option.fieldId === field.id)
+    const mappedType = resolveFormFieldType(field.type, fieldOptions)
 
     if (!mappedType) {
       return []
@@ -507,7 +1280,7 @@ export async function getPublicFormBySlug(slug: string): Promise<PublicFormDefin
 
     const name = mapFieldName(field)
 
-    if (mappedType === 'radio') {
+    if (mappedType === 'radio' || mappedType === 'likert') {
       return [{
         id: field.id,
         name,
@@ -545,12 +1318,10 @@ export async function getPublicFormBySlug(slug: string): Promise<PublicFormDefin
     slug: rows.form.slug,
     title: rows.form.title,
     description: rows.form.description,
+    successMessage: rows.form.successMessage,
     submitLabel: 'Submit',
     fields,
-    settings: {
-      uniqueFields: ['nipNrp'],
-      legacyTarget: rows.form.slug === ATTENDANCE_FORM_SLUG ? 'attendance' : undefined,
-    },
+    settings: buildFormSettings(rows.form, fields),
   }
 }
 
@@ -560,9 +1331,16 @@ function getStringValue(value: unknown): string {
 
 export function validateFormSubmission(form: PublicFormDefinition, payload: Record<string, unknown>) {
   const values: Record<string, string> = {}
+  const visibleFieldNames = getVisibleFieldNames(form, payload)
 
   for (const field of form.fields) {
     const value = getStringValue(payload[field.name])
+    const isVisible = visibleFieldNames.has(field.name)
+
+    if (!isVisible) {
+      values[field.name] = ''
+      continue
+    }
 
     if (field.required && !value) {
       throw new FormSubmissionError(`Field "${field.label}" wajib diisi`, 400)
@@ -573,7 +1351,7 @@ export function validateFormSubmission(form: PublicFormDefinition, payload: Reco
       continue
     }
 
-    if (field.type === 'radio') {
+    if (field.type === 'radio' || field.type === 'likert') {
       if (!field.options.includes(value)) {
         throw new FormSubmissionError(`Pilihan untuk "${field.label}" tidak valid`, 400)
       }
@@ -592,12 +1370,15 @@ export function validateFormSubmission(form: PublicFormDefinition, payload: Reco
       continue
     }
 
-    const maxLength = field.maxLength ?? MAX_TEXT_LENGTH
-    if (value.length > maxLength) {
-      throw new FormSubmissionError(`Field "${field.label}" melebihi batas panjang`, 400)
-    }
+    if (field.type === 'text' || field.type === 'textarea') {
+      const maxLength = field.maxLength ?? MAX_TEXT_LENGTH
+      if (value.length > maxLength) {
+        throw new FormSubmissionError(`Field "${field.label}" melebihi batas panjang`, 400)
+      }
 
-    values[field.name] = value
+      values[field.name] = value
+      continue
+    }
   }
 
   return values
@@ -620,12 +1401,14 @@ async function findExistingAttendanceSubmission(formId: string, nipFieldId: stri
 async function createFormsEngineSubmission(
   rows: NonNullable<Awaited<ReturnType<typeof getPublicFormRows>>>,
   values: Record<string, string>,
-  tx: typeof prisma | Prisma.TransactionClient = prisma
+  tx: typeof prisma | Prisma.TransactionClient = prisma,
+  path: Record<string, unknown> | null = null
 ) {
   const submissionId = randomId('submission')
+  const pathJson = path ? JSON.stringify(path) : null
   await tx.$executeRaw`
     INSERT INTO submissions (id, form_id, path_json, created_at, completed_at)
-    VALUES (${submissionId}, ${rows.form.id}, ${null}, NOW(), NOW())
+    VALUES (${submissionId}, ${rows.form.id}, ${pathJson}::jsonb, NOW(), NOW())
   `
 
   for (const field of rows.fields) {
@@ -654,19 +1437,18 @@ async function createFormsEngineSubmission(
   return { id: submissionId }
 }
 
-export async function createAttendanceSubmission(payload: Record<string, unknown>) {
-  const form = await getPublicFormBySlug(ATTENDANCE_FORM_SLUG)
+async function createWebinarSubmission(
+  form: PublicFormDefinition,
+  rows: NonNullable<Awaited<ReturnType<typeof getPublicFormRows>>>,
+  values: Record<string, string>
+) {
+  const participantType = values.participantType ?? ''
+  const isInternalParticipant = !form.settings.branching
+    || sameChoice(participantType, form.settings.branching.internalValue)
 
-  if (!form) {
-    throw new FormSubmissionError('Form daftar hadir tidak ditemukan', 404)
-  }
+  const nipField = rows.fields.find((field) => mapFieldName(field) === 'nipNrp')
 
-  const values = validateFormSubmission(form, payload)
-
-  const rows = await getPublicFormRows(ATTENDANCE_FORM_SLUG)
-  const nipField = rows?.fields.find((field) => mapFieldName(field) === 'nipNrp')
-
-  if (rows && nipField) {
+  if (nipField && isInternalParticipant) {
     const existingSubmission = await findExistingAttendanceSubmission(rows.form.id, nipField.id, values.nipNrp)
     if (existingSubmission) {
       throw new FormSubmissionError(
@@ -677,29 +1459,25 @@ export async function createAttendanceSubmission(payload: Record<string, unknown
   }
 
   try {
-    const attendance = await prisma.$transaction(async (tx) => {
-      const createdAttendance = await tx.attendance.create({
-        data: {
-          namaLengkap: values.namaLengkap,
-          nipNrp: values.nipNrp,
-          jabatan: values.jabatan,
-          unitKerja: values.unitKerja,
-          sebagai: values.sebagai,
-          signature: values.signature,
-        },
-      })
-
-      if (!rows) {
-        throw new FormSubmissionError('Form daftar hadir tidak ditemukan', 404)
+    const submission = await prisma.$transaction(async (tx) => {
+      if (isInternalParticipant) {
+        await tx.attendance.create({
+          data: {
+            namaLengkap: values.namaLengkap,
+            nipNrp: values.nipNrp,
+            jabatan: values.jabatan,
+            unitKerja: values.unitKerja,
+            sebagai: values.sebagai,
+            signature: values.signature,
+          },
+        })
       }
 
-      await createFormsEngineSubmission(rows, values, tx)
-
-      return createdAttendance
+      return createFormsEngineSubmission(rows, values, tx, buildSubmissionMeta(form, rows, values))
     })
 
     return {
-      id: attendance.id,
+      id: submission.id,
       message: 'Daftar hadir berhasil disimpan',
     }
   } catch (error) {
@@ -718,15 +1496,38 @@ export async function createAttendanceSubmission(payload: Record<string, unknown
   }
 }
 
+export async function createAttendanceSubmission(payload: Record<string, unknown>) {
+  const form = await getPublicFormBySlug(ATTENDANCE_FORM_SLUG)
+
+  if (!form) {
+    throw new FormSubmissionError('Form daftar hadir tidak ditemukan', 404)
+  }
+
+  const rows = await getPublicFormRows(ATTENDANCE_FORM_SLUG)
+
+  if (!rows) {
+    throw new FormSubmissionError('Form daftar hadir tidak ditemukan', 404)
+  }
+
+  const values = validateFormSubmission(form, payload)
+
+  if (!hasLegacyAttendanceShape(form)) {
+    const submission = await createFormsEngineSubmission(rows, values, prisma, buildSubmissionMeta(form, rows, values))
+
+    return {
+      id: submission.id,
+      message: 'Form berhasil dikirim',
+    }
+  }
+
+  return createWebinarSubmission(form, rows, values)
+}
+
 export async function createPublicFormSubmission(slug: string, payload: Record<string, unknown>) {
   const form = await getPublicFormBySlug(slug)
 
   if (!form) {
     throw new FormSubmissionError('Form tidak ditemukan', 404)
-  }
-
-  if (form.settings.legacyTarget === 'attendance') {
-    return createAttendanceSubmission(payload)
   }
 
   const values = validateFormSubmission(form, payload)
@@ -736,11 +1537,54 @@ export async function createPublicFormSubmission(slug: string, payload: Record<s
     throw new FormSubmissionError('Form tidak ditemukan', 404)
   }
 
-  const submission = await createFormsEngineSubmission(rows, values)
+  if (form.settings.legacyTarget === 'attendance' && hasLegacyAttendanceShape(form)) {
+    return createWebinarSubmission(form, rows, values)
+  }
+
+  if (form.settings.workflow === 'WEBINAR' && hasLegacyAttendanceShape(form)) {
+    return createWebinarSubmission(form, rows, values)
+  }
+
+  const submission = await createFormsEngineSubmission(rows, values, prisma, buildSubmissionMeta(form, rows, values))
 
   return {
     id: submission.id,
     message: 'Form berhasil dikirim',
+  }
+}
+
+export async function getPublicSubmissionSummary(
+  slug: string,
+  submissionId: string
+): Promise<PublicSubmissionSummary | null> {
+  const rows = await prisma.$queryRaw<Array<{
+    id: string
+    title: string
+    pathJson: Prisma.JsonValue | null
+  }>>`
+    SELECT
+      s.id,
+      f.title,
+      s.path_json AS "pathJson"
+    FROM submissions s
+    JOIN forms f ON f.id = s.form_id
+    WHERE s.id = ${submissionId} AND f.slug = ${slug}
+    LIMIT 1
+  `
+
+  const row = rows[0]
+
+  if (!row) {
+    return null
+  }
+
+  const meta = readSubmissionMeta(row.pathJson)
+
+  return {
+    submissionId: row.id,
+    formTitle: row.title,
+    participantType: meta.participantType,
+    quiz: meta.quiz,
   }
 }
 
@@ -764,7 +1608,60 @@ export async function listAdminForms(): Promise<AdminFormListItem[]> {
     ORDER BY f.updated_at DESC, f.created_at DESC
   `
 
+  const quizRows = await prisma.$queryRaw<QuizSummaryRow[]>`
+    SELECT
+      s.form_id AS "formId",
+      COUNT(*) FILTER (
+        WHERE jsonb_typeof(s.path_json -> 'quiz') = 'object'
+      )::int AS "totalQuizSubmissions",
+      COUNT(*) FILTER (
+        WHERE jsonb_typeof(s.path_json -> 'quiz') = 'object'
+          AND COALESCE(s.path_json -> 'quiz' ->> 'passed', 'false') = 'true'
+      )::int AS "passedCount",
+      COUNT(*) FILTER (
+        WHERE jsonb_typeof(s.path_json -> 'quiz') = 'object'
+          AND COALESCE(s.path_json -> 'quiz' ->> 'passed', 'false') <> 'true'
+      )::int AS "failedCount",
+      ROUND(
+        AVG(
+          CASE
+            WHEN jsonb_typeof(s.path_json -> 'quiz') = 'object'
+              AND COALESCE(s.path_json -> 'quiz' ->> 'maxScore', '') <> ''
+              AND (s.path_json -> 'quiz' ->> 'maxScore')::numeric > 0
+            THEN (
+              ((s.path_json -> 'quiz' ->> 'score')::numeric
+                / (s.path_json -> 'quiz' ->> 'maxScore')::numeric) * 100
+            )
+            ELSE NULL
+          END
+        ),
+        1
+      )::float8 AS "averageScorePercentage"
+    FROM submissions s
+    GROUP BY s.form_id
+  `
+
+  const quizSummaryByFormId = new Map(quizRows.map((row) => [row.formId, row]))
+
   return rows.map((row) => ({
+    quizSummary: row.mode === 'QUIZ' || row.mode === 'ATTENDANCE'
+      ? (() => {
+          const quizRow = quizSummaryByFormId.get(row.id)
+          const totalQuizSubmissions = quizRow?.totalQuizSubmissions ?? 0
+          const passedCount = quizRow?.passedCount ?? 0
+          const failedCount = quizRow?.failedCount ?? 0
+
+          return {
+            totalQuizSubmissions,
+            passedCount,
+            failedCount,
+            passRate: totalQuizSubmissions > 0
+              ? Math.round((passedCount / totalQuizSubmissions) * 100)
+              : null,
+            averageScorePercentage: quizRow?.averageScorePercentage ?? null,
+          }
+        })()
+      : null,
     id: row.id,
     slug: row.slug,
     title: row.title,
@@ -783,11 +1680,29 @@ export async function getAdminFormDetail(id: string): Promise<AdminFormDetail | 
     return null
   }
 
-  const optionsByField = rows.options.reduce<Record<string, string[]>>((acc, option) => {
-    acc[option.fieldId] ??= []
-    acc[option.fieldId].push(option.value || option.label)
-    return acc
-  }, {})
+  const optionsByField = buildAdminOptionsByField(rows.options)
+  const fieldIds = rows.fields.map((field) => field.id)
+  const pages = readFormPages(rows.form.settingsJson ?? null, fieldIds)
+  const conditionalRoutes = readFormConditionalRoutes(
+    rows.form.settingsJson ?? null,
+    fieldIds,
+    pages.map((page) => page.id)
+  )
+  const pageIdByFieldId = new Map<string, string>()
+  const nextPageIdByOptionKey = new Map<string, string>()
+
+  for (const page of pages) {
+    for (const fieldId of page.fieldIds) {
+      pageIdByFieldId.set(fieldId, page.id)
+    }
+  }
+
+  for (const route of conditionalRoutes) {
+    nextPageIdByOptionKey.set(
+      createConditionalRouteKey(route.fieldId, route.optionLabel),
+      route.nextPageId
+    )
+  }
 
   return {
     id: rows.form.id,
@@ -797,8 +1712,15 @@ export async function getAdminFormDetail(id: string): Promise<AdminFormDetail | 
     successMessage: rows.form.successMessage,
     status: rows.form.status ?? 'DRAFT',
     mode: rows.form.mode ?? 'STANDARD',
+    workflow: readFormWorkflow(rows.form.slug, rows.form.settingsJson ?? null),
+    quizSettings: readQuizSettings(rows.form.settingsJson ?? null),
+    pages: pages.map((page) => ({
+      id: page.id,
+      title: page.title,
+      description: page.description ?? '',
+    })),
     fields: rows.fields.flatMap((field) => {
-      const type = mapFieldType(field.type)
+      const type = resolveFormFieldType(field.type, optionsByField[field.id] ?? [])
       if (!type) {
         return []
       }
@@ -810,7 +1732,13 @@ export async function getAdminFormDetail(id: string): Promise<AdminFormDetail | 
         type,
         required: field.required,
         placeholder: field.placeholder ?? '',
-        options: optionsByField[field.id] ?? [],
+        pageId: pageIdByFieldId.get(field.id) ?? pages[0]?.id ?? 'page-1',
+        options: (optionsByField[field.id] ?? []).map((option) => ({
+          ...option,
+          nextPageId: nextPageIdByOptionKey.get(
+            createConditionalRouteKey(field.id, option.label)
+          ),
+        })),
       }]
     }),
   }
@@ -821,13 +1749,17 @@ interface UpdateAdminFormPayload {
   description: string
   successMessage: string
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+  mode: FormMode
+  quizSettings: QuizSettings
+  pages: AdminFormPage[]
   fields: Array<{
     id: string
     type: FormFieldType
     label: string
     required: boolean
     placeholder?: string
-    options?: string[]
+    pageId: string
+    options?: AdminEditableFieldOption[]
   }>
 }
 
@@ -838,14 +1770,112 @@ function mapFormFieldTypeToDb(type: FormFieldType): FieldType {
     case 'textarea':
       return 'LONG_TEXT'
     case 'radio':
+    case 'likert':
       return 'RADIO'
     case 'signature':
       return 'SIGNATURE'
   }
 }
 
-function isProtectedAttendanceField(field: Pick<AdminEditableField, 'id' | 'name'>) {
-  return attendanceProtectedFieldNames.has(field.name) || defaultAttendanceFields.some((item) => item.id === field.id)
+function normalizeAdminFormPages(
+  pages: AdminFormPage[] | undefined,
+  fields: Array<{ id: string; pageId?: string }>
+) {
+  const uniqueFieldIds = Array.from(new Set(fields.map((field) => field.id)))
+  const fallbackPages = createDefaultFormPages(uniqueFieldIds).map((page) => ({
+    id: page.id,
+    title: page.title,
+    description: page.description ?? '',
+  }))
+  const inputPages = pages && pages.length > 0 ? pages : fallbackPages
+
+  const normalizedPages = inputPages.map((page, index) => ({
+    id: page.id?.trim() || `page-${index + 1}`,
+    title: page.title?.trim() || `Halaman ${index + 1}`,
+    description: page.description?.trim() || '',
+  }))
+
+  const pageIds = new Set(normalizedPages.map((page) => page.id))
+  const firstPageId = normalizedPages[0]?.id ?? 'page-1'
+  const fieldsByPageId = new Map<string, string[]>()
+
+  for (const page of normalizedPages) {
+    fieldsByPageId.set(page.id, [])
+  }
+
+  for (const field of fields) {
+    const pageId = field.pageId && pageIds.has(field.pageId) ? field.pageId : firstPageId
+    fieldsByPageId.get(pageId)?.push(field.id)
+  }
+
+  return normalizedPages
+    .map<FormPageDefinition>((page) => ({
+      id: page.id,
+      title: page.title,
+      description: page.description || null,
+      fieldIds: fieldsByPageId.get(page.id) ?? [],
+    }))
+    .filter((page) => page.fieldIds.length > 0)
+}
+
+function normalizeAdminConditionalRoutes(
+  fields: Array<{
+    id: string
+    type: FormFieldType
+    options?: AdminEditableFieldOption[]
+  }>,
+  pages: FormPageDefinition[]
+) {
+  const pageIndexById = new Map(pages.map((page, index) => [page.id, index]))
+  const pageIdByFieldId = new Map<string, string>()
+  const seenKeys = new Set<string>()
+  const routes: FormConditionalRoute[] = []
+
+  for (const page of pages) {
+    for (const fieldId of page.fieldIds) {
+      pageIdByFieldId.set(fieldId, page.id)
+    }
+  }
+
+  for (const field of fields) {
+    if (field.type !== 'radio') {
+      continue
+    }
+
+    const currentPageId = pageIdByFieldId.get(field.id)
+    const currentPageIndex = currentPageId ? pageIndexById.get(currentPageId) ?? -1 : -1
+
+    if (currentPageIndex < 0) {
+      continue
+    }
+
+    const allowedPageIds = new Set(
+      pages.slice(currentPageIndex + 1).map((page) => page.id)
+    )
+
+    for (const option of field.options ?? []) {
+      const optionLabel = option.label.trim()
+      const nextPageId = option.nextPageId?.trim()
+
+      if (!optionLabel || !nextPageId || !allowedPageIds.has(nextPageId)) {
+        continue
+      }
+
+      const key = createConditionalRouteKey(field.id, optionLabel)
+      if (seenKeys.has(key)) {
+        continue
+      }
+
+      seenKeys.add(key)
+      routes.push({
+        fieldId: field.id,
+        optionLabel,
+        nextPageId,
+      })
+    }
+  }
+
+  return routes
 }
 
 export async function updateAdminForm(id: string, payload: UpdateAdminFormPayload) {
@@ -865,44 +1895,31 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
     throw new FormSubmissionError('Status form tidak valid', 400)
   }
 
-  if (current.slug === ATTENDANCE_FORM_SLUG) {
-    const protectedFields = current.fields.filter(isProtectedAttendanceField)
-
-    if (protectedFields.length !== attendanceProtectedFieldNames.size) {
-      throw new FormSubmissionError('Field inti attendance tidak lengkap. Periksa template attendance.', 400)
-    }
-
-    const payloadById = new Map(payload.fields.map((field) => [field.id, field]))
-    for (const field of protectedFields) {
-      const incoming = payloadById.get(field.id)
-
-      if (!incoming) {
-        throw new FormSubmissionError('Field inti attendance tidak boleh dihapus', 400)
-      }
-
-      if (incoming.type !== field.type) {
-        throw new FormSubmissionError('Tipe field inti attendance tidak boleh diubah', 400)
-      }
-    }
-
-    const currentOrder = protectedFields.map((field) => field.id)
-    const incomingOrder = payload.fields
-      .filter((field) => currentOrder.includes(field.id))
-      .map((field) => field.id)
-
-    if (incomingOrder.join('|') !== currentOrder.join('|')) {
-      throw new FormSubmissionError('Urutan field inti attendance tidak boleh diubah', 400)
-    }
+  const allowedModes = new Set<FormMode>(['STANDARD', 'QUIZ', 'ATTENDANCE'])
+  if (!allowedModes.has(payload.mode)) {
+    throw new FormSubmissionError('Mode form tidak valid', 400)
   }
 
-  const editableFieldIds = new Set(current.fields.map((field) => field.id))
-  const allowedTypes = new Set<FormFieldType>(['text', 'textarea', 'radio', 'signature'])
+  const workflow = current.slug === ATTENDANCE_FORM_SLUG ? 'WEBINAR' : 'STANDARD'
+  const quizSettings = {
+    passingPercentage: normalizePassingPercentage(payload.quizSettings?.passingPercentage),
+  }
+  const normalizedPayloadFields = payload.fields
+  const formPages = normalizeAdminFormPages(payload.pages, normalizedPayloadFields)
+  const conditionalRoutes = normalizeAdminConditionalRoutes(normalizedPayloadFields, formPages)
 
-  if (payload.fields.length === 0) {
+  const editableFieldIds = new Set(current.fields.map((field) => field.id))
+  const allowedTypes = new Set<FormFieldType>(['text', 'textarea', 'radio', 'likert', 'signature'])
+
+  if (normalizedPayloadFields.length === 0) {
     throw new FormSubmissionError('Form harus memiliki minimal satu field', 400)
   }
 
   await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`
+      SELECT pg_advisory_xact_lock(4242, hashtext(${id}))
+    `
+
     await tx.$executeRaw`
       UPDATE forms
       SET
@@ -910,14 +1927,27 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
         description = ${payload.description.trim() || null},
         success_message = ${payload.successMessage.trim() || null},
         status = ${payload.status}::"FormStatus",
+        mode = ${payload.mode}::"FormMode",
+        settings_json = ${serializeFormSettings(
+          workflow,
+          quizSettings,
+          formPages,
+          conditionalRoutes
+        )}::jsonb,
         updated_at = NOW()
       WHERE id = ${id}
     `
 
+    await tx.$executeRaw`
+      UPDATE form_fields
+      SET "order" = "order" + 1000, updated_at = NOW()
+      WHERE form_id = ${id}
+    `
+
     const seenIds = new Set<string>()
 
-    for (let index = 0; index < payload.fields.length; index += 1) {
-      const field = payload.fields[index]
+    for (let index = 0; index < normalizedPayloadFields.length; index += 1) {
+      const field = normalizedPayloadFields[index]
       const label = field.label.trim()
       if (!label) {
         throw new FormSubmissionError('Label field wajib diisi', 400)
@@ -930,11 +1960,30 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
       const placeholder = field.placeholder?.trim() || null
       const dbType = mapFormFieldTypeToDb(field.type)
       const options = (field.options ?? [])
-        .map((option) => option.trim())
-        .filter(Boolean)
+        .map((option) => ({
+          label: option.label.trim(),
+          isCorrect: field.type === 'likert' ? false : option.isCorrect,
+          points: field.type === 'likert'
+            ? 0
+            : Number.isFinite(option.points)
+              ? Math.max(0, Math.trunc(option.points))
+              : 0,
+        }))
+        .filter((option) => option.label)
 
-      if (field.type === 'radio' && options.length === 0) {
+      if ((field.type === 'radio' || field.type === 'likert') && options.length === 0) {
         throw new FormSubmissionError('Field pilihan harus punya minimal satu opsi', 400)
+      }
+
+      if (field.type === 'likert' && options.length !== 5) {
+        throw new FormSubmissionError('Field Likert harus memiliki tepat 5 opsi', 400)
+      }
+
+      if (field.type === 'radio' || field.type === 'likert') {
+        const correctCount = options.filter((option) => option.isCorrect).length
+        if (correctCount > 1) {
+          throw new FormSubmissionError('Setiap field quiz hanya boleh punya satu jawaban benar', 400)
+        }
       }
 
       if (editableFieldIds.has(field.id)) {
@@ -953,7 +2002,7 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
           WHERE id = ${field.id}
         `
       } else {
-        const newFieldId = randomId('field')
+        const newFieldId = field.id.startsWith('new-') ? randomId('field') : field.id
         seenIds.add(newFieldId)
 
         await tx.$executeRaw`
@@ -987,7 +2036,7 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
         field.id = newFieldId
       }
 
-      if (field.type === 'radio') {
+      if (field.type === 'radio' || field.type === 'likert') {
         await tx.$executeRaw`DELETE FROM field_options WHERE field_id = ${field.id}`
 
         for (let index = 0; index < options.length; index += 1) {
@@ -1005,11 +2054,11 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
             ) VALUES (
               ${randomId('option')},
               ${field.id},
-              ${option},
-              ${option},
+              ${option.label},
+              ${option.label},
               ${index + 1},
-              ${false},
-              ${0},
+              ${option.isCorrect},
+              ${option.points},
               NOW()
             )
           `
@@ -1020,7 +2069,7 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
     }
 
     for (const existingField of current.fields) {
-      if (!payload.fields.some((field) => field.id === existingField.id)) {
+      if (!normalizedPayloadFields.some((field) => field.id === existingField.id)) {
         await tx.$executeRaw`
           UPDATE form_fields
           SET is_active = ${false}, updated_at = NOW()
@@ -1044,16 +2093,17 @@ export async function createAdminForm(title: string) {
   const baseSlug = slugify(normalizedTitle) || 'form-baru'
   const candidateSlug = `${baseSlug}-${Date.now().toString().slice(-6)}`
   const formId = randomId('form')
+  const starterFieldIds = [randomId('field'), randomId('field'), randomId('field')]
 
   const starterFields = [
-    { label: 'Nama Lengkap', type: 'SHORT_TEXT' as const, placeholder: 'Masukkan nama lengkap' },
-    { label: 'Email', type: 'SHORT_TEXT' as const, placeholder: 'Masukkan email' },
-    { label: 'Catatan', type: 'LONG_TEXT' as const, placeholder: 'Tambahkan catatan bila perlu' },
+    { id: starterFieldIds[0], label: 'Nama Lengkap', type: 'SHORT_TEXT' as const, placeholder: 'Masukkan nama lengkap' },
+    { id: starterFieldIds[1], label: 'Email', type: 'SHORT_TEXT' as const, placeholder: 'Masukkan email' },
+    { id: starterFieldIds[2], label: 'Catatan', type: 'LONG_TEXT' as const, placeholder: 'Tambahkan catatan bila perlu' },
   ]
 
   await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`
-      INSERT INTO forms (id, slug, title, description, status, mode, success_message, created_at, updated_at)
+      INSERT INTO forms (id, slug, title, description, status, mode, success_message, settings_json, created_at, updated_at)
       VALUES (
         ${formId},
         ${candidateSlug},
@@ -1062,6 +2112,11 @@ export async function createAdminForm(title: string) {
         'DRAFT'::"FormStatus",
         'STANDARD'::"FormMode",
         ${'Terima kasih, data Anda berhasil dikirim.'},
+        ${serializeFormSettings(
+          'STANDARD',
+          { passingPercentage: DEFAULT_QUIZ_PASS_PERCENTAGE },
+          createDefaultFormPages(starterFieldIds)
+        )}::jsonb,
         NOW(),
         NOW()
       )
@@ -1083,7 +2138,7 @@ export async function createAdminForm(title: string) {
           created_at,
           updated_at
         ) VALUES (
-          ${randomId('field')},
+          ${field.id},
           ${formId},
           ${field.label},
           ${field.type}::"FieldType",
@@ -1102,7 +2157,10 @@ export async function createAdminForm(title: string) {
   return await getAdminFormDetail(formId)
 }
 
-export async function listAdminFormSubmissions(id: string): Promise<AdminFormSubmissionsResult | null> {
+export async function listAdminFormSubmissions(
+  id: string,
+  filters?: Partial<AdminSubmissionFilters>
+): Promise<AdminFormSubmissionsResult | null> {
   const detail = await getAdminFormDetail(id)
 
   if (!detail) {
@@ -1113,6 +2171,7 @@ export async function listAdminFormSubmissions(id: string): Promise<AdminFormSub
     SELECT
       s.id,
       s.created_at AS "createdAt",
+      s.path_json AS "pathJson",
       sa.field_id AS "fieldId",
       sa.value_text AS "valueText"
     FROM submissions s
@@ -1128,6 +2187,7 @@ export async function listAdminFormSubmissions(id: string): Promise<AdminFormSub
       id: row.id,
       createdAt: row.createdAt.toISOString(),
       answers: {},
+      meta: readSubmissionMeta(row.pathJson),
     }
 
     const field = detail.fields.find((candidate) => candidate.id === row.fieldId)
@@ -1138,6 +2198,8 @@ export async function listAdminFormSubmissions(id: string): Promise<AdminFormSub
     itemsById.set(row.id, item)
   }
 
+  const allItems = Array.from(itemsById.values())
+
   return {
     form: {
       id: detail.id,
@@ -1145,13 +2207,16 @@ export async function listAdminFormSubmissions(id: string): Promise<AdminFormSub
       title: detail.title,
       status: detail.status,
     },
+    totalItems: allItems.length,
+    hasParticipantType: allItems.some((item) => item.meta.participantType !== null),
+    hasQuiz: allItems.some((item) => item.meta.quiz !== null),
     columns: detail.fields.map((field) => ({
       id: field.id,
       name: field.name,
       label: field.label,
       type: field.type,
     })),
-    items: Array.from(itemsById.values()),
+    items: applyAdminSubmissionFilters(allItems, filters),
   }
 }
 
@@ -1208,20 +2273,39 @@ function escapeCsvValue(value: string) {
   return `"${escaped}"`
 }
 
-export async function exportAdminFormSubmissionsCsv(id: string) {
-  const data = await listAdminFormSubmissions(id)
+export async function exportAdminFormSubmissionsCsv(
+  id: string,
+  filters?: Partial<AdminSubmissionFilters>
+) {
+  const data = await listAdminFormSubmissions(id, filters)
 
   if (!data) {
     throw new FormSubmissionError('Form tidak ditemukan', 404)
   }
 
-  const headers = ['Waktu Submit', ...data.columns.map((column) => column.label)]
-  const lines = [headers.map(escapeCsvValue).join(',')]
+  const exportableColumns = data.columns.filter((column) => column.name !== 'participantType')
+  const hasParticipantType = data.hasParticipantType
+  const hasQuiz = data.hasQuiz
+  const metaHeaders = [
+    ...(hasParticipantType ? ['Tipe Peserta'] : []),
+    ...(hasQuiz ? ['Skor Quiz', 'Jawaban Benar', 'Total Soal', 'Status Quiz'] : []),
+  ]
+  const headersWithMeta = ['Waktu Submit', ...metaHeaders, ...exportableColumns.map((column) => column.label)]
+  const lines = [headersWithMeta.map(escapeCsvValue).join(',')]
 
   for (const item of data.items) {
     const row = [
       new Date(item.createdAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }),
-      ...data.columns.map((column) => item.answers[column.name] ?? ''),
+      ...(hasParticipantType ? [item.meta.participantType ?? '-'] : []),
+      ...(hasQuiz
+        ? [
+            item.meta.quiz ? `${item.meta.quiz.score}/${item.meta.quiz.maxScore}` : '-',
+            item.meta.quiz ? String(item.meta.quiz.correctAnswers) : '-',
+            item.meta.quiz ? String(item.meta.quiz.totalQuestions) : '-',
+            item.meta.quiz ? (item.meta.quiz.passed ? 'Lulus' : 'Belum lulus') : '-',
+          ]
+        : []),
+      ...exportableColumns.map((column) => item.answers[column.name] ?? ''),
     ]
     lines.push(row.map(escapeCsvValue).join(','))
   }

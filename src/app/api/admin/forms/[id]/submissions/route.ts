@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth'
-import { deleteAdminFormSubmission, FormSubmissionError, listAdminFormSubmissions } from '@/lib/forms'
+import {
+  deleteAdminFormSubmission,
+  FormSubmissionError,
+  listAdminFormSubmissions,
+  normalizeAdminSubmissionFilters,
+} from '@/lib/forms'
 
 interface RouteContext {
   params: Promise<{
@@ -8,7 +13,7 @@ interface RouteContext {
   }>
 }
 
-export async function GET(_: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const session = await getAdminSession()
 
   if (!session) {
@@ -16,7 +21,30 @@ export async function GET(_: Request, context: RouteContext) {
   }
 
   const { id } = await context.params
-  const data = await listAdminFormSubmissions(id)
+  const url = new URL(request.url)
+  const participantType = url.searchParams.get('participantType')
+  const quizStatus = url.searchParams.get('quizStatus')
+  const sortBy = url.searchParams.get('sortBy')
+  const normalizedParticipantType =
+    participantType === 'all' || participantType === 'internal' || participantType === 'external'
+      ? participantType
+      : undefined
+  const normalizedQuizStatus =
+    quizStatus === 'all' || quizStatus === 'passed' || quizStatus === 'failed' || quizStatus === 'ungraded'
+      ? quizStatus
+      : undefined
+  const normalizedSortBy =
+    sortBy === 'newest' || sortBy === 'oldest' || sortBy === 'score-desc' || sortBy === 'score-asc'
+      ? sortBy
+      : undefined
+  const data = await listAdminFormSubmissions(
+    id,
+    normalizeAdminSubmissionFilters({
+      participantType: normalizedParticipantType,
+      quizStatus: normalizedQuizStatus,
+      sortBy: normalizedSortBy,
+    })
+  )
 
   if (!data) {
     return NextResponse.json({ error: 'Form tidak ditemukan' }, { status: 404 })
