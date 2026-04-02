@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
 const MAX_TEXT_LENGTH = 500
@@ -222,6 +223,11 @@ const attendanceProtectedFieldNames = new Set([
   'signature',
 ])
 
+const attendanceFieldNameById: Record<string, string> = defaultAttendanceFields.reduce((acc, field) => {
+  acc[field.id] = field.name
+  return acc
+}, {} as Record<string, string>)
+
 export class FormSubmissionError extends Error {
   status: number
 
@@ -260,8 +266,10 @@ function mapFieldType(type: FieldType): FormFieldType | null {
   }
 }
 
-function mapFieldName(field: Pick<FieldRow, 'label' | 'order'>) {
-  return fieldNameByLabel[normalizeLabel(field.label)] ?? `field_${field.order}`
+function mapFieldName(field: Pick<FieldRow, 'id' | 'label' | 'order'>) {
+  return attendanceFieldNameById[field.id]
+    ?? fieldNameByLabel[normalizeLabel(field.label)]
+    ?? `field_${field.order}`
 }
 
 function randomId(prefix: string) {
@@ -609,15 +617,13 @@ async function findExistingAttendanceSubmission(formId: string, nipFieldId: stri
   return rows[0] ?? null
 }
 
-async function createFormsEngineSubmission(form: PublicFormDefinition, values: Record<string, string>) {
-  const rows = await getPublicFormRows(form.slug)
-
-  if (!rows) {
-    throw new FormSubmissionError('Form tidak ditemukan', 404)
-  }
-
+async function createFormsEngineSubmission(
+  rows: NonNullable<Awaited<ReturnType<typeof getPublicFormRows>>>,
+  values: Record<string, string>,
+  tx: typeof prisma | Prisma.TransactionClient = prisma
+) {
   const submissionId = randomId('submission')
-  await prisma.$executeRaw`
+  await tx.$executeRaw`
     INSERT INTO submissions (id, form_id, path_json, created_at, completed_at)
     VALUES (${submissionId}, ${rows.form.id}, ${null}, NOW(), NOW())
   `
@@ -626,7 +632,7 @@ async function createFormsEngineSubmission(form: PublicFormDefinition, values: R
     const fieldName = mapFieldName(field)
     const value = values[fieldName] ?? ''
 
-    await prisma.$executeRaw`
+    await tx.$executeRaw`
       INSERT INTO submission_answers (
         id,
         submission_id,
@@ -657,17 +663,6 @@ export async function createAttendanceSubmission(payload: Record<string, unknown
 
   const values = validateFormSubmission(form, payload)
 
-  const existingAttendance = await prisma.attendance.findUnique({
-    where: { nipNrp: values.nipNrp },
-  })
-
-  if (existingAttendance) {
-    throw new FormSubmissionError(
-      'NIP/NRP sudah terdaftar. Anda sudah mengisi daftar hadir.',
-      409
-    )
-  }
-
   const rows = await getPublicFormRows(ATTENDANCE_FORM_SLUG)
   const nipField = rows?.fields.find((field) => mapFieldName(field) === 'nipNrp')
 
@@ -681,22 +676,45 @@ export async function createAttendanceSubmission(payload: Record<string, unknown
     }
   }
 
-  const attendance = await prisma.attendance.create({
-    data: {
-      namaLengkap: values.namaLengkap,
-      nipNrp: values.nipNrp,
-      jabatan: values.jabatan,
-      unitKerja: values.unitKerja,
-      sebagai: values.sebagai,
-      signature: values.signature,
-    },
-  })
+  try {
+    const attendance = await prisma.$transaction(async (tx) => {
+      const createdAttendance = await tx.attendance.create({
+        data: {
+          namaLengkap: values.namaLengkap,
+          nipNrp: values.nipNrp,
+          jabatan: values.jabatan,
+          unitKerja: values.unitKerja,
+          sebagai: values.sebagai,
+          signature: values.signature,
+        },
+      })
 
-  await createFormsEngineSubmission(form, values)
+      if (!rows) {
+        throw new FormSubmissionError('Form daftar hadir tidak ditemukan', 404)
+      }
 
-  return {
-    id: attendance.id,
-    message: 'Daftar hadir berhasil disimpan',
+      await createFormsEngineSubmission(rows, values, tx)
+
+      return createdAttendance
+    })
+
+    return {
+      id: attendance.id,
+      message: 'Daftar hadir berhasil disimpan',
+    }
+  } catch (error) {
+    if (error instanceof FormSubmissionError) {
+      throw error
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new FormSubmissionError(
+        'NIP/NRP sudah terdaftar. Anda sudah mengisi daftar hadir.',
+        409
+      )
+    }
+
+    throw error
   }
 }
 
@@ -712,7 +730,13 @@ export async function createPublicFormSubmission(slug: string, payload: Record<s
   }
 
   const values = validateFormSubmission(form, payload)
-  const submission = await createFormsEngineSubmission(form, values)
+  const rows = await getPublicFormRows(form.slug)
+
+  if (!rows) {
+    throw new FormSubmissionError('Form tidak ditemukan', 404)
+  }
+
+  const submission = await createFormsEngineSubmission(rows, values)
 
   return {
     id: submission.id,

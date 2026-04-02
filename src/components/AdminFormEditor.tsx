@@ -272,7 +272,7 @@ export default function AdminFormEditor({ formId }: Props) {
               <div key={field.id} className="admin-builder-card">
                 {isProtectedAttendanceField(field) && (
                   <div className="admin-builder-protected-note">
-                    Field inti attendance: tipe, urutan, dan keberadaannya dikunci untuk menjaga dual-write tetap aman.
+                    Field inti attendance: tipe, urutan, dan keberadaannya dikunci untuk menjaga dual-write tetap aman. Label masih boleh diperbarui.
                   </div>
                 )}
                 <div className="admin-builder-card-head">
