@@ -1,45 +1,53 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import SignaturePad from './SignaturePad'
+import type { PublicFormDefinition, FormField } from '@/lib/forms'
 
-const SEBAGAI_OPTIONS = ['Penguji', 'Coach', 'Mentor'] as const
+interface AttendanceFormProps {
+  form: PublicFormDefinition
+}
 
-export default function AttendanceForm() {
+function createInitialValues(fields: FormField[]) {
+  return fields.reduce<Record<string, string>>((acc, field) => {
+    acc[field.name] = ''
+    return acc
+  }, {})
+}
+
+export default function AttendanceForm({ form }: AttendanceFormProps) {
   const router = useRouter()
-  const [formData, setFormData] = useState({
-    namaLengkap: '',
-    nipNrp: '',
-    jabatan: '',
-    unitKerja: '',
-    sebagai: '',
-  })
-  const [signature, setSignature] = useState<string | null>(null)
+  const initialValues = useMemo(() => createInitialValues(form.fields), [form.fields])
+  const [formData, setFormData] = useState<Record<string, string>>(initialValues)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  useEffect(() => {
+    setFormData(initialValues)
+  }, [initialValues])
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSignatureChange = (name: string, value: string | null) => {
+    setFormData((prev) => ({ ...prev, [name]: value ?? '' }))
   }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
-
-    if (!signature) {
-      setError('Tanda tangan wajib diisi')
-      return
-    }
-
     setIsSubmitting(true)
 
     try {
-      const res = await fetch('/api/attendance', {
+      const res = await fetch(`/api/public/forms/${form.slug}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, signature }),
+        body: JSON.stringify(formData),
       })
 
       const data = await res.json()
@@ -70,83 +78,77 @@ export default function AttendanceForm() {
         </div>
       )}
 
-      <div className="form-group">
-        <label className="form-label" htmlFor="namaLengkap">Nama Lengkap</label>
-        <input
-          type="text"
-          id="namaLengkap"
-          name="namaLengkap"
-          value={formData.namaLengkap}
-          onChange={handleChange}
-          required
-          className="form-input"
-        />
-      </div>
+      {form.fields.map((field) => {
+        if (field.type === 'radio') {
+          return (
+            <div key={field.id} className="form-group">
+              <label className="form-label">{field.label}</label>
+              <div className="radio-group">
+                {field.options.map((option) => (
+                  <label key={option} className="radio-label">
+                    <input
+                      type="radio"
+                      name={field.name}
+                      value={option}
+                      checked={formData[field.name] === option}
+                      onChange={handleChange}
+                      required={field.required}
+                      className="radio-input"
+                    />
+                    <span className="radio-custom" />
+                    <span className="radio-text">{option}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )
+        }
 
-      <div className="form-group">
-        <label className="form-label" htmlFor="nipNrp">NIP/NRP</label>
-        <input
-          type="text"
-          id="nipNrp"
-          name="nipNrp"
-          value={formData.nipNrp}
-          onChange={handleChange}
-          required
-          className="form-input"
-        />
-      </div>
+        if (field.type === 'signature') {
+          return (
+            <div key={field.id} className="form-group">
+              <label className="form-label">{field.label}</label>
+              <SignaturePad onSignatureChange={(value) => handleSignatureChange(field.name, value)} />
+            </div>
+          )
+        }
 
-      <div className="form-group">
-        <label className="form-label" htmlFor="jabatan">Jabatan</label>
-        <textarea
-          id="jabatan"
-          name="jabatan"
-          value={formData.jabatan}
-          onChange={handleChange}
-          required
-          rows={3}
-          className="form-textarea"
-        />
-      </div>
-
-      <div className="form-group">
-        <label className="form-label" htmlFor="unitKerja">Unit Kerja</label>
-        <textarea
-          id="unitKerja"
-          name="unitKerja"
-          value={formData.unitKerja}
-          onChange={handleChange}
-          required
-          rows={3}
-          className="form-textarea"
-        />
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">Sebagai</label>
-        <div className="radio-group">
-          {SEBAGAI_OPTIONS.map((option) => (
-            <label key={option} className="radio-label">
-              <input
-                type="radio"
-                name="sebagai"
-                value={option}
-                checked={formData.sebagai === option}
+        if (field.type === 'textarea') {
+          return (
+            <div key={field.id} className="form-group">
+              <label className="form-label" htmlFor={field.name}>{field.label}</label>
+              <textarea
+                id={field.name}
+                name={field.name}
+                value={formData[field.name] ?? ''}
                 onChange={handleChange}
-                required
-                className="radio-input"
+                required={field.required}
+                rows={field.rows ?? 3}
+                maxLength={field.maxLength}
+                placeholder={field.placeholder ?? undefined}
+                className="form-textarea"
               />
-              <span className="radio-custom" />
-              <span className="radio-text">{option}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+            </div>
+          )
+        }
 
-      <div className="form-group">
-        <label className="form-label">Signature</label>
-        <SignaturePad onSignatureChange={setSignature} />
-      </div>
+        return (
+          <div key={field.id} className="form-group">
+            <label className="form-label" htmlFor={field.name}>{field.label}</label>
+            <input
+              type="text"
+              id={field.name}
+              name={field.name}
+              value={formData[field.name] ?? ''}
+              onChange={handleChange}
+              required={field.required}
+              maxLength={field.maxLength}
+              placeholder={field.placeholder ?? undefined}
+              className="form-input"
+            />
+          </div>
+        )
+      })}
 
       <button
         type="submit"
@@ -159,7 +161,7 @@ export default function AttendanceForm() {
             Mengirim...
           </>
         ) : (
-          'Submit'
+          form.submitLabel
         )}
       </button>
     </form>

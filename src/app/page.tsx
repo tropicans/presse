@@ -1,7 +1,16 @@
 import Image from 'next/image'
 import AttendanceForm from '@/components/AttendanceForm'
+import { getPublicFormBySlug } from '@/lib/forms'
 
-export default function HomePage() {
+export const dynamic = 'force-dynamic'
+
+export default async function HomePage() {
+  const form = await getPublicFormBySlug('attendance-template')
+
+  if (!form) {
+    throw new Error('Default attendance form is unavailable')
+  }
+
   return (
     <div className="page-wrapper">
       <div className="form-card">
@@ -14,15 +23,13 @@ export default function HomePage() {
             className="header-logo"
             priority
           />
-          <h1 className="header-title">Daftar Hadir</h1>
+          <h1 className="header-title">{form.title}</h1>
           <p className="header-subtitle">
-            Seminar Evaluasi Rancangan Aktualisasi Pelatihan Dasar CPNS
-            Golongan II Angkatan V dan Golongan III Angkatan X
-            Kemensetneg Tahun 2026
+            {form.description}
           </p>
         </div>
         <div className="form-body">
-          <AttendanceForm />
+          <AttendanceForm form={form} />
         </div>
       </div>
     </div>

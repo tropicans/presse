@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { signOut } from 'next-auth/react'
 
 interface Attendance {
@@ -102,6 +104,9 @@ export default function AdminTable() {
             <span className="count-number">{total}</span>
             <span>/ 700</span>
           </div>
+          <Link href="/admin/forms" className="admin-secondary-btn">
+            Form Builder
+          </Link>
           <a href="/api/attendance/export" className="admin-export-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -167,15 +172,18 @@ export default function AdminTable() {
                     <td>{item.jabatan}</td>
                     <td>{item.unitKerja}</td>
                     <td>{getSebagaiBadge(item.sebagai)}</td>
-                    <td>
-                      {item.signature && (
-                        <img
-                          src={item.signature}
-                          alt="Signature"
-                          className="signature-thumb"
-                        />
-                      )}
-                    </td>
+                      <td>
+                        {item.signature && (
+                          <Image
+                            src={item.signature}
+                            alt="Signature"
+                            width={80}
+                            height={40}
+                            unoptimized
+                            className="signature-thumb"
+                          />
+                        )}
+                      </td>
                     <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                       {new Date(item.createdAt).toLocaleString('id-ID', {
                         timeZone: 'Asia/Jakarta',

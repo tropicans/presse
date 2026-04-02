@@ -4,7 +4,7 @@ services:
     container_name: jott-postgres
     restart: unless-stopped
     ports:
-      - "5433:5432"
+      - "5443:5432"
     environment:
       POSTGRES_DB: jott_attendance
       POSTGRES_USER: jott_user

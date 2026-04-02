@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAdminSession } from '@/lib/auth'
 import { rateLimit, getClientIp } from '@/lib/rate-limit'
-
-const VALID_SEBAGAI = ['Penguji', 'Coach', 'Mentor']
-const MAX_TEXT_LENGTH = 500
-const MAX_SIGNATURE_LENGTH = 500000 // ~375KB base64 PNG
+import { createAttendanceSubmission, FormSubmissionError } from '@/lib/forms'
 
 // Rate limit: 5 submissions per minute per IP (generous for 700 users)
 const POST_RATE_LIMIT = { limit: 5, windowMs: 60_000 }
@@ -14,7 +11,6 @@ const GET_RATE_LIMIT = { limit: 30, windowMs: 60_000 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting
     const ip = getClientIp(request.headers)
     const rl = rateLimit(`post:${ip}`, POST_RATE_LIMIT)
     if (!rl.allowed) {
@@ -32,100 +28,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { namaLengkap, nipNrp, jabatan, unitKerja, sebagai, signature } = body
-
-    // Validation: required fields
-    if (!namaLengkap || !nipNrp || !jabatan || !unitKerja || !sebagai || !signature) {
-      return NextResponse.json(
-        { error: 'Semua field wajib diisi termasuk tanda tangan' },
-        { status: 400 }
-      )
-    }
-
-    // Validation: type checks
-    if (
-      typeof namaLengkap !== 'string' ||
-      typeof nipNrp !== 'string' ||
-      typeof jabatan !== 'string' ||
-      typeof unitKerja !== 'string' ||
-      typeof sebagai !== 'string' ||
-      typeof signature !== 'string'
-    ) {
-      return NextResponse.json(
-        { error: 'Format data tidak valid' },
-        { status: 400 }
-      )
-    }
-
-    // Validation: length limits
-    if (
-      namaLengkap.length > MAX_TEXT_LENGTH ||
-      nipNrp.length > 50 ||
-      jabatan.length > MAX_TEXT_LENGTH ||
-      unitKerja.length > MAX_TEXT_LENGTH
-    ) {
-      return NextResponse.json(
-        { error: 'Data melebihi batas panjang yang diizinkan' },
-        { status: 400 }
-      )
-    }
-
-    // Validation: signature size
-    if (signature.length > MAX_SIGNATURE_LENGTH) {
-      return NextResponse.json(
-        { error: 'Ukuran tanda tangan terlalu besar' },
-        { status: 400 }
-      )
-    }
-
-    // Validation: sebagai value
-    if (!VALID_SEBAGAI.includes(sebagai)) {
-      return NextResponse.json(
-        { error: 'Nilai "Sebagai" tidak valid' },
-        { status: 400 }
-      )
-    }
-
-    // Validation: signature format
-    if (!signature.startsWith('data:image/png;base64,')) {
-      return NextResponse.json(
-        { error: 'Format tanda tangan tidak valid' },
-        { status: 400 }
-      )
-    }
-
-    // Sanitize: trim whitespace
-    const sanitized = {
-      namaLengkap: namaLengkap.trim(),
-      nipNrp: nipNrp.trim(),
-      jabatan: jabatan.trim(),
-      unitKerja: unitKerja.trim(),
-      sebagai,
-      signature,
-    }
-
-    // Check duplicate NIP/NRP
-    const existing = await prisma.attendance.findUnique({
-      where: { nipNrp: sanitized.nipNrp },
-    })
-
-    if (existing) {
-      return NextResponse.json(
-        { error: 'NIP/NRP sudah terdaftar. Anda sudah mengisi daftar hadir.' },
-        { status: 409 }
-      )
-    }
-
-    // Create attendance record
-    const attendance = await prisma.attendance.create({
-      data: sanitized,
-    })
+    const result = await createAttendanceSubmission(body)
 
     return NextResponse.json(
-      { message: 'Daftar hadir berhasil disimpan', id: attendance.id },
+      result,
       { status: 201 }
     )
   } catch (error) {
+    if (error instanceof FormSubmissionError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+
     console.error('Error creating attendance:', error)
     return NextResponse.json(
       { error: 'Terjadi kesalahan server. Silakan coba lagi.' },
