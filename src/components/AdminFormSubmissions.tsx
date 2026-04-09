@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
+import { getAdminFormStatusLabel } from '@/lib/admin-display'
 
 interface SubmissionColumn {
   id: string
@@ -46,6 +47,45 @@ interface Props {
   formId: string
 }
 
+const numberFormatter = new Intl.NumberFormat('id-ID')
+
+function getParticipantLabel(participantType: SubmissionItem['meta']['participantType']) {
+  if (participantType === 'internal') {
+    return 'Internal'
+  }
+
+  if (participantType === 'external') {
+    return 'Eksternal'
+  }
+
+  return '-'
+}
+
+function getParticipantClass(participantType: SubmissionItem['meta']['participantType']) {
+  if (participantType === 'internal') {
+    return 'internal'
+  }
+
+  if (participantType === 'external') {
+    return 'external'
+  }
+
+  return 'neutral'
+}
+
+function formatAnswer(value: string | undefined) {
+  const normalized = value?.trim() ?? ''
+  return normalized.length > 0 ? normalized : '-'
+}
+
+function getQuizPercentage(item: SubmissionItem) {
+  if (!item.meta.quiz) {
+    return null
+  }
+
+  return Math.round((item.meta.quiz.score / Math.max(item.meta.quiz.maxScore, 1)) * 100)
+}
+
 export default function AdminFormSubmissions({ formId }: Props) {
   const [data, setData] = useState<SubmissionData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -71,20 +111,20 @@ export default function AdminFormSubmissions({ formId }: Props) {
       const json = await res.json()
 
       if (!res.ok) {
-        setError(json.error || 'Gagal memuat submissions')
+        setError(json.error || 'Gagal memuat kiriman')
         return
       }
 
       setData(json.data)
     } catch {
-      setError('Gagal memuat submissions')
+      setError('Gagal memuat kiriman')
     } finally {
       setLoading(false)
     }
   }, [formId, participantFilter, quizFilter, sortBy])
 
   useEffect(() => {
-    load()
+    void load()
   }, [load])
 
   const handleDelete = async (submissionId: string) => {
@@ -97,22 +137,22 @@ export default function AdminFormSubmissions({ formId }: Props) {
       const json = await res.json()
 
       if (!res.ok) {
-        setFeedback({ type: 'error', message: json.error || 'Gagal menghapus submission' })
+        setFeedback({ type: 'error', message: json.error || 'Gagal menghapus kiriman' })
         return
       }
 
-      setFeedback({ type: 'success', message: 'Submission berhasil dihapus' })
+      setFeedback({ type: 'success', message: 'Kiriman berhasil dihapus' })
       setPendingDeleteId(null)
       await load()
     } catch {
-      setFeedback({ type: 'error', message: 'Gagal menghapus submission' })
+      setFeedback({ type: 'error', message: 'Gagal menghapus kiriman' })
     } finally {
       setDeleting(false)
     }
   }
 
   if (loading) {
-    return <div className="admin-wrapper"><div className="admin-empty"><p>Memuat submissions...</p></div></div>
+    return <div className="admin-wrapper"><div className="admin-empty"><p>Memuat kiriman...</p></div></div>
   }
 
   if (!data) {
@@ -150,211 +190,418 @@ export default function AdminFormSubmissions({ formId }: Props) {
     ? Math.round((passedQuizCount / quizItems.length) * 100)
     : null
 
+  const bestQuizSubmission = data.items.reduce<SubmissionItem | null>((best, item) => {
+    const currentPercentage = getQuizPercentage(item)
+    const bestPercentage = best ? getQuizPercentage(best) : null
+
+    if (currentPercentage === null) {
+      return best
+    }
+
+    if (bestPercentage === null || currentPercentage > bestPercentage) {
+      return item
+    }
+
+    return best
+  }, null)
+
+  const bestQuizPercentage = bestQuizSubmission ? getQuizPercentage(bestQuizSubmission) : null
+  const signatureColumn = data.columns.find((column) => column.type === 'signature')
+
   return (
-    <div className="admin-wrapper admin-builder-wrapper">
-      <div className="admin-header">
-        <div className="admin-header-left">
-          <h1>Submissions Form</h1>
-          <p>{data.form.title} · {data.form.slug}</p>
+    <div className="editorial-form-editor-shell">
+      <header className="editorial-form-editor-topbar">
+        <div className="editorial-form-editor-topbar-left">
+          <div className="forms-dashboard-brand">
+            <div className="forms-dashboard-brand-mark" aria-hidden="true" />
+            <div>
+              <strong>Editorial Data Intelligence</strong>
+              <span>Ruang kerja peninjauan kiriman</span>
+            </div>
+          </div>
+
+          <div className="editorial-form-editor-divider" aria-hidden="true" />
+
+          <Link href="/admin/forms" className="editorial-form-editor-backlink">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+            <span>Kembali ke daftar</span>
+          </Link>
         </div>
-        <div className="admin-header-right">
-          <Link href="/admin/forms" className="admin-secondary-btn">Daftar Form</Link>
-          <a href={`/api/admin/forms/${data.form.id}/export?${exportParams.toString()}`} className="admin-secondary-btn">
-            Export CSV
+
+        <div className="editorial-form-editor-topbar-actions">
+          <Link href={`/admin/forms/${data.form.id}`} className="editorial-form-editor-ghost-btn">
+            Edit Formulir
+          </Link>
+          <a
+            href={`/api/admin/forms/${data.form.id}/export?${exportParams.toString()}`}
+            className="editorial-form-editor-primary-btn"
+          >
+            Unduh CSV
           </a>
-          <Link href={`/admin/forms/${data.form.id}`} className="admin-export-btn">Edit Form</Link>
         </div>
-      </div>
+      </header>
 
-      {feedback && (
-        <div className={`admin-builder-alert ${feedback.type}`}>
-          {feedback.message}
-        </div>
-      )}
-
-      <section className="admin-submissions-summary">
-        <div className="admin-submissions-summary-grid">
-          <article className="admin-submissions-summary-card">
-            <span>Total Tersaring</span>
-            <strong>{data.items.length}</strong>
-            <small>Menampilkan {data.items.length} dari {data.totalItems} submission.</small>
-          </article>
-          {hasParticipantType && (
-            <>
-              <article className="admin-submissions-summary-card">
-                <span>Peserta Internal</span>
-                <strong>{internalCount}</strong>
-                <small>Submission internal pada hasil aktif.</small>
-              </article>
-              <article className="admin-submissions-summary-card">
-                <span>Peserta Eksternal</span>
-                <strong>{externalCount}</strong>
-                <small>Submission eksternal pada hasil aktif.</small>
-              </article>
-            </>
-          )}
-          {hasQuiz && (
-            <>
-              <article className="admin-submissions-summary-card">
-                <span>Kelulusan Quiz</span>
-                <strong>{passRate !== null ? `${passRate}%` : '-'}</strong>
-                <small>{passedQuizCount} lulus, {failedQuizCount} belum lulus.</small>
-              </article>
-              <article className="admin-submissions-summary-card">
-                <span>Rata-rata Nilai</span>
-                <strong>{averageQuizPercentage !== null ? `${averageQuizPercentage}%` : '-'}</strong>
-                <small>Berdasarkan submission quiz pada hasil aktif.</small>
-              </article>
-            </>
-          )}
-        </div>
-
-        <div className="admin-submissions-filters">
-          {hasParticipantType && (
-            <label className="admin-builder-field">
-              <span>Filter Peserta</span>
-              <select
-                value={participantFilter}
-                onChange={(e) => setParticipantFilter(e.target.value as typeof participantFilter)}
-                className="admin-builder-select"
-              >
-                <option value="all">Semua peserta</option>
-                <option value="internal">Internal</option>
-                <option value="external">Eksternal</option>
-              </select>
-            </label>
-          )}
-          {hasQuiz && (
-            <label className="admin-builder-field">
-              <span>Filter Quiz</span>
-              <select
-                value={quizFilter}
-                onChange={(e) => setQuizFilter(e.target.value as typeof quizFilter)}
-                className="admin-builder-select"
-              >
-                <option value="all">Semua hasil</option>
-                <option value="passed">Lulus</option>
-                <option value="failed">Belum lulus</option>
-                <option value="ungraded">Tanpa quiz</option>
-              </select>
-            </label>
-          )}
-          <label className="admin-builder-field">
-            <span>Urutkan</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="admin-builder-select"
-            >
-              <option value="newest">Terbaru</option>
-              <option value="oldest">Terlama</option>
-              {hasQuiz && <option value="score-desc">Skor tertinggi</option>}
-              {hasQuiz && <option value="score-asc">Skor terendah</option>}
-            </select>
-          </label>
-        </div>
-      </section>
-
-      <div className="admin-table-container">
-        {data.totalItems === 0 ? (
-          <div className="admin-empty">
-            <h3>Belum ada submission</h3>
-            <p>Form ini belum menerima kiriman data.</p>
+      <div className="editorial-form-editor-content submissions-dashboard-content">
+        {feedback && (
+          <div className={`admin-builder-alert ${feedback.type}`}>
+            {feedback.message}
           </div>
-        ) : data.items.length === 0 ? (
-          <div className="admin-empty">
-            <h3>Tidak ada hasil yang cocok</h3>
-            <p>Ubah filter peserta, filter quiz, atau urutan untuk melihat submission lain.</p>
-          </div>
-        ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th scope="col">Waktu</th>
-                {hasParticipantType && <th scope="col">Tipe Peserta</th>}
-                {hasQuiz && <th scope="col">Hasil Quiz</th>}
-                {visibleColumns.map((column) => (
-                  <th key={column.id} scope="col">{column.label}</th>
-                ))}
-                <th scope="col">Tanda Tangan</th>
-                <th scope="col">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((item) => {
-                const signatureColumn = data.columns.find((column) => column.type === 'signature')
-                const signature = signatureColumn ? item.answers[signatureColumn.name] : ''
-
-                return (
-                  <tr key={item.id}>
-                    <td data-label="Waktu">{new Date(item.createdAt).toLocaleString('id-ID')}</td>
-                    {hasParticipantType && (
-                      <td data-label="Tipe Peserta">
-                        {item.meta.participantType === 'internal'
-                          ? 'Internal'
-                          : item.meta.participantType === 'external'
-                            ? 'Eksternal'
-                            : '-'}
-                      </td>
-                    )}
-                    {hasQuiz && (
-                      <td data-label="Hasil Quiz">
-                        {item.meta.quiz ? (
-                          <div className="admin-quiz-result">
-                            <strong>{item.meta.quiz.score}/{item.meta.quiz.maxScore}</strong>
-                            <span>
-                              {item.meta.quiz.correctAnswers} benar dari {item.meta.quiz.totalQuestions} soal · target {item.meta.quiz.passingScore}
-                            </span>
-                            <em className={`admin-quiz-status ${item.meta.quiz.passed ? 'pass' : 'fail'}`}>
-                              {item.meta.quiz.passed ? 'Lulus' : 'Belum lulus'}
-                            </em>
-                          </div>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                    )}
-                    {visibleColumns.map((column) => (
-                      <td key={column.id} data-label={column.label}>{item.answers[column.name] || '-'}</td>
-                    ))}
-                    <td data-label="Tanda Tangan">
-                      {signature ? (
-                        <Image
-                          src={signature}
-                          alt="Signature"
-                          width={80}
-                          height={40}
-                          unoptimized
-                          className="signature-thumb"
-                        />
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td data-label="Aksi">
-                      <button
-                        type="button"
-                        onClick={() => setPendingDeleteId(item.id)}
-                        className="delete-btn"
-                        title="Hapus submission"
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
         )}
+
+        <div className="editorial-form-editor-statusbar" aria-live="polite">
+          <div>
+            <p className="forms-dashboard-overline">Pusat Kiriman</p>
+            <strong>{data.form.title}</strong>
+            <span>
+              Pantau kiriman, evaluasi hasil quiz, dan unduh data CSV dari satu tampilan editorial.
+            </span>
+          </div>
+          <div className="editorial-form-editor-status-meta">
+            <span className={`forms-dashboard-status-chip ${data.form.status.toLowerCase()}`}>{getAdminFormStatusLabel(data.form.status)}</span>
+            <code>{data.form.slug}</code>
+          </div>
+        </div>
+
+        <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
+          <Link href="/admin" className="admin-breadcrumb-link">Admin</Link>
+          <span className="admin-breadcrumb-separator">/</span>
+          <Link href="/admin/forms" className="admin-breadcrumb-link">Formulir</Link>
+          <span className="admin-breadcrumb-separator">/</span>
+          <Link href={`/admin/forms/${data.form.id}`} className="admin-breadcrumb-link">{data.form.title}</Link>
+          <span className="admin-breadcrumb-separator">/</span>
+          <span className="admin-breadcrumb-current">Kiriman</span>
+        </nav>
+
+        <section className="forms-dashboard-hero submissions-dashboard-hero">
+          <div className="forms-dashboard-hero-copy">
+            <p className="forms-dashboard-overline">Tinjauan & Ringkasan</p>
+            <h1>Kiriman Form</h1>
+            <p>
+              Menampilkan {numberFormatter.format(data.items.length)} hasil aktif dari total{' '}
+              {numberFormatter.format(data.totalItems)} kiriman untuk form ini.
+            </p>
+          </div>
+
+          <div className="forms-dashboard-hero-actions">
+            <button
+              type="button"
+              className="forms-dashboard-secondary-button"
+              onClick={() => {
+                setFeedback(null)
+                void load()
+              }}
+              disabled={loading}
+            >
+              {loading ? 'Memuat...' : 'Muat Ulang Data'}
+            </button>
+          </div>
+        </section>
+
+            <section className="forms-dashboard-stats" aria-label="Ringkasan kiriman">
+          <article className="forms-dashboard-stat-card">
+            <div className="forms-dashboard-stat-head">
+              <span>Total Tersaring</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v18" />
+                <path d="M3 12h18" />
+              </svg>
+            </div>
+            <strong>{numberFormatter.format(data.items.length)}</strong>
+            <small>Menampilkan hasil sesuai filter yang sedang aktif.</small>
+          </article>
+
+          <article className="forms-dashboard-stat-card">
+            <div className="forms-dashboard-stat-head">
+                <span>Total Kiriman</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+                <path d="M14 3v6h6" />
+              </svg>
+            </div>
+            <strong>{numberFormatter.format(data.totalItems)}</strong>
+              <small>Jumlah semua kiriman yang tersimpan untuk form ini.</small>
+          </article>
+
+          {hasParticipantType && (
+            <article className="forms-dashboard-stat-card">
+              <div className="forms-dashboard-stat-head">
+                <span>Peserta Internal</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+                  <path d="M6 20a6 6 0 0 1 12 0" />
+                </svg>
+              </div>
+              <strong>{numberFormatter.format(internalCount)}</strong>
+              <small>{numberFormatter.format(externalCount)} kiriman lain berasal dari peserta eksternal.</small>
+            </article>
+          )}
+
+          {hasQuiz && (
+            <article className="forms-dashboard-stat-card">
+              <div className="forms-dashboard-stat-head">
+                <span>Pass Rate Quiz</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m3 17 6-6 4 4 8-8" />
+                  <path d="M14 7h7v7" />
+                </svg>
+              </div>
+              <strong>{passRate !== null ? `${passRate}%` : '-'}</strong>
+              <small>
+                {numberFormatter.format(passedQuizCount)} lulus, {numberFormatter.format(failedQuizCount)} belum lulus.
+              </small>
+            </article>
+          )}
+        </section>
+
+        <section className="forms-dashboard-panel forms-dashboard-table-panel" id="submissions-dashboard-table">
+          <div className="forms-dashboard-panel-header">
+            <div>
+                <p className="forms-dashboard-overline">Tabel Kiriman</p>
+              <h2>Data Masuk</h2>
+                <p>Filter, urutkan, lalu hapus kiriman yang tidak valid bila diperlukan.</p>
+            </div>
+
+            <div className="submissions-dashboard-filterbar">
+              {hasParticipantType && (
+                <label className="submissions-dashboard-filter">
+                  <span>Peserta</span>
+                  <select
+                    value={participantFilter}
+                    onChange={(event) => setParticipantFilter(event.target.value as typeof participantFilter)}
+                    className="forms-dashboard-select"
+                  >
+                    <option value="all">Semua peserta</option>
+                    <option value="internal">Internal</option>
+                    <option value="external">Eksternal</option>
+                  </select>
+                </label>
+              )}
+
+              {hasQuiz && (
+                <label className="submissions-dashboard-filter">
+                  <span>Quiz</span>
+                  <select
+                    value={quizFilter}
+                    onChange={(event) => setQuizFilter(event.target.value as typeof quizFilter)}
+                    className="forms-dashboard-select"
+                  >
+                    <option value="all">Semua hasil</option>
+                    <option value="passed">Lulus</option>
+                    <option value="failed">Belum lulus</option>
+                    <option value="ungraded">Tanpa quiz</option>
+                  </select>
+                </label>
+              )}
+
+              <label className="submissions-dashboard-filter">
+                <span>Urutan</span>
+                <select
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
+                  className="forms-dashboard-select"
+                >
+                  <option value="newest">Terbaru</option>
+                  <option value="oldest">Terlama</option>
+                  {hasQuiz && <option value="score-desc">Skor tertinggi</option>}
+                  {hasQuiz && <option value="score-asc">Skor terendah</option>}
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div className="forms-dashboard-table-wrap">
+            {data.totalItems === 0 ? (
+              <div className="forms-dashboard-empty-state">
+                  <h3>Belum ada kiriman</h3>
+                <p>Form ini belum menerima kiriman data.</p>
+              </div>
+            ) : data.items.length === 0 ? (
+              <div className="forms-dashboard-empty-state">
+                <h3>Tidak ada hasil yang cocok</h3>
+                  <p>Ubah filter peserta, filter quiz, atau urutan untuk melihat kiriman lain.</p>
+              </div>
+            ) : (
+              <table className="forms-dashboard-table submissions-dashboard-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Waktu & Metadata</th>
+                    {hasParticipantType && <th scope="col">Tipe Peserta</th>}
+                    {hasQuiz && <th scope="col">Hasil Quiz</th>}
+                    {visibleColumns.map((column) => (
+                      <th key={column.id} scope="col">{column.label}</th>
+                    ))}
+                    <th scope="col">Tanda Tangan</th>
+                      <th scope="col">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.items.map((item) => {
+                    const signature = signatureColumn ? item.answers[signatureColumn.name] : ''
+                    const quizPercentage = getQuizPercentage(item)
+
+                    return (
+                      <tr key={item.id}>
+                        <td data-label="Waktu & Metadata">
+                          <div className="submissions-dashboard-primary-cell">
+                            <strong>{new Date(item.createdAt).toLocaleString('id-ID')}</strong>
+                            <span>ID: {item.id}</span>
+                          </div>
+                        </td>
+                        {hasParticipantType && (
+                          <td data-label="Tipe Peserta">
+                            <span className={`submissions-dashboard-participant-chip ${getParticipantClass(item.meta.participantType)}`}>
+                              {getParticipantLabel(item.meta.participantType)}
+                            </span>
+                          </td>
+                        )}
+                        {hasQuiz && (
+                          <td data-label="Hasil Quiz">
+                            {item.meta.quiz ? (
+                              <div className="submissions-dashboard-quiz-card">
+                                <strong>{item.meta.quiz.score}/{item.meta.quiz.maxScore}</strong>
+                                <span>
+                                  {item.meta.quiz.correctAnswers} benar dari {item.meta.quiz.totalQuestions} soal
+                                </span>
+                                <em className={`admin-quiz-status ${item.meta.quiz.passed ? 'pass' : 'fail'}`}>
+                                  {quizPercentage}% · {item.meta.quiz.passed ? 'Lulus' : 'Belum lulus'}
+                                </em>
+                              </div>
+                            ) : (
+                              '-'
+                            )}
+                          </td>
+                        )}
+                        {visibleColumns.map((column) => (
+                          <td key={column.id} data-label={column.label}>
+                            {formatAnswer(item.answers[column.name])}
+                          </td>
+                        ))}
+                        <td data-label="Tanda Tangan">
+                          {signature ? (
+                            <Image
+                              src={signature}
+                              alt="Signature"
+                              width={80}
+                              height={40}
+                              unoptimized
+                              className="signature-thumb"
+                            />
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                        <td data-label="Aksi">
+                          <div className="forms-dashboard-row-actions">
+                            <button
+                              type="button"
+                              onClick={() => setPendingDeleteId(item.id)}
+                              className="forms-dashboard-action-link danger"
+                              title="Hapus kiriman"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+
+        <section className="forms-dashboard-insights submissions-dashboard-insights">
+          <article className="forms-dashboard-panel submissions-dashboard-breakdown-panel">
+            <div className="forms-dashboard-panel-header compact">
+              <div>
+                  <p className="forms-dashboard-overline">Ringkasan</p>
+                <h2>Komposisi Hasil</h2>
+                <p>Ringkasan cepat untuk melihat distribusi kiriman yang sedang aktif.</p>
+              </div>
+            </div>
+
+            <div className="submissions-dashboard-breakdown-list">
+              {hasParticipantType && (
+                <div className="submissions-dashboard-breakdown-item">
+                  <div>
+                    <strong>Peserta Internal</strong>
+                    <span>{numberFormatter.format(internalCount)} data</span>
+                  </div>
+                  <div className="submissions-dashboard-breakdown-meter" aria-hidden="true">
+                    <span style={{ width: `${data.items.length > 0 ? Math.max(10, Math.round((internalCount / data.items.length) * 100)) : 0}%` }} />
+                  </div>
+                </div>
+              )}
+
+              {hasParticipantType && (
+                <div className="submissions-dashboard-breakdown-item">
+                  <div>
+                    <strong>Peserta Eksternal</strong>
+                    <span>{numberFormatter.format(externalCount)} data</span>
+                  </div>
+                  <div className="submissions-dashboard-breakdown-meter muted" aria-hidden="true">
+                    <span style={{ width: `${data.items.length > 0 ? Math.max(10, Math.round((externalCount / data.items.length) * 100)) : 0}%` }} />
+                  </div>
+                </div>
+              )}
+
+              {hasQuiz && (
+                <div className="submissions-dashboard-breakdown-item">
+                  <div>
+                    <strong>Kelulusan Quiz</strong>
+                    <span>{passRate !== null ? `${passRate}% tingkat kelulusan` : 'Belum ada nilai'}</span>
+                  </div>
+                  <div className="submissions-dashboard-breakdown-meter accent" aria-hidden="true">
+                    <span style={{ width: `${passRate !== null ? Math.max(12, passRate) : 0}%` }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </article>
+
+          <article className="forms-dashboard-highlight-card">
+            <div className="forms-dashboard-highlight-copy">
+              <p className="forms-dashboard-overline dark">Insight Teratas</p>
+              <strong>{bestQuizPercentage !== null ? `${bestQuizPercentage}%` : numberFormatter.format(data.items.length)}</strong>
+              <h3>{bestQuizSubmission ? 'Nilai Tertinggi' : 'Kiriman Aktif'}</h3>
+              <p>
+                {bestQuizSubmission
+                  ? `Kiriman terbaik memiliki skor ${bestQuizSubmission.meta.quiz?.score}/${bestQuizSubmission.meta.quiz?.maxScore} dan dikirim pada ${new Date(bestQuizSubmission.createdAt).toLocaleString('id-ID')}.`
+                  : 'Belum ada data quiz. Gunakan panel ini untuk memantau volume kiriman aktif.'}
+              </p>
+            </div>
+
+            <dl className="forms-dashboard-highlight-list">
+              <div>
+                  <dt>Tersaring</dt>
+                <dd>{numberFormatter.format(data.items.length)}</dd>
+              </div>
+              <div>
+                <dt>Total</dt>
+                <dd>{numberFormatter.format(data.totalItems)}</dd>
+              </div>
+              <div>
+                  <dt>Lulus</dt>
+                <dd>{numberFormatter.format(passedQuizCount)}</dd>
+              </div>
+              <div>
+                  <dt>Rata-rata</dt>
+                <dd>{averageQuizPercentage !== null ? `${averageQuizPercentage}%` : '-'}</dd>
+              </div>
+            </dl>
+          </article>
+        </section>
       </div>
 
       {pendingDeleteId && (
         <div className="admin-modal-backdrop" role="presentation">
           <div className="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-submission-title">
             <div className="admin-modal-head">
-              <h3 id="delete-submission-title">Hapus Submission</h3>
-              <p>Tindakan ini akan menghapus submission dari form builder. Untuk form attendance, data legacy terkait juga ikut dihapus.</p>
+              <h3 id="delete-submission-title">Hapus Kiriman</h3>
+              <p>Tindakan ini akan menghapus kiriman dari builder form. Untuk form attendance, data legacy terkait juga ikut dihapus.</p>
             </div>
 
             <div className="admin-modal-actions">

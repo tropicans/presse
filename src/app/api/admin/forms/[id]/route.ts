@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth'
-import { FormSubmissionError, getAdminFormDetail, updateAdminForm } from '@/lib/forms'
+import { deleteAdminForm, FormSubmissionError, getAdminFormDetail, updateAdminForm } from '@/lib/forms'
 
 interface RouteContext {
   params: Promise<{
@@ -45,5 +45,27 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     console.error('Error updating admin form:', error)
     return NextResponse.json({ error: 'Gagal memperbarui form' }, { status: 500 })
+  }
+}
+
+export async function DELETE(_: NextRequest, context: RouteContext) {
+  const session = await getAdminSession()
+
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const { id } = await context.params
+    const form = await deleteAdminForm(id)
+
+    return NextResponse.json({ data: form })
+  } catch (error) {
+    if (error instanceof FormSubmissionError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+
+    console.error('Error deleting admin form:', error)
+    return NextResponse.json({ error: 'Gagal menghapus form' }, { status: 500 })
   }
 }

@@ -15,5 +15,12 @@ export async function GET(_: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Form tidak ditemukan' }, { status: 404 })
   }
 
-  return NextResponse.json({ form })
+  return NextResponse.json(
+    { form },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=300',
+      },
+    }
+  )
 }

@@ -1,8 +1,52 @@
+x-runtime-image: &runtime-image
+  image: jott-runtime:local
+
+x-runtime-build: &runtime-build
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+x-benchmark-app: &benchmark-app
+  <<: *runtime-image
+  restart: unless-stopped
+  env_file:
+    - .env.production
+  environment:
+    DB_POOL_MAX: 20
+    DB_POOL_MIN: 4
+    DB_POOL_CONNECTION_TIMEOUT_MS: 10000
+    DB_POOL_IDLE_TIMEOUT_MS: 30000
+    SUBMISSION_JOB_DELAY_SECONDS: 5
+    INTERNAL_WORKER_TOKEN: benchmark-worker-token
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+x-worker: &worker
+  <<: *runtime-image
+  restart: unless-stopped
+  env_file:
+    - .env.production
+  environment:
+    INTERNAL_WORKER_TOKEN: benchmark-worker-token
+    WORKER_BATCH_SIZE: 25
+    WORKER_IDLE_MS: 100
+    WORKER_ERROR_MS: 1000
+  depends_on:
+    postgres:
+      condition: service_healthy
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: jott-postgres
     restart: unless-stopped
+    command:
+      - postgres
+      - -c
+      - max_connections=300
+      - -c
+      - shared_buffers=256MB
     ports:
       - "5443:5432"
     environment:
@@ -18,18 +62,89 @@ services:
       retries: 5
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: [*runtime-image, *runtime-build]
     container_name: jott-app
     restart: unless-stopped
     ports:
       - "3456:3456"
     env_file:
       - .env.production
+    environment:
+      DB_POOL_MAX: 40
+      DB_POOL_MIN: 4
+      DB_POOL_CONNECTION_TIMEOUT_MS: 10000
+      DB_POOL_IDLE_TIMEOUT_MS: 30000
+      SUBMISSION_JOB_DELAY_SECONDS: 5
+      INTERNAL_WORKER_TOKEN: benchmark-worker-token
     depends_on:
       postgres:
         condition: service_healthy
+
+  worker:
+    <<: *worker
+    container_name: jott-worker
+    command: ["node", "scripts/submission-worker.mjs"]
+    environment:
+      INTERNAL_WORKER_TOKEN: benchmark-worker-token
+      WORKER_BASE_URL: http://app:3456
+      WORKER_BATCH_SIZE: 25
+      WORKER_IDLE_MS: 100
+      WORKER_ERROR_MS: 1000
+    depends_on:
+      app:
+        condition: service_started
+
+  app-bench-1:
+    <<: *benchmark-app
+
+  app-bench-2:
+    <<: *benchmark-app
+
+  app-bench-3:
+    <<: *benchmark-app
+
+  app-bench-4:
+    <<: *benchmark-app
+
+  worker-bench-1:
+    <<: *worker
+    command: ["node", "scripts/submission-worker.mjs"]
+    environment:
+      INTERNAL_WORKER_TOKEN: benchmark-worker-token
+      WORKER_BASE_URL: http://app-bench-1:3456
+      WORKER_BATCH_SIZE: 25
+      WORKER_IDLE_MS: 50
+      WORKER_ERROR_MS: 1000
+    depends_on:
+      app-bench-1:
+        condition: service_started
+
+  worker-bench-2:
+    <<: *worker
+    command: ["node", "scripts/submission-worker.mjs"]
+    environment:
+      INTERNAL_WORKER_TOKEN: benchmark-worker-token
+      WORKER_BASE_URL: http://app-bench-2:3456
+      WORKER_BATCH_SIZE: 25
+      WORKER_IDLE_MS: 50
+      WORKER_ERROR_MS: 1000
+    depends_on:
+      app-bench-2:
+        condition: service_started
+
+  proxy-bench:
+    image: nginx:1.27-alpine
+    container_name: jott-proxy-bench
+    restart: unless-stopped
+    ports:
+      - "3457:3456"
+    volumes:
+      - ./infra/nginx/benchmark.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app-bench-1
+      - app-bench-2
+      - app-bench-3
+      - app-bench-4
 
 volumes:
   pgdata:

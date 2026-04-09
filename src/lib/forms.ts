@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
@@ -13,7 +14,9 @@ type FieldType = 'SHORT_TEXT' | 'LONG_TEXT' | 'RADIO' | 'SELECT' | 'YES_NO' | 'S
 export type FormWorkflow = 'STANDARD' | 'WEBINAR'
 export type FormMode = 'STANDARD' | 'QUIZ' | 'ATTENDANCE'
 
-export type FormFieldType = 'text' | 'textarea' | 'radio' | 'likert' | 'signature'
+export type FormFieldType = 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature'
+
+const CONDITIONAL_ROUTE_SUBMIT = '__SUBMIT__'
 
 interface BaseField {
   id: string
@@ -35,11 +38,16 @@ export interface RadioField extends BaseField {
   options: string[]
 }
 
+export interface SelectField extends BaseField {
+  type: 'select'
+  options: string[]
+}
+
 export interface SignatureField extends BaseField {
   type: 'signature'
 }
 
-export type FormField = TextField | RadioField | SignatureField
+export type FormField = TextField | RadioField | SelectField | SignatureField
 
 export interface FormPageDefinition {
   id: string
@@ -181,6 +189,30 @@ export interface PublicSubmissionSummary {
   } | null
 }
 
+export interface PublicSubmissionResult {
+  id: string
+  message: string
+}
+
+interface SubmissionJobSnapshotField {
+  id: string
+  name: string
+}
+
+interface SubmissionJobPayload {
+  values: Record<string, string>
+  fields: SubmissionJobSnapshotField[]
+}
+
+interface SubmissionJobRow {
+  id: string
+  submissionId: string
+  formId: string
+  payloadJson: Prisma.JsonValue
+  pathJson: Prisma.JsonValue | null
+  attempts: number
+}
+
 export interface AdminFormSubmissionsResult {
   form: Pick<AdminFormDetail, 'id' | 'slug' | 'title' | 'status'>
   totalItems: number
@@ -245,6 +277,25 @@ interface SubmissionAnswerRow {
   fieldId: string
   valueText: string | null
 }
+
+interface PublicFormRowsResult {
+  form: FormRow
+  fields: FieldRow[]
+  options: FieldOptionRow[]
+}
+
+interface PublicFormCacheEntry {
+  expiresAt: number
+  value: PublicFormRowsResult | null
+}
+
+const PUBLIC_FORM_CACHE_TTL_MS = 30_000
+const publicFormCache = new Map<string, PublicFormCacheEntry>()
+const publicFormInflight = new Map<string, Promise<PublicFormRowsResult | null>>()
+const submissionJobDelaySeconds = Number(process.env.SUBMISSION_JOB_DELAY_SECONDS ?? '5')
+
+let attendanceTemplateReady = false
+let attendanceTemplatePromise: Promise<void> | null = null
 
 interface QuizSummaryRow {
   formId: string
@@ -374,6 +425,8 @@ function mapFieldType(type: FieldType): FormFieldType | null {
       return 'textarea'
     case 'RADIO':
       return 'radio'
+    case 'SELECT':
+      return 'select'
     case 'SIGNATURE':
       return 'signature'
     default:
@@ -471,7 +524,7 @@ function readQuizSettings(settingsJson: Prisma.JsonValue | null): QuizSettings {
 function createDefaultFormPages(fieldIds: string[]): FormPageDefinition[] {
   return [{
     id: 'page-1',
-    title: 'Halaman 1',
+    title: '',
     description: null,
     fieldIds,
   }]
@@ -503,9 +556,9 @@ function readFormPages(
     const id = typeof page.id === 'string' && page.id.trim()
       ? page.id.trim()
       : `page-${index + 1}`
-    const title = typeof page.title === 'string' && page.title.trim()
+    const title = typeof page.title === 'string'
       ? page.title.trim()
-      : `Halaman ${index + 1}`
+      : ''
     const description = typeof page.description === 'string' && page.description.trim()
       ? page.description.trim()
       : null
@@ -543,7 +596,7 @@ function readFormPages(
     }
   }
 
-  return pages.filter((page) => page.fieldIds.length > 0)
+  return pages
 }
 
 function readFormConditionalRoutes(
@@ -563,7 +616,7 @@ function readFormConditionalRoutes(
   }
 
   const availableFieldIds = new Set(fieldIds)
-  const availablePageIds = new Set(pageIds)
+  const availableTargets = new Set([...pageIds, CONDITIONAL_ROUTE_SUBMIT])
   const seenKeys = new Set<string>()
 
   return rawRoutes.flatMap<FormConditionalRoute>((rawRoute) => {
@@ -580,7 +633,7 @@ function readFormConditionalRoutes(
       return []
     }
 
-    if (!availableFieldIds.has(fieldId) || !availablePageIds.has(nextPageId)) {
+    if (!availableFieldIds.has(fieldId) || !availableTargets.has(nextPageId)) {
       return []
     }
 
@@ -976,181 +1029,242 @@ function applyAdminSubmissionFilters(
 }
 
 async function seedAttendanceTemplateIfNeeded() {
-  const existingRows = await prisma.$queryRaw<FormRow[]>`
-    SELECT
-      id,
-      slug,
-      title,
-      description,
-      success_message AS "successMessage",
-      settings_json AS "settingsJson"
-    FROM forms
-    WHERE slug = ${ATTENDANCE_FORM_SLUG}
-    LIMIT 1
-  `
-
-  let formId = existingRows[0]?.id
-  const quizSettings = readQuizSettings(existingRows[0]?.settingsJson ?? null)
-
-  if (!formId) {
-    await prisma.$executeRaw`
-      INSERT INTO forms (id, slug, title, description, status, mode, success_message, settings_json, created_at, updated_at)
-      VALUES (
-        ${ATTENDANCE_FORM_ID},
-        ${ATTENDANCE_FORM_SLUG},
-        ${'Daftar Hadir'},
-        ${'Seminar Evaluasi Rancangan Aktualisasi Pelatihan Dasar CPNS Golongan II Angkatan V dan Golongan III Angkatan X Kemensetneg Tahun 2026'},
-        'PUBLISHED'::"FormStatus",
-        'STANDARD'::"FormMode",
-        ${'Kehadiran Anda telah berhasil dicatat.'},
-        ${serializeFormSettings('WEBINAR', quizSettings)}::jsonb,
-        NOW(),
-        NOW()
-      )
-      ON CONFLICT (slug) DO UPDATE SET
-        title = EXCLUDED.title,
-        description = EXCLUDED.description,
-        success_message = EXCLUDED.success_message,
-        settings_json = COALESCE(forms.settings_json, EXCLUDED.settings_json),
-        updated_at = NOW()
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`
+      SELECT pg_advisory_xact_lock(4243, hashtext(${ATTENDANCE_FORM_SLUG}))
     `
 
-    formId = ATTENDANCE_FORM_ID
-  } else {
-    await prisma.$executeRaw`
-      UPDATE forms
-      SET
-        title = ${'Daftar Hadir'},
-        description = ${'Seminar Evaluasi Rancangan Aktualisasi Pelatihan Dasar CPNS Golongan II Angkatan V dan Golongan III Angkatan X Kemensetneg Tahun 2026'},
-        success_message = ${'Kehadiran Anda telah berhasil dicatat.'},
-        settings_json = ${serializeFormSettings('WEBINAR', quizSettings)}::jsonb,
-        updated_at = NOW()
-      WHERE id = ${formId}
+    const existingRows = await tx.$queryRaw<FormRow[]>`
+      SELECT
+        id,
+        slug,
+        title,
+        description,
+        success_message AS "successMessage",
+        settings_json AS "settingsJson"
+      FROM forms
+      WHERE slug = ${ATTENDANCE_FORM_SLUG}
+      LIMIT 1
     `
-  }
 
-  const existingFields = await prisma.$queryRaw<FieldRow[]>`
-    SELECT
-      id,
-      form_id AS "formId",
-      label,
-      type::text AS type,
-      "order",
-      required,
-      placeholder
-    FROM form_fields
-    WHERE form_id = ${formId}
-    ORDER BY "order" ASC
-  `
+    let formId = existingRows[0]?.id
+    const quizSettings = readQuizSettings(existingRows[0]?.settingsJson ?? null)
 
-  const existingFieldsById = new Map(existingFields.map((field) => [field.id, field]))
-  const existingFieldsByName = new Map(existingFields.map((field) => [mapFieldName(field), field]))
-  const needsBranchingShift = !existingFieldsById.has('attendance-field-0')
-  const attendanceFieldIds = new Set(defaultAttendanceFields.map((field) => field.id))
-
-  if (existingFields.length > 0) {
-    await prisma.$executeRaw`
-      UPDATE form_fields
-      SET "order" = "order" + 1000, updated_at = NOW()
-      WHERE form_id = ${formId}
-    `
-  }
-
-  for (const field of existingFields) {
-    if (attendanceFieldIds.has(field.id)) {
-      continue
-    }
-
-    await prisma.$executeRaw`
-      UPDATE form_fields
-      SET "order" = ${needsBranchingShift ? field.order + 1 : field.order}, updated_at = NOW()
-      WHERE id = ${field.id}
-    `
-  }
-
-  for (const field of defaultAttendanceFields) {
-    const existingField = existingFieldsById.get(field.id) ?? existingFieldsByName.get(field.name)
-
-    if (existingField) {
-      await prisma.$executeRaw`
-        UPDATE form_fields
-        SET
-          type = ${field.type}::"FieldType",
-          "order" = ${field.order},
-          required = ${field.required},
-          placeholder = ${existingField.placeholder ?? field.placeholder},
-          is_active = ${true},
-          updated_at = NOW()
-        WHERE id = ${field.id}
-      `
-    } else {
-      await prisma.$executeRaw`
-        INSERT INTO form_fields (
-          id,
-          form_id,
-          label,
-          type,
-          "order",
-          required,
-          placeholder,
-          help_text,
-          is_active,
-          created_at,
-          updated_at
-        ) VALUES (
-          ${field.id},
-          ${formId},
-          ${field.label},
-          ${field.type}::"FieldType",
-          ${field.order},
-          ${field.required},
-          ${field.placeholder},
-          ${null},
-          ${true},
+    if (!formId) {
+      await tx.$executeRaw`
+        INSERT INTO forms (id, slug, title, description, status, mode, success_message, settings_json, created_at, updated_at)
+        VALUES (
+          ${ATTENDANCE_FORM_ID},
+          ${ATTENDANCE_FORM_SLUG},
+          ${'Daftar Hadir'},
+          ${'Seminar Evaluasi Rancangan Aktualisasi Pelatihan Dasar CPNS Golongan II Angkatan V dan Golongan III Angkatan X Kemensetneg Tahun 2026'},
+          'PUBLISHED'::"FormStatus",
+          'STANDARD'::"FormMode",
+          ${'Kehadiran Anda telah berhasil dicatat.'},
+          ${serializeFormSettings('WEBINAR', quizSettings)}::jsonb,
           NOW(),
           NOW()
         )
+        ON CONFLICT (slug) DO UPDATE SET
+          title = EXCLUDED.title,
+          description = EXCLUDED.description,
+          success_message = EXCLUDED.success_message,
+          settings_json = COALESCE(forms.settings_json, EXCLUDED.settings_json),
+          updated_at = NOW()
+      `
+
+      formId = ATTENDANCE_FORM_ID
+    } else {
+      await tx.$executeRaw`
+        UPDATE forms
+        SET
+          title = ${'Daftar Hadir'},
+          description = ${'Seminar Evaluasi Rancangan Aktualisasi Pelatihan Dasar CPNS Golongan II Angkatan V dan Golongan III Angkatan X Kemensetneg Tahun 2026'},
+          success_message = ${'Kehadiran Anda telah berhasil dicatat.'},
+          settings_json = ${serializeFormSettings('WEBINAR', quizSettings)}::jsonb,
+          updated_at = NOW()
+        WHERE id = ${formId}
       `
     }
 
-    const shouldRefreshOptions = field.type === 'RADIO' && (field.id === 'attendance-field-0' || !existingField)
+    const existingFields = await tx.$queryRaw<FieldRow[]>`
+      SELECT
+        id,
+        form_id AS "formId",
+        label,
+        type::text AS type,
+        "order",
+        required,
+        placeholder
+      FROM form_fields
+      WHERE form_id = ${formId}
+      ORDER BY "order" ASC
+    `
 
-    if (shouldRefreshOptions) {
-      await prisma.$executeRaw`DELETE FROM field_options WHERE field_id = ${field.id}`
+    const existingFieldsById = new Map(existingFields.map((field) => [field.id, field]))
+    const existingFieldsByName = new Map(existingFields.map((field) => [mapFieldName(field), field]))
+    const needsBranchingShift = !existingFieldsById.has('attendance-field-0')
+    const attendanceFieldIds = new Set(defaultAttendanceFields.map((field) => field.id))
 
-      for (let index = 0; index < field.options.length; index += 1) {
-        const option = field.options[index]
-        await prisma.$executeRaw`
-          INSERT INTO field_options (
+    if (existingFields.length > 0) {
+      await tx.$executeRaw`
+        UPDATE form_fields
+        SET "order" = "order" + 1000, updated_at = NOW()
+        WHERE form_id = ${formId}
+      `
+    }
+
+    for (const field of existingFields) {
+      if (attendanceFieldIds.has(field.id)) {
+        continue
+      }
+
+      await tx.$executeRaw`
+        UPDATE form_fields
+        SET "order" = ${needsBranchingShift ? field.order + 1 : field.order}, updated_at = NOW()
+        WHERE id = ${field.id}
+      `
+    }
+
+    for (const field of defaultAttendanceFields) {
+      const existingField = existingFieldsById.get(field.id) ?? existingFieldsByName.get(field.name)
+
+      if (existingField) {
+        await tx.$executeRaw`
+          UPDATE form_fields
+          SET
+            type = ${field.type}::"FieldType",
+            "order" = ${field.order},
+            required = ${field.required},
+            placeholder = ${existingField.placeholder ?? field.placeholder},
+            is_active = ${true},
+            updated_at = NOW()
+          WHERE id = ${field.id}
+        `
+      } else {
+        await tx.$executeRaw`
+          INSERT INTO form_fields (
             id,
-            field_id,
+            form_id,
             label,
-            value,
+            type,
             "order",
-            is_correct,
-            points,
-            created_at
+            required,
+            placeholder,
+            help_text,
+            is_active,
+            created_at,
+            updated_at
           ) VALUES (
-            ${`${field.id}-option-${index + 1}`},
             ${field.id},
-            ${option},
-            ${option},
-            ${index + 1},
-            ${false},
-            ${0},
+            ${formId},
+            ${field.label},
+            ${field.type}::"FieldType",
+            ${field.order},
+            ${field.required},
+            ${field.placeholder},
+            ${null},
+            ${true},
+            NOW(),
             NOW()
           )
         `
       }
+
+      const shouldRefreshOptions = field.type === 'RADIO' && (field.id === 'attendance-field-0' || !existingField)
+
+      if (shouldRefreshOptions) {
+        await tx.$executeRaw`DELETE FROM field_options WHERE field_id = ${field.id}`
+
+        for (let index = 0; index < field.options.length; index += 1) {
+          const option = field.options[index]
+          await tx.$executeRaw`
+            INSERT INTO field_options (
+              id,
+              field_id,
+              label,
+              value,
+              "order",
+              is_correct,
+              points,
+              created_at
+            ) VALUES (
+              ${`${field.id}-option-${index + 1}`},
+              ${field.id},
+              ${option},
+              ${option},
+              ${index + 1},
+              ${false},
+              ${0},
+              NOW()
+            )
+            ON CONFLICT (id) DO UPDATE SET
+              field_id = EXCLUDED.field_id,
+              label = EXCLUDED.label,
+              value = EXCLUDED.value,
+              "order" = EXCLUDED."order",
+              is_correct = EXCLUDED.is_correct,
+              points = EXCLUDED.points
+          `
+        }
+      }
     }
-  }
+  })
 }
 
-async function getPublicFormRows(slug: string) {
-  if (slug === ATTENDANCE_FORM_SLUG) {
-    await seedAttendanceTemplateIfNeeded()
+async function ensureAttendanceTemplateReady() {
+  if (attendanceTemplateReady) {
+    return
   }
 
+  if (!attendanceTemplatePromise) {
+    attendanceTemplatePromise = seedAttendanceTemplateIfNeeded()
+      .then(() => {
+        attendanceTemplateReady = true
+      })
+      .catch((error) => {
+        attendanceTemplatePromise = null
+        throw error
+      })
+  }
+
+  await attendanceTemplatePromise
+}
+
+function invalidatePublicFormCache(slug?: string) {
+  if (slug) {
+    publicFormCache.delete(slug)
+    publicFormInflight.delete(slug)
+    return
+  }
+
+  publicFormCache.clear()
+  publicFormInflight.clear()
+}
+
+function getCachedPublicFormRows(slug: string) {
+  const entry = publicFormCache.get(slug)
+
+  if (!entry) {
+    return undefined
+  }
+
+  if (entry.expiresAt <= Date.now()) {
+    publicFormCache.delete(slug)
+    return undefined
+  }
+
+  return entry.value
+}
+
+function setCachedPublicFormRows(slug: string, value: PublicFormRowsResult | null) {
+  publicFormCache.set(slug, {
+    value,
+    expiresAt: Date.now() + PUBLIC_FORM_CACHE_TTL_MS,
+  })
+}
+
+async function fetchPublicFormRows(slug: string): Promise<PublicFormRowsResult | null> {
   const forms = await prisma.$queryRaw<FormRow[]>`
     SELECT
       id,
@@ -1202,9 +1316,36 @@ async function getPublicFormRows(slug: string) {
   return { form, fields, options }
 }
 
+async function getPublicFormRows(slug: string): Promise<PublicFormRowsResult | null> {
+  const cached = getCachedPublicFormRows(slug)
+  if (cached !== undefined) {
+    return cached
+  }
+
+  const inflight = publicFormInflight.get(slug)
+  if (inflight) {
+    return inflight
+  }
+
+  const loadPromise = (async () => {
+    if (slug === ATTENDANCE_FORM_SLUG) {
+      await ensureAttendanceTemplateReady()
+    }
+
+    const rows = await fetchPublicFormRows(slug)
+    setCachedPublicFormRows(slug, rows)
+    return rows
+  })().finally(() => {
+    publicFormInflight.delete(slug)
+  })
+
+  publicFormInflight.set(slug, loadPromise)
+  return loadPromise
+}
+
 async function getFormRowsById(id: string) {
   if (id === ATTENDANCE_FORM_ID) {
-    await seedAttendanceTemplateIfNeeded()
+    await ensureAttendanceTemplateReady()
   }
 
   const forms = await prisma.$queryRaw<FormRow[]>`
@@ -1261,13 +1402,7 @@ async function getFormRowsById(id: string) {
   return { form, fields, options }
 }
 
-export async function getPublicFormBySlug(slug: string): Promise<PublicFormDefinition | null> {
-  const rows = await getPublicFormRows(slug)
-
-  if (!rows) {
-    return null
-  }
-
+function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDefinition {
   const optionsByField = buildPublicOptionsByField(rows.options)
 
   const fields = rows.fields.flatMap<FormField>((field) => {
@@ -1281,6 +1416,17 @@ export async function getPublicFormBySlug(slug: string): Promise<PublicFormDefin
     const name = mapFieldName(field)
 
     if (mappedType === 'radio' || mappedType === 'likert') {
+      return [{
+        id: field.id,
+        name,
+        label: field.label,
+        type: mappedType,
+        required: field.required,
+        options: optionsByField[field.id] ?? [],
+      }]
+    }
+
+    if (mappedType === 'select') {
       return [{
         id: field.id,
         name,
@@ -1325,6 +1471,16 @@ export async function getPublicFormBySlug(slug: string): Promise<PublicFormDefin
   }
 }
 
+export async function getPublicFormBySlug(slug: string): Promise<PublicFormDefinition | null> {
+  const rows = await getPublicFormRows(slug)
+
+  if (!rows) {
+    return null
+  }
+
+  return mapPublicFormRowsToDefinition(rows)
+}
+
 function getStringValue(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
 }
@@ -1351,7 +1507,7 @@ export function validateFormSubmission(form: PublicFormDefinition, payload: Reco
       continue
     }
 
-    if (field.type === 'radio' || field.type === 'likert') {
+    if (field.type === 'radio' || field.type === 'select' || field.type === 'likert') {
       if (!field.options.includes(value)) {
         throw new FormSubmissionError(`Pilihan untuk "${field.label}" tidak valid`, 400)
       }
@@ -1384,100 +1540,380 @@ export function validateFormSubmission(form: PublicFormDefinition, payload: Reco
   return values
 }
 
-async function findExistingAttendanceSubmission(formId: string, nipFieldId: string, nipNrp: string) {
-  const rows = await prisma.$queryRaw<Array<{ id: string }>>`
-    SELECT s.id
-    FROM submissions s
-    JOIN submission_answers sa ON sa.submission_id = s.id
-    WHERE s.form_id = ${formId}
-      AND sa.field_id = ${nipFieldId}
-      AND sa.value_text = ${nipNrp}
-    LIMIT 1
-  `
-
-  return rows[0] ?? null
-}
-
-async function createFormsEngineSubmission(
-  rows: NonNullable<Awaited<ReturnType<typeof getPublicFormRows>>>,
-  values: Record<string, string>,
-  tx: typeof prisma | Prisma.TransactionClient = prisma,
-  path: Record<string, unknown> | null = null
-) {
-  const submissionId = randomId('submission')
-  const pathJson = path ? JSON.stringify(path) : null
-  await tx.$executeRaw`
-    INSERT INTO submissions (id, form_id, path_json, created_at, completed_at)
-    VALUES (${submissionId}, ${rows.form.id}, ${pathJson}::jsonb, NOW(), NOW())
-  `
-
-  for (const field of rows.fields) {
+function buildSubmissionAnswerValueRows(rows: PublicFormRowsResult, values: Record<string, string>) {
+  return rows.fields.map((field) => {
     const fieldName = mapFieldName(field)
     const value = values[fieldName] ?? ''
 
-    await tx.$executeRaw`
-      INSERT INTO submission_answers (
-        id,
-        submission_id,
-        field_id,
-        value_text,
-        value_json,
-        created_at
-      ) VALUES (
-        ${randomId('answer')},
-        ${submissionId},
-        ${field.id},
-        ${value},
-        ${null},
-        NOW()
-      )
+    return Prisma.sql`(
+      ${randomId('answer')},
+      ${field.id},
+      ${value}
+    )`
+  })
+}
+
+function buildSubmissionFieldSnapshot(rows: PublicFormRowsResult): SubmissionJobSnapshotField[] {
+  return rows.fields.map((field) => ({
+    id: field.id,
+    name: mapFieldName(field),
+  }))
+}
+
+function buildSubmissionAnswerValueRowsFromSnapshot(
+  fields: SubmissionJobSnapshotField[],
+  values: Record<string, string>
+) {
+  return fields.map((field) => Prisma.sql`(
+    ${randomId('answer')},
+    ${field.id},
+    ${values[field.name] ?? ''}
+  )`)
+}
+
+function buildFormSubmissionMutation(
+  rows: PublicFormRowsResult,
+  values: Record<string, string>,
+  submissionId: string,
+  path: Record<string, unknown> | null = null
+) {
+  const pathJson = path ? JSON.stringify(path) : null
+  const answerRows = buildSubmissionAnswerValueRows(rows, values)
+
+  if (answerRows.length === 0) {
+    return Prisma.sql`
+      INSERT INTO submissions (id, form_id, path_json, created_at, completed_at)
+      VALUES (${submissionId}, ${rows.form.id}, ${pathJson}::jsonb, NOW(), NOW())
     `
   }
 
-  return { id: submissionId }
+  return Prisma.sql`
+    WITH submission_insert AS (
+      INSERT INTO submissions (id, form_id, path_json, created_at, completed_at)
+      VALUES (${submissionId}, ${rows.form.id}, ${pathJson}::jsonb, NOW(), NOW())
+      RETURNING id
+    )
+    INSERT INTO submission_answers (
+      id,
+      submission_id,
+      field_id,
+      value_text,
+      value_json,
+      created_at
+    )
+    SELECT
+      answers.id,
+      submission_insert.id,
+      answers.field_id,
+      answers.value_text,
+      NULL::jsonb,
+      NOW()
+    FROM submission_insert
+    CROSS JOIN (
+      VALUES ${Prisma.join(answerRows)}
+    ) AS answers(id, field_id, value_text)
+  `
+}
+
+function buildFormSubmissionMutationFromSnapshot(
+  formId: string,
+  fields: SubmissionJobSnapshotField[],
+  values: Record<string, string>,
+  submissionId: string,
+  pathJson: Prisma.JsonValue | null
+) {
+  const serializedPath = pathJson ? JSON.stringify(pathJson) : null
+  const answerRows = buildSubmissionAnswerValueRowsFromSnapshot(fields, values)
+
+  if (answerRows.length === 0) {
+    return Prisma.sql`
+      INSERT INTO submissions (id, form_id, path_json, created_at, completed_at)
+      VALUES (${submissionId}, ${formId}, ${serializedPath}::jsonb, NOW(), NOW())
+    `
+  }
+
+  return Prisma.sql`
+    WITH submission_insert AS (
+      INSERT INTO submissions (id, form_id, path_json, created_at, completed_at)
+      VALUES (${submissionId}, ${formId}, ${serializedPath}::jsonb, NOW(), NOW())
+      RETURNING id
+    )
+    INSERT INTO submission_answers (
+      id,
+      submission_id,
+      field_id,
+      value_text,
+      value_json,
+      created_at
+    )
+    SELECT
+      answers.id,
+      submission_insert.id,
+      answers.field_id,
+      answers.value_text,
+      NULL::jsonb,
+      NOW()
+    FROM submission_insert
+    CROSS JOIN (
+      VALUES ${Prisma.join(answerRows)}
+    ) AS answers(id, field_id, value_text)
+  `
+}
+
+async function enqueueSubmissionJob(
+  rows: PublicFormRowsResult,
+  values: Record<string, string>,
+  submissionId: string,
+  path: Prisma.JsonValue | null,
+  dedupeFieldName?: string,
+  dedupeValue?: string
+) {
+  const payload = JSON.stringify({
+    values,
+    fields: buildSubmissionFieldSnapshot(rows),
+  } satisfies SubmissionJobPayload)
+
+  await prisma.$executeRaw`
+    INSERT INTO submission_jobs (
+      id,
+      submission_id,
+      form_id,
+      payload_json,
+      path_json,
+      dedupe_field_name,
+      dedupe_value_text,
+      status,
+      attempts,
+      available_at,
+      created_at,
+      updated_at
+    ) VALUES (
+      ${randomId('job')},
+      ${submissionId},
+      ${rows.form.id},
+      ${payload}::jsonb,
+      ${path ? JSON.stringify(path) : null}::jsonb,
+      ${dedupeFieldName ?? null},
+      ${dedupeValue?.trim() || null},
+      ${'PENDING'},
+      ${0},
+      NOW() + (${Math.max(0, submissionJobDelaySeconds)} * INTERVAL '1 second'),
+      NOW(),
+      NOW()
+    )
+  `
+}
+
+function buildAttendanceAndSubmissionJobMutation(
+  rows: PublicFormRowsResult,
+  values: Record<string, string>,
+  submissionId: string,
+  path: Prisma.JsonValue | null,
+  dedupeFieldName: string,
+  dedupeValue: string
+) {
+  const payload = JSON.stringify({
+    values,
+    fields: buildSubmissionFieldSnapshot(rows),
+  } satisfies SubmissionJobPayload)
+
+  return Prisma.sql`
+    WITH attendance_insert AS (
+      INSERT INTO attendances (
+        nama_lengkap,
+        nip_nrp,
+        jabatan,
+        unit_kerja,
+        sebagai,
+        signature,
+        created_at
+      ) VALUES (
+        ${values.namaLengkap},
+        ${values.nipNrp},
+        ${values.jabatan},
+        ${values.unitKerja},
+        ${values.sebagai},
+        ${values.signature},
+        NOW()
+      )
+      RETURNING 1
+    )
+    INSERT INTO submission_jobs (
+      id,
+      submission_id,
+      form_id,
+      payload_json,
+      path_json,
+      dedupe_field_name,
+      dedupe_value_text,
+      status,
+      attempts,
+      available_at,
+      created_at,
+      updated_at
+    )
+    SELECT
+      ${randomId('job')},
+      ${submissionId},
+      ${rows.form.id},
+      ${payload}::jsonb,
+      ${path ? JSON.stringify(path) : null}::jsonb,
+      ${dedupeFieldName},
+      ${dedupeValue.trim()},
+      ${'PENDING'},
+      ${0},
+      NOW() + (${Math.max(0, submissionJobDelaySeconds)} * INTERVAL '1 second'),
+      NOW(),
+      NOW()
+    FROM attendance_insert
+  `
+}
+
+function isDuplicateAttendanceError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false
+  }
+
+  if (error.code === 'P2002') {
+    return true
+  }
+
+  if (error.code !== 'P2010') {
+    return false
+  }
+
+  const meta = error.meta as Record<string, unknown> | undefined
+  const code = String(meta?.code ?? '')
+  const message = String(meta?.message ?? '')
+
+  return code === '23505'
+    || message.includes('duplicate key value')
+    || message.includes('attendances_nip_nrp_key')
+    || message.includes('submission_jobs_dedupe_key')
+}
+
+function isRetryableRawDbError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2010') {
+    return false
+  }
+
+  const meta = error.meta as Record<string, unknown> | undefined
+  const code = String(meta?.code ?? '')
+  const message = String(meta?.message ?? '')
+
+  return code === '40P01'
+    || code === '40001'
+    || message.includes('deadlock detected')
+    || message.includes('could not serialize access')
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+async function executeRawWithRetry(statement: Prisma.Sql, maxAttempts = 4) {
+  let attempt = 0
+
+  while (true) {
+    try {
+      await prisma.$executeRaw(statement)
+      return
+    } catch (error) {
+      attempt += 1
+
+      if (!isRetryableRawDbError(error) || attempt >= maxAttempts) {
+        throw error
+      }
+
+      await wait(50 * attempt)
+    }
+  }
+}
+
+function parseSubmissionJobPayload(payloadJson: Prisma.JsonValue): SubmissionJobPayload {
+  const payload = payloadJson as unknown
+
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('Invalid submission job payload')
+  }
+
+  const record = payload as Record<string, unknown>
+  const values = record.values
+  const fields = record.fields
+
+  if (!values || typeof values !== 'object' || Array.isArray(values)) {
+    throw new Error('Invalid submission job values')
+  }
+
+  if (!Array.isArray(fields)) {
+    throw new Error('Invalid submission job fields')
+  }
+
+  return {
+    values: Object.fromEntries(
+      Object.entries(values as Record<string, unknown>).map(([key, value]) => [key, String(value ?? '')])
+    ),
+    fields: fields.map((field) => {
+      if (!field || typeof field !== 'object' || Array.isArray(field)) {
+        throw new Error('Invalid submission job field snapshot')
+      }
+
+      const snapshot = field as Record<string, unknown>
+      return {
+        id: String(snapshot.id ?? ''),
+        name: String(snapshot.name ?? ''),
+      }
+    }),
+  }
+}
+
+async function createFormsEngineSubmission(
+  rows: PublicFormRowsResult,
+  values: Record<string, string>,
+  path: Record<string, unknown> | null = null
+): Promise<PublicSubmissionResult> {
+  const submissionId = randomId('submission')
+
+  await executeRawWithRetry(buildFormSubmissionMutation(rows, values, submissionId, path))
+
+  return {
+    id: submissionId,
+    message: 'Form berhasil dikirim',
+  }
 }
 
 async function createWebinarSubmission(
   form: PublicFormDefinition,
   rows: NonNullable<Awaited<ReturnType<typeof getPublicFormRows>>>,
   values: Record<string, string>
-) {
+): Promise<PublicSubmissionResult> {
   const participantType = values.participantType ?? ''
   const isInternalParticipant = !form.settings.branching
     || sameChoice(participantType, form.settings.branching.internalValue)
 
-  const nipField = rows.fields.find((field) => mapFieldName(field) === 'nipNrp')
-
-  if (nipField && isInternalParticipant) {
-    const existingSubmission = await findExistingAttendanceSubmission(rows.form.id, nipField.id, values.nipNrp)
-    if (existingSubmission) {
-      throw new FormSubmissionError(
-        'NIP/NRP sudah terdaftar. Anda sudah mengisi daftar hadir.',
-        409
-      )
-    }
-  }
-
   try {
-    const submission = await prisma.$transaction(async (tx) => {
-      if (isInternalParticipant) {
-        await tx.attendance.create({
-          data: {
-            namaLengkap: values.namaLengkap,
-            nipNrp: values.nipNrp,
-            jabatan: values.jabatan,
-            unitKerja: values.unitKerja,
-            sebagai: values.sebagai,
-            signature: values.signature,
-          },
-        })
-      }
+    const submissionId = randomId('submission')
+    const submissionMeta = buildSubmissionMeta(form, rows, values)
 
-      return createFormsEngineSubmission(rows, values, tx, buildSubmissionMeta(form, rows, values))
-    })
+    if (isInternalParticipant) {
+      await executeRawWithRetry(
+        buildAttendanceAndSubmissionJobMutation(
+          rows,
+          values,
+          submissionId,
+          submissionMeta,
+          'nipNrp',
+          values.nipNrp
+        )
+      )
+    } else {
+      await enqueueSubmissionJob(rows, values, submissionId, submissionMeta)
+    }
 
     return {
-      id: submission.id,
+      id: submissionId,
       message: 'Daftar hadir berhasil disimpan',
     }
   } catch (error) {
@@ -1485,7 +1921,7 @@ async function createWebinarSubmission(
       throw error
     }
 
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    if (isDuplicateAttendanceError(error)) {
       throw new FormSubmissionError(
         'NIP/NRP sudah terdaftar. Anda sudah mengisi daftar hadir.',
         409
@@ -1497,45 +1933,34 @@ async function createWebinarSubmission(
 }
 
 export async function createAttendanceSubmission(payload: Record<string, unknown>) {
-  const form = await getPublicFormBySlug(ATTENDANCE_FORM_SLUG)
-
-  if (!form) {
-    throw new FormSubmissionError('Form daftar hadir tidak ditemukan', 404)
-  }
-
   const rows = await getPublicFormRows(ATTENDANCE_FORM_SLUG)
 
   if (!rows) {
     throw new FormSubmissionError('Form daftar hadir tidak ditemukan', 404)
   }
 
+  const form = mapPublicFormRowsToDefinition(rows)
   const values = validateFormSubmission(form, payload)
 
   if (!hasLegacyAttendanceShape(form)) {
-    const submission = await createFormsEngineSubmission(rows, values, prisma, buildSubmissionMeta(form, rows, values))
-
-    return {
-      id: submission.id,
-      message: 'Form berhasil dikirim',
-    }
+    return createFormsEngineSubmission(rows, values, buildSubmissionMeta(form, rows, values))
   }
 
   return createWebinarSubmission(form, rows, values)
 }
 
-export async function createPublicFormSubmission(slug: string, payload: Record<string, unknown>) {
-  const form = await getPublicFormBySlug(slug)
-
-  if (!form) {
-    throw new FormSubmissionError('Form tidak ditemukan', 404)
-  }
-
-  const values = validateFormSubmission(form, payload)
-  const rows = await getPublicFormRows(form.slug)
+export async function createPublicFormSubmission(
+  slug: string,
+  payload: Record<string, unknown>
+): Promise<PublicSubmissionResult> {
+  const rows = await getPublicFormRows(slug)
 
   if (!rows) {
     throw new FormSubmissionError('Form tidak ditemukan', 404)
   }
+
+  const form = mapPublicFormRowsToDefinition(rows)
+  const values = validateFormSubmission(form, payload)
 
   if (form.settings.legacyTarget === 'attendance' && hasLegacyAttendanceShape(form)) {
     return createWebinarSubmission(form, rows, values)
@@ -1545,11 +1970,83 @@ export async function createPublicFormSubmission(slug: string, payload: Record<s
     return createWebinarSubmission(form, rows, values)
   }
 
-  const submission = await createFormsEngineSubmission(rows, values, prisma, buildSubmissionMeta(form, rows, values))
+  return createFormsEngineSubmission(rows, values, buildSubmissionMeta(form, rows, values))
+}
+
+export async function processQueuedSubmissionJobs(batchSize = 25) {
+  const safeBatchSize = Math.max(1, Math.min(100, Math.trunc(batchSize)))
+  const jobs = await prisma.$queryRaw<SubmissionJobRow[]>`
+    WITH next_jobs AS (
+      SELECT id
+      FROM submission_jobs
+      WHERE status = ${'PENDING'} AND available_at <= NOW()
+      ORDER BY available_at ASC, created_at ASC
+      LIMIT ${safeBatchSize}
+      FOR UPDATE SKIP LOCKED
+    )
+    UPDATE submission_jobs jobs
+    SET status = ${'PROCESSING'},
+        attempts = attempts + 1,
+        updated_at = NOW()
+    FROM next_jobs
+    WHERE jobs.id = next_jobs.id
+    RETURNING
+      jobs.id,
+      jobs.submission_id AS "submissionId",
+      jobs.form_id AS "formId",
+      jobs.payload_json AS "payloadJson",
+      jobs.path_json AS "pathJson",
+      jobs.attempts
+  `
+
+  let processed = 0
+  let failed = 0
+
+  for (const job of jobs) {
+    try {
+      const payload = parseSubmissionJobPayload(job.payloadJson)
+
+      await executeRawWithRetry(
+        buildFormSubmissionMutationFromSnapshot(
+          job.formId,
+          payload.fields,
+          payload.values,
+          job.submissionId,
+          job.pathJson
+        )
+      )
+
+      await prisma.$executeRaw`
+        UPDATE submission_jobs
+        SET status = ${'COMPLETED'},
+            processed_at = NOW(),
+            updated_at = NOW(),
+            last_error = ${null}
+        WHERE id = ${job.id}
+      `
+
+      processed += 1
+    } catch (error) {
+      failed += 1
+
+      const nextStatus = job.attempts >= 5 ? 'FAILED' : 'PENDING'
+      const delaySeconds = Math.min(30, job.attempts * 2)
+
+      await prisma.$executeRaw`
+        UPDATE submission_jobs
+        SET status = ${nextStatus},
+            last_error = ${String(error instanceof Error ? error.message : error)},
+            available_at = NOW() + (${delaySeconds} * INTERVAL '1 second'),
+            updated_at = NOW()
+        WHERE id = ${job.id}
+      `
+    }
+  }
 
   return {
-    id: submission.id,
-    message: 'Form berhasil dikirim',
+    claimed: jobs.length,
+    processed,
+    failed,
   }
 }
 
@@ -1772,6 +2269,8 @@ function mapFormFieldTypeToDb(type: FormFieldType): FieldType {
     case 'radio':
     case 'likert':
       return 'RADIO'
+    case 'select':
+      return 'SELECT'
     case 'signature':
       return 'SIGNATURE'
   }
@@ -1791,7 +2290,7 @@ function normalizeAdminFormPages(
 
   const normalizedPages = inputPages.map((page, index) => ({
     id: page.id?.trim() || `page-${index + 1}`,
-    title: page.title?.trim() || `Halaman ${index + 1}`,
+    title: page.title?.trim() || '',
     description: page.description?.trim() || '',
   }))
 
@@ -1815,7 +2314,6 @@ function normalizeAdminFormPages(
       description: page.description || null,
       fieldIds: fieldsByPageId.get(page.id) ?? [],
     }))
-    .filter((page) => page.fieldIds.length > 0)
 }
 
 function normalizeAdminConditionalRoutes(
@@ -1838,7 +2336,7 @@ function normalizeAdminConditionalRoutes(
   }
 
   for (const field of fields) {
-    if (field.type !== 'radio') {
+    if (field.type !== 'radio' && field.type !== 'select') {
       continue
     }
 
@@ -1857,7 +2355,11 @@ function normalizeAdminConditionalRoutes(
       const optionLabel = option.label.trim()
       const nextPageId = option.nextPageId?.trim()
 
-      if (!optionLabel || !nextPageId || !allowedPageIds.has(nextPageId)) {
+      if (!optionLabel || !nextPageId) {
+        continue
+      }
+
+      if (nextPageId !== CONDITIONAL_ROUTE_SUBMIT && !allowedPageIds.has(nextPageId)) {
         continue
       }
 
@@ -1909,7 +2411,7 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
   const conditionalRoutes = normalizeAdminConditionalRoutes(normalizedPayloadFields, formPages)
 
   const editableFieldIds = new Set(current.fields.map((field) => field.id))
-  const allowedTypes = new Set<FormFieldType>(['text', 'textarea', 'radio', 'likert', 'signature'])
+  const allowedTypes = new Set<FormFieldType>(['text', 'textarea', 'radio', 'select', 'likert', 'signature'])
 
   if (normalizedPayloadFields.length === 0) {
     throw new FormSubmissionError('Form harus memiliki minimal satu field', 400)
@@ -1919,6 +2421,15 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
     await tx.$executeRaw`
       SELECT pg_advisory_xact_lock(4242, hashtext(${id}))
     `
+
+    const fieldCountRows = await tx.$queryRaw<Array<{ count: bigint }>>`
+      SELECT COUNT(*)::bigint AS count
+      FROM form_fields
+      WHERE form_id = ${id}
+    `
+
+    const fieldCount = Number(fieldCountRows[0]?.count ?? BigInt(0))
+    const tempOrderBase = 2_000_000_000
 
     await tx.$executeRaw`
       UPDATE forms
@@ -1939,9 +2450,16 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
     `
 
     await tx.$executeRaw`
-      UPDATE form_fields
-      SET "order" = "order" + 1000, updated_at = NOW()
-      WHERE form_id = ${id}
+      WITH ordered_fields AS (
+        SELECT id, ROW_NUMBER() OVER (ORDER BY "order" ASC, id ASC) AS row_num
+        FROM form_fields
+        WHERE form_id = ${id}
+      )
+      UPDATE form_fields AS fields
+      SET "order" = ${tempOrderBase} + ordered_fields.row_num,
+          updated_at = NOW()
+      FROM ordered_fields
+      WHERE fields.id = ordered_fields.id
     `
 
     const seenIds = new Set<string>()
@@ -1950,7 +2468,7 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
       const field = normalizedPayloadFields[index]
       const label = field.label.trim()
       if (!label) {
-        throw new FormSubmissionError('Label field wajib diisi', 400)
+        throw new FormSubmissionError('Label pertanyaan wajib diisi', 400)
       }
 
       if (!allowedTypes.has(field.type)) {
@@ -1971,7 +2489,7 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
         }))
         .filter((option) => option.label)
 
-      if ((field.type === 'radio' || field.type === 'likert') && options.length === 0) {
+      if ((field.type === 'radio' || field.type === 'select' || field.type === 'likert') && options.length === 0) {
         throw new FormSubmissionError('Field pilihan harus punya minimal satu opsi', 400)
       }
 
@@ -1996,7 +2514,6 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
             type = ${dbType}::"FieldType",
             required = ${field.required},
             placeholder = ${placeholder},
-            "order" = ${index + 1},
             is_active = ${true},
             updated_at = NOW()
           WHERE id = ${field.id}
@@ -2019,14 +2536,14 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
             created_at,
             updated_at
           ) VALUES (
-            ${newFieldId},
-            ${id},
-            ${label},
-            ${dbType}::"FieldType",
-            ${index + 1},
-            ${field.required},
-            ${placeholder},
-            ${null},
+              ${newFieldId},
+              ${id},
+              ${label},
+              ${dbType}::"FieldType",
+              ${tempOrderBase + fieldCount + index + 1},
+              ${field.required},
+              ${placeholder},
+              ${null},
             ${true},
             NOW(),
             NOW()
@@ -2036,7 +2553,7 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
         field.id = newFieldId
       }
 
-      if (field.type === 'radio' || field.type === 'likert') {
+      if (field.type === 'radio' || field.type === 'select' || field.type === 'likert') {
         await tx.$executeRaw`DELETE FROM field_options WHERE field_id = ${field.id}`
 
         for (let index = 0; index < options.length; index += 1) {
@@ -2068,6 +2585,19 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
       }
     }
 
+    if (normalizedPayloadFields.length > 0) {
+      for (let index = 0; index < normalizedPayloadFields.length; index += 1) {
+        const field = normalizedPayloadFields[index]
+
+        await tx.$executeRaw`
+          UPDATE form_fields
+          SET "order" = ${index + 1},
+              updated_at = NOW()
+          WHERE id = ${field.id}
+        `
+      }
+    }
+
     for (const existingField of current.fields) {
       if (!normalizedPayloadFields.some((field) => field.id === existingField.id)) {
         await tx.$executeRaw`
@@ -2079,6 +2609,9 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
       }
     }
   })
+
+  invalidatePublicFormCache(current.slug)
+  revalidatePath(`/f/${current.slug}`)
 
   return await getAdminFormDetail(id)
 }
@@ -2154,7 +2687,80 @@ export async function createAdminForm(title: string) {
     }
   })
 
+  invalidatePublicFormCache(candidateSlug)
+  revalidatePath(`/f/${candidateSlug}`)
+
   return await getAdminFormDetail(formId)
+}
+
+export async function deleteAdminForm(id: string) {
+  const deleted = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`
+      SELECT pg_advisory_xact_lock(4242, hashtext(${id}))
+    `
+
+    const forms = await tx.$queryRaw<Array<{
+      id: string
+      slug: string
+      status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+    }>>`
+      SELECT id, slug, status::text AS status
+      FROM forms
+      WHERE id = ${id}
+      LIMIT 1
+    `
+
+    const form = forms[0]
+
+    if (!form) {
+      throw new FormSubmissionError('Form tidak ditemukan', 404)
+    }
+
+    if (form.id === ATTENDANCE_FORM_ID || form.slug === ATTENDANCE_FORM_SLUG) {
+      throw new FormSubmissionError('Form template attendance tidak boleh dihapus', 403)
+    }
+
+    if (form.status !== 'ARCHIVED') {
+      throw new FormSubmissionError('Arsipkan form terlebih dahulu sebelum menghapus', 409)
+    }
+
+    const [submissionCountRows, jobCountRows] = await Promise.all([
+      tx.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*)::bigint AS count
+        FROM submissions
+        WHERE form_id = ${id}
+      `,
+      tx.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*)::bigint AS count
+        FROM submission_jobs
+        WHERE form_id = ${id}
+      `,
+    ])
+
+    const submissionCount = Number(submissionCountRows[0]?.count ?? BigInt(0))
+    const jobCount = Number(jobCountRows[0]?.count ?? BigInt(0))
+
+    if (submissionCount > 0 || jobCount > 0) {
+      throw new FormSubmissionError('Form yang sudah punya data tidak bisa dihapus', 409)
+    }
+
+    await tx.$executeRaw`
+      DELETE FROM submission_jobs
+      WHERE form_id = ${id}
+    `
+
+    await tx.$executeRaw`
+      DELETE FROM forms
+      WHERE id = ${id}
+    `
+
+    return form
+  })
+
+  invalidatePublicFormCache(deleted.slug)
+  revalidatePath(`/f/${deleted.slug}`)
+
+  return deleted
 }
 
 export async function listAdminFormSubmissions(
@@ -2252,6 +2858,11 @@ export async function deleteAdminFormSubmission(formId: string, submissionId: st
     : ''
 
   await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`
+      DELETE FROM submission_jobs
+      WHERE submission_id = ${submissionId}
+    `
+
     await tx.$executeRaw`
       DELETE FROM submissions
       WHERE id = ${submissionId} AND form_id = ${formId}

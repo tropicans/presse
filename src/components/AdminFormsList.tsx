@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { signOut } from 'next-auth/react'
+import { getAdminFormModeLabel, getAdminFormStatusLabel } from '@/lib/admin-display'
 
 interface AdminFormListItem {
   id: string
@@ -23,35 +24,40 @@ interface AdminFormListItem {
   updatedAt: string
 }
 
+const numberFormatter = new Intl.NumberFormat('id-ID')
+
 export default function AdminFormsList() {
   const router = useRouter()
   const [forms, setForms] = useState<AdminFormListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newFormTitle, setNewFormTitle] = useState('Form Baru')
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | AdminFormListItem['status']>('all')
+
+  const loadForms = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/forms')
+      if (!res.ok) {
+        setFeedback({ type: 'error', message: 'Gagal memuat daftar form' })
+        return
+      }
+
+      const json = await res.json()
+      setForms(json.data ?? [])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      try {
-        const res = await fetch('/api/admin/forms')
-        if (!res.ok) {
-          setFeedback({ type: 'error', message: 'Gagal memuat daftar form' })
-          return
-        }
-
-        const json = await res.json()
-        setForms(json.data ?? [])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    load()
-  }, [])
+    void loadForms()
+  }, [loadForms])
 
   const getPublicFormPath = (form: Pick<AdminFormListItem, 'slug' | 'status'>) => {
     if (form.status !== 'PUBLISHED') {
@@ -89,7 +95,7 @@ export default function AdminFormsList() {
       setCopiedSlug(form.slug)
       setFeedback({ type: 'success', message: `Link form ${form.slug} berhasil disalin` })
       window.setTimeout(() => {
-        setCopiedSlug((current) => current === form.slug ? null : current)
+        setCopiedSlug((current) => (current === form.slug ? null : current))
       }, 1800)
     } catch {
       setFeedback({ type: 'error', message: 'Gagal menyalin link form' })
@@ -137,6 +143,12 @@ export default function AdminFormsList() {
     }
   }
 
+  const handleOpenCreateModal = () => {
+    setNewFormTitle('Form Baru')
+    setShowCreateModal(true)
+    setFeedback(null)
+  }
+
   const handleCreateForm = async () => {
     const title = newFormTitle.trim()
 
@@ -170,246 +182,569 @@ export default function AdminFormsList() {
     }
   }
 
-  const quizForms = forms.filter(
+  const getDeleteDisabledReason = (form: AdminFormListItem) => {
+    if (form.slug === 'attendance-template') {
+      return 'Form template attendance tidak bisa dihapus'
+    }
+
+    if (form.status !== 'ARCHIVED') {
+      return 'Arsipkan form terlebih dahulu sebelum menghapus'
+    }
+
+    if (form.submissionCount > 0) {
+      return 'Form yang sudah punya submission tidak bisa dihapus'
+    }
+
+    return null
+  }
+
+  const handleDeleteForm = async (form: AdminFormListItem) => {
+    const reason = getDeleteDisabledReason(form)
+
+    if (reason) {
+      setFeedback({ type: 'error', message: reason })
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Hapus form "${form.title}"? Tindakan ini permanen dan tidak bisa dibatalkan.`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setDeletingId(form.id)
+
+    try {
+      const res = await fetch(`/api/admin/forms/${form.id}`, {
+        method: 'DELETE',
+      })
+      const json = await res.json()
+
+      if (!res.ok) {
+        setFeedback({ type: 'error', message: json.error || 'Gagal menghapus form' })
+        return
+      }
+
+      setForms((current) => current.filter((item) => item.id !== form.id))
+      setFeedback({ type: 'success', message: `Form ${form.title} berhasil dihapus` })
+    } catch {
+      setFeedback({ type: 'error', message: 'Gagal menghapus form' })
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const normalizedSearch = search.trim().toLowerCase()
+  const filteredForms = useMemo(() => {
+    return forms.filter((form) => {
+      const matchesSearch = !normalizedSearch
+        || [form.title, form.slug, form.description ?? '']
+          .some((value) => value.toLowerCase().includes(normalizedSearch))
+
+      const matchesStatus = statusFilter === 'all' || form.status === statusFilter
+
+      return matchesSearch && matchesStatus
+    })
+  }, [forms, normalizedSearch, statusFilter])
+
+  const filteredQuizForms = filteredForms.filter(
     (form) => (form.mode === 'QUIZ' || form.mode === 'ATTENDANCE') && form.quizSummary
   )
-  const totalSubmissions = forms.reduce((sum, form) => sum + form.submissionCount, 0)
-  const totalQuizSubmissions = quizForms.reduce(
+  const filteredSubmissions = filteredForms.reduce((sum, form) => sum + form.submissionCount, 0)
+  const filteredQuizSubmissions = filteredQuizForms.reduce(
     (sum, form) => sum + (form.quizSummary?.totalQuizSubmissions ?? 0),
     0
   )
-  const totalPassedQuiz = quizForms.reduce(
+  const filteredPassedQuiz = filteredQuizForms.reduce(
     (sum, form) => sum + (form.quizSummary?.passedCount ?? 0),
     0
   )
-  const overallQuizPassRate = totalQuizSubmissions > 0
-    ? Math.round((totalPassedQuiz / totalQuizSubmissions) * 100)
+  const filteredQuizPassRate = filteredQuizSubmissions > 0
+    ? Math.round((filteredPassedQuiz / filteredQuizSubmissions) * 100)
     : null
+  const publishedCount = filteredForms.filter((form) => form.status === 'PUBLISHED').length
+  const draftCount = filteredForms.filter((form) => form.status === 'DRAFT').length
+  const archivedCount = filteredForms.filter((form) => form.status === 'ARCHIVED').length
+  const topSubmissionForms = useMemo(
+    () => [...filteredForms].sort((left, right) => right.submissionCount - left.submissionCount).slice(0, 12),
+    [filteredForms]
+  )
+  const leadingForm = topSubmissionForms[0] ?? null
+  const leadingFormShare = leadingForm && filteredSubmissions > 0
+    ? Math.round((leadingForm.submissionCount / filteredSubmissions) * 100)
+    : 0
+  const highestSubmissionCount = topSubmissionForms[0]?.submissionCount ?? 0
+  const activityBars = topSubmissionForms.map((form, index) => ({
+    id: form.id,
+    title: form.title,
+    submissionCount: form.submissionCount,
+    barHeight: highestSubmissionCount > 0
+      ? Math.max(14, Math.round((form.submissionCount / highestSubmissionCount) * 100))
+      : 14,
+    isAccent: index % 3 === 1 || index === topSubmissionForms.length - 1,
+  }))
+  const latestUpdatedForm = filteredForms[0] ?? null
+  const tableSummary = filteredForms.length === forms.length
+    ? `Menampilkan semua ${numberFormatter.format(forms.length)} form yang tersedia.`
+    : `Menampilkan ${numberFormatter.format(filteredForms.length)} dari ${numberFormatter.format(forms.length)} form.`
 
   return (
-    <div className="admin-wrapper">
-      <div className="admin-header">
-        <div className="admin-header-left">
-          <h1>Form Builder</h1>
-          <p>Kelola form publik yang dipakai aplikasi</p>
+    <div className="forms-dashboard-shell">
+      <header className="forms-dashboard-topbar">
+        <div className="forms-dashboard-brand">
+          <div className="forms-dashboard-brand-mark" aria-hidden="true" />
+          <div>
+            <strong>Editorial Data Intelligence</strong>
+            <span>Dashboard admin formulir</span>
+          </div>
         </div>
-        <div className="admin-header-right">
+
+        <nav className="forms-dashboard-topnav" aria-label="Navigasi dashboard">
+          <Link href="/admin/forms" className="active">Ringkasan</Link>
+          <a href="#forms-dashboard-table">Formulir</a>
+          <a href="#forms-dashboard-insights">Insight</a>
+        </nav>
+
+        <div className="forms-dashboard-topbar-actions">
+          <Link href="/admin" className="forms-dashboard-topbar-link">
+            Data Kehadiran
+          </Link>
+          <Link href="/" className="forms-dashboard-topbar-icon" aria-label="Buka beranda">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 10.5 12 3l9 7.5" />
+              <path d="M5 9.5V21h14V9.5" />
+            </svg>
+          </Link>
           <button
-            onClick={() => {
-              setNewFormTitle('Form Baru')
-              setShowCreateModal(true)
-              setFeedback(null)
-            }}
-            className="admin-export-btn"
+            type="button"
+            className="forms-dashboard-topbar-icon"
+            onClick={() => signOut({ callbackUrl: '/admin/login' })}
+            aria-label="Logout"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <path d="M16 17l5-5-5-5" />
+              <path d="M21 12H9" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div className="forms-dashboard-layout">
+        <aside className="forms-dashboard-sidebar" aria-label="Sidebar dashboard">
+          <div className="forms-dashboard-sidebar-head">
+            <h2>Arsip Formulir</h2>
+            <p>Data & ringkasan</p>
+          </div>
+
+          <nav className="forms-dashboard-sidebar-nav">
+            <Link href="/admin/forms" className="active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              </svg>
+              <span>Ringkasan</span>
+            </Link>
+            <a href="#forms-dashboard-table">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+                <path d="M14 3v6h6" />
+                <path d="M9 13h6" />
+                <path d="M9 17h6" />
+              </svg>
+              <span>Semua Form</span>
+            </a>
+            <a href="#forms-dashboard-insights">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19V5" />
+                <path d="M10 19v-8" />
+                <path d="M16 19v-4" />
+                <path d="M22 19V9" />
+              </svg>
+              <span>Webinar & quiz</span>
+            </a>
+            <Link href="/admin">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 5h16" />
+                <path d="M4 12h16" />
+                <path d="M4 19h16" />
+              </svg>
+              <span>Kehadiran</span>
+            </Link>
+          </nav>
+
+          <button
+            type="button"
+            className="forms-dashboard-sidebar-cta"
+            onClick={handleOpenCreateModal}
             disabled={creating}
           >
-            Buat Form
+            <span>+</span>
+            <span>Buat Form Baru</span>
           </button>
-          <Link href="/admin" className="admin-secondary-btn">Lihat Kehadiran</Link>
-          <button onClick={() => signOut({ callbackUrl: '/admin/login' })} className="admin-logout-btn">
-            Logout
-          </button>
-        </div>
-      </div>
 
-      {feedback && (
-        <div className={`admin-builder-alert ${feedback.type}`}>
-          {feedback.message}
-        </div>
-      )}
-
-      {forms.length > 0 && (
-        <section className="admin-submissions-summary">
-          <div className="admin-submissions-summary-grid">
-            <article className="admin-submissions-summary-card">
-              <span>Total Form</span>
-              <strong>{forms.length}</strong>
-              <small>Semua form yang saat ini tersedia di admin.</small>
-            </article>
-            <article className="admin-submissions-summary-card">
-              <span>Total Submission</span>
-              <strong>{totalSubmissions}</strong>
-              <small>Akumulasi submission dari seluruh form.</small>
-            </article>
-            <article className="admin-submissions-summary-card">
-              <span>Form Quiz</span>
-              <strong>{quizForms.length}</strong>
-              <small>Form webinar/quiz yang punya scoring.</small>
-            </article>
-            <article className="admin-submissions-summary-card">
-              <span>Pass Rate Quiz</span>
-              <strong>{overallQuizPassRate !== null ? `${overallQuizPassRate}%` : '-'}</strong>
-              <small>{totalPassedQuiz} lulus dari {totalQuizSubmissions || 0} attempt quiz.</small>
-            </article>
+          <div className="forms-dashboard-sidebar-foot">
+            <Link href="/">Kembali ke beranda</Link>
           </div>
+        </aside>
 
-          {quizForms.length > 0 && (
-            <div className="admin-form-analytics">
-              <div className="admin-form-analytics-head">
-                <h2>Chart Ringkas Hasil Webinar</h2>
-                <p>Ringkasan cepat performa quiz per form webinar yang sudah menerima submission.</p>
-              </div>
-              <div className="admin-form-analytics-list">
-                {quizForms.map((form) => {
-                  const summary = form.quizSummary
-                  if (!summary) {
-                    return null
-                  }
+        <main className="forms-dashboard-main">
+          <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
+            <Link href="/admin" className="admin-breadcrumb-link">Admin</Link>
+            <span className="admin-breadcrumb-separator">/</span>
+            <span className="admin-breadcrumb-current">Formulir</span>
+            <span className="admin-breadcrumb-separator">/</span>
+            <span className="admin-breadcrumb-current muted">Ringkasan</span>
+          </nav>
 
-                  const total = Math.max(summary.totalQuizSubmissions, 1)
-                  const passedWidth = summary.totalQuizSubmissions > 0
-                    ? (summary.passedCount / total) * 100
-                    : 0
-                  const failedWidth = summary.totalQuizSubmissions > 0
-                    ? (summary.failedCount / total) * 100
-                    : 0
+          <section className="forms-dashboard-hero">
+            <div className="forms-dashboard-hero-copy">
+              <p className="forms-dashboard-overline">Dashboard Admin</p>
+              <h1>Formulir</h1>
+              <p>
+                Kelola form publik, lihat performa kiriman, dan pantau hasil webinar dalam
+                satu tampilan editorial yang lebih rapi.
+              </p>
+            </div>
 
-                  return (
-                    <article key={form.id} className="admin-form-analytics-card">
-                      <div className="admin-form-analytics-card-head">
-                        <div>
-                          <h3>{form.title}</h3>
-                          <p>{form.slug}</p>
-                        </div>
-                        <strong>{summary.passRate !== null ? `${summary.passRate}%` : '-'}</strong>
-                      </div>
-                      <div className="admin-form-analytics-bar" aria-hidden="true">
-                        <span className="pass" style={{ width: `${passedWidth}%` }} />
-                        <span className="fail" style={{ width: `${failedWidth}%` }} />
-                      </div>
-                      <dl className="admin-form-analytics-meta">
-                        <div>
-                          <dt>Quiz</dt>
-                          <dd>{summary.totalQuizSubmissions}</dd>
-                        </div>
-                        <div>
-                          <dt>Lulus</dt>
-                          <dd>{summary.passedCount}</dd>
-                        </div>
-                        <div>
-                          <dt>Belum</dt>
-                          <dd>{summary.failedCount}</dd>
-                        </div>
-                        <div>
-                          <dt>Rata-rata</dt>
-                          <dd>{summary.averageScorePercentage !== null ? `${summary.averageScorePercentage}%` : '-'}</dd>
-                        </div>
-                      </dl>
-                    </article>
-                  )
-                })}
-              </div>
+            <div className="forms-dashboard-hero-actions">
+              <button
+                type="button"
+                className="forms-dashboard-secondary-button"
+                onClick={() => {
+                  setFeedback(null)
+                  void loadForms()
+                }}
+                disabled={loading}
+              >
+                {loading ? 'Memuat...' : 'Muat Ulang Data'}
+              </button>
+              <button
+                type="button"
+                className="forms-dashboard-primary-button"
+                onClick={handleOpenCreateModal}
+                disabled={creating}
+              >
+                <span>+</span>
+                <span>Buat Form</span>
+              </button>
+            </div>
+          </section>
+
+          {feedback && (
+            <div className={`admin-builder-alert ${feedback.type}`}>
+              {feedback.message}
             </div>
           )}
-        </section>
-      )}
 
-      <div className="admin-table-container">
-        {loading ? (
-          <div className="admin-empty"><p>Memuat form...</p></div>
-        ) : forms.length === 0 ? (
-          <div className="admin-empty">
-            <h3>Belum ada form</h3>
-            <p>Form yang bisa diedit akan muncul di sini.</p>
-          </div>
-        ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th scope="col">Judul</th>
-                <th scope="col">Slug</th>
-                <th scope="col">Status</th>
-                <th scope="col">Mode</th>
-                <th scope="col">Submission</th>
-                <th scope="col">Diperbarui</th>
-                <th scope="col">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {forms.map((form) => {
-                const publicFormPath = getPublicFormPath(form)
+          <section className="forms-dashboard-stats" aria-label="Ringkasan dashboard">
+            <article className="forms-dashboard-stat-card">
+              <div className="forms-dashboard-stat-head">
+                <span>Total Form</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+                  <path d="M14 3v6h6" />
+                </svg>
+              </div>
+              <strong>{numberFormatter.format(filteredForms.length)}</strong>
+              <small>{tableSummary}</small>
+            </article>
 
-                return (
-                <tr key={form.id}>
-                  <td data-label="Judul">
-                    <div className="admin-form-title">{form.title}</div>
-                    {form.description && <div className="admin-form-subtitle">{form.description}</div>}
-                  </td>
-                  <td data-label="Slug">
-                    <code>{form.slug}</code>
-                    {publicFormPath && (
-                      <div className="admin-form-share-path">{publicFormPath}</div>
-                    )}
-                  </td>
-                  <td data-label="Status"><span className={`admin-form-status ${form.status.toLowerCase()}`}>{form.status}</span></td>
-                  <td data-label="Mode">{form.mode}</td>
-                  <td data-label="Submission">{form.submissionCount}</td>
-                  <td data-label="Diperbarui">{new Date(form.updatedAt).toLocaleString('id-ID')}</td>
-                  <td data-label="Aksi">
-                    <div className="admin-action-group">
-                      <Link href={`/admin/forms/${form.id}`} className="admin-link-btn">
-                        Edit Form
-                      </Link>
-                      <Link href={`/admin/forms/${form.id}/submissions`} className="admin-link-btn">
-                        Lihat Data
-                      </Link>
-                      {publicFormPath && (
-                        <>
-                          <button
-                            type="button"
-                            className="admin-link-btn admin-copy-btn"
-                            onClick={(event) => {
-                              handleCopyPublicUrl(form)
-                              closeShareMenu(event.currentTarget.closest('details'))
-                            }}
-                          >
-                            {copiedSlug === form.slug ? 'Tersalin' : 'Copy Link'}
-                          </button>
-                          <details className="admin-share-menu">
-                            <summary className="admin-link-btn admin-share-summary">
-                              Bagikan
-                            </summary>
-                            <div className="admin-share-menu-panel">
-                              <button
-                                type="button"
-                                className="admin-link-btn admin-share-btn whatsapp"
-                                onClick={() => handleShareWhatsApp(form)}
-                              >
-                                WhatsApp
-                              </button>
-                              <button
-                                type="button"
-                                className="admin-link-btn admin-share-btn x"
-                                onClick={() => handleShareX(form)}
-                              >
-                                X
-                              </button>
-                              <button
-                                type="button"
-                                className="admin-link-btn admin-share-btn threads"
-                                onClick={() => handleShareThreads(form)}
-                              >
-                                Threads
-                              </button>
-                              <Link
-                                href={publicFormPath}
-                                className="admin-link-btn"
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Buka Form
-                              </Link>
+            <article className="forms-dashboard-stat-card">
+              <div className="forms-dashboard-stat-head">
+                <span>Total Kiriman</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 2 11 13" />
+                  <path d="M22 2 15 22 11 13 2 9 22 2Z" />
+                </svg>
+              </div>
+              <strong>{numberFormatter.format(filteredSubmissions)}</strong>
+              <small>Akumulasi kiriman dari hasil filter yang sedang aktif.</small>
+            </article>
+
+            <article className="forms-dashboard-stat-card">
+              <div className="forms-dashboard-stat-head">
+                <span>Form Quiz</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9.09 9a3 3 0 1 1 5.82 1c0 2-3 3-3 3" />
+                  <path d="M12 17h.01" />
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                </svg>
+              </div>
+              <strong>{numberFormatter.format(filteredQuizForms.length)}</strong>
+              <small>Form quiz dan attendance yang punya ringkasan hasil webinar.</small>
+            </article>
+
+            <article className="forms-dashboard-stat-card">
+              <div className="forms-dashboard-stat-head">
+                <span>Pass Rate Quiz</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m3 17 6-6 4 4 8-8" />
+                  <path d="M14 7h7v7" />
+                </svg>
+              </div>
+              <strong>{filteredQuizPassRate !== null ? `${filteredQuizPassRate}%` : '-'}</strong>
+              <small>
+                {numberFormatter.format(filteredPassedQuiz)} lulus dari{' '}
+                {numberFormatter.format(filteredQuizSubmissions)} percobaan quiz.
+              </small>
+            </article>
+          </section>
+
+          <section className="forms-dashboard-panel forms-dashboard-table-panel" id="forms-dashboard-table">
+            <div className="forms-dashboard-panel-header">
+              <div>
+                <p className="forms-dashboard-overline">Daftar Form</p>
+                <h2>Semua Form Aktif</h2>
+                <p>{tableSummary}</p>
+              </div>
+
+              <div className="forms-dashboard-panel-controls">
+                <label className="forms-dashboard-search" aria-label="Cari form">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-3.5-3.5" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Cari judul, slug, atau deskripsi..."
+                  />
+                </label>
+
+                <label className="forms-dashboard-select-wrap" aria-label="Filter status">
+                  <select
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
+                    className="forms-dashboard-select"
+                  >
+                    <option value="all">Semua status</option>
+                    <option value="DRAFT">Draft</option>
+                    <option value="PUBLISHED">Publik</option>
+                    <option value="ARCHIVED">Arsip</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="forms-dashboard-empty-state">
+                <h3>Memuat form</h3>
+                <p>Dashboard sedang mengambil daftar form terbaru.</p>
+              </div>
+            ) : forms.length === 0 ? (
+              <div className="forms-dashboard-empty-state">
+                <h3>Belum ada form</h3>
+                <p>Mulai dengan membuat form pertama dari tombol di samping atau di header.</p>
+              </div>
+            ) : filteredForms.length === 0 ? (
+              <div className="forms-dashboard-empty-state">
+                <h3>Tidak ada form yang cocok</h3>
+                <p>Ubah kata kunci pencarian atau filter status untuk melihat form lain.</p>
+              </div>
+            ) : (
+              <div className="forms-dashboard-table-wrap">
+                <table className="forms-dashboard-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Judul &amp; Deskripsi</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Mode</th>
+                      <th scope="col">Kiriman</th>
+                      <th scope="col">Diperbarui</th>
+                      <th scope="col">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredForms.map((form) => {
+                      const publicFormPath = getPublicFormPath(form)
+                      const deleteDisabledReason = getDeleteDisabledReason(form)
+                      const isDeleting = deletingId === form.id
+
+                      return (
+                        <tr key={form.id}>
+                          <td data-label="Judul & Deskripsi">
+                            <div className="forms-dashboard-table-title">{form.title}</div>
+                            <div className="forms-dashboard-table-subtitle">
+                              {form.description || 'Belum ada deskripsi untuk form ini.'}
                             </div>
-                          </details>
-                        </>
-                      )}
+                            <div className="forms-dashboard-table-meta">
+                              <code>{form.slug}</code>
+                              {publicFormPath && <span>{publicFormPath}</span>}
+                            </div>
+                          </td>
+                          <td data-label="Status">
+                            <span className={`forms-dashboard-status-chip ${form.status.toLowerCase()}`}>
+                              {getAdminFormStatusLabel(form.status)}
+                            </span>
+                          </td>
+                          <td data-label="Mode">
+                            <span className="forms-dashboard-mode-chip">{getAdminFormModeLabel(form.mode)}</span>
+                          </td>
+                          <td data-label="Kiriman" className="forms-dashboard-table-number">
+                            {numberFormatter.format(form.submissionCount)}
+                          </td>
+                          <td data-label="Diperbarui">
+                            {new Date(form.updatedAt).toLocaleString('id-ID')}
+                          </td>
+                          <td data-label="Aksi">
+                            <div className="forms-dashboard-row-actions">
+                              <Link href={`/admin/forms/${form.id}`} className="forms-dashboard-action-link">
+                                Edit
+                              </Link>
+                              <Link href={`/admin/forms/${form.id}/submissions`} className="forms-dashboard-action-link">
+                                Hasil
+                              </Link>
+                              {publicFormPath && (
+                                <button
+                                  type="button"
+                                  className="forms-dashboard-action-link"
+                                  onClick={() => handleCopyPublicUrl(form)}
+                                >
+                                  {copiedSlug === form.slug ? 'Tersalin' : 'Salin Link'}
+                                </button>
+                              )}
+                              {publicFormPath && (
+                                <details className="forms-dashboard-share-menu">
+                                  <summary className="forms-dashboard-action-link">Bagikan</summary>
+                                  <div className="forms-dashboard-share-panel">
+                                    <button
+                                      type="button"
+                                      className="forms-dashboard-share-link"
+                                      onClick={() => handleShareWhatsApp(form)}
+                                    >
+                                      WhatsApp
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="forms-dashboard-share-link"
+                                      onClick={() => handleShareX(form)}
+                                    >
+                                      X
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="forms-dashboard-share-link"
+                                      onClick={() => handleShareThreads(form)}
+                                    >
+                                      Threads
+                                    </button>
+                                    <Link
+                                      href={publicFormPath}
+                                      className="forms-dashboard-share-link"
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      onClick={(event) => closeShareMenu(event.currentTarget.closest('details'))}
+                                    >
+                                      Buka Formulir
+                                    </Link>
+                                  </div>
+                                </details>
+                              )}
+                              <button
+                                type="button"
+                                className="forms-dashboard-action-link danger"
+                                onClick={() => handleDeleteForm(form)}
+                                disabled={Boolean(deleteDisabledReason) || isDeleting}
+                                title={deleteDisabledReason ?? 'Hapus form ini secara permanen'}
+                              >
+                                {isDeleting ? 'Menghapus...' : 'Hapus'}
+                              </button>
+                            </div>
+                            {deleteDisabledReason && (
+                              <p className="forms-dashboard-row-note">{deleteDisabledReason}</p>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          <section className="forms-dashboard-insights" id="forms-dashboard-insights">
+            <article className="forms-dashboard-panel forms-dashboard-activity-panel">
+              <div className="forms-dashboard-panel-header compact">
+                <div>
+                  <p className="forms-dashboard-overline">Aktivitas Kiriman</p>
+                  <h2>Distribusi Kiriman per Form</h2>
+                  <p>Ringkasan ini memakai total kiriman per form yang tampil pada filter saat ini.</p>
+                </div>
+                <span className="forms-dashboard-panel-tag">Filter aktif</span>
+              </div>
+
+              {activityBars.length === 0 ? (
+                <div className="forms-dashboard-empty-inline">
+                  Belum ada data kiriman yang bisa divisualisasikan.
+                </div>
+              ) : (
+                <div className="forms-dashboard-activity-chart">
+                  {activityBars.map((item) => (
+                    <div key={item.id} className="forms-dashboard-activity-column">
+                      <div className="forms-dashboard-activity-track" aria-hidden="true">
+                        <span
+                          className={`forms-dashboard-activity-bar ${item.isAccent ? 'accent' : ''}`}
+                          style={{ height: `${item.barHeight}%` }}
+                        />
+                      </div>
+                      <span className="forms-dashboard-activity-value">
+                        {numberFormatter.format(item.submissionCount)}
+                      </span>
+                      <span className="forms-dashboard-activity-label" title={item.title}>
+                        {item.title}
+                      </span>
                     </div>
-                  </td>
-                </tr>
-              )})}
-            </tbody>
-          </table>
-        )}
+                  ))}
+                </div>
+              )}
+            </article>
+
+            <article className="forms-dashboard-highlight-card">
+              <div className="forms-dashboard-highlight-copy">
+                <p className="forms-dashboard-overline dark">Form Teraktif</p>
+                <strong>
+                  {leadingForm ? numberFormatter.format(leadingForm.submissionCount) : '0'}
+                </strong>
+                <h3>{leadingForm?.title ?? 'Belum ada form aktif'}</h3>
+                <p>
+                  {leadingForm
+                    ? `Menyumbang ${leadingFormShare}% dari total kiriman pada filter saat ini.`
+                    : 'Buat atau publikasikan form terlebih dahulu untuk melihat ringkasan aktivitas.'}
+                </p>
+              </div>
+
+              <div className="forms-dashboard-highlight-meter" aria-hidden="true">
+                <span style={{ width: `${Math.max(leadingFormShare, leadingForm ? 12 : 0)}%` }} />
+              </div>
+
+              <dl className="forms-dashboard-highlight-list">
+                <div>
+                  <dt>Publik</dt>
+                  <dd>{numberFormatter.format(publishedCount)}</dd>
+                </div>
+                <div>
+                  <dt>Draft</dt>
+                  <dd>{numberFormatter.format(draftCount)}</dd>
+                </div>
+                <div>
+                  <dt>Arsip</dt>
+                  <dd>{numberFormatter.format(archivedCount)}</dd>
+                </div>
+                <div>
+                  <dt>Terbaru</dt>
+                  <dd>{latestUpdatedForm?.title ?? '-'}</dd>
+                </div>
+              </dl>
+            </article>
+          </section>
+        </main>
       </div>
 
       {showCreateModal && (
@@ -417,14 +752,14 @@ export default function AdminFormsList() {
           <div className="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="create-form-title">
             <div className="admin-modal-head">
               <h3 id="create-form-title">Buat Form Baru</h3>
-              <p>Tentukan judul awal. Anda bisa mengubah detail dan field setelah form dibuat.</p>
+              <p>Tentukan judul awal. Anda bisa mengubah detail dan pertanyaan setelah form dibuat.</p>
             </div>
 
             <label className="admin-builder-field">
               <span>Judul Form</span>
               <input
                 value={newFormTitle}
-                onChange={(e) => setNewFormTitle(e.target.value)}
+                onChange={(event) => setNewFormTitle(event.target.value)}
                 className="admin-builder-input"
                 placeholder="Masukkan judul form"
                 autoFocus

@@ -1,8 +1,6 @@
-import { notFound } from 'next/navigation'
-import PublicFormShell from '@/components/PublicFormShell'
-import { getPublicFormBySlug } from '@/lib/forms'
+import PublicFormPageClient from '@/components/PublicFormPage'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 30
 
 interface PublicFormPageProps {
   params: Promise<{
@@ -10,13 +8,7 @@ interface PublicFormPageProps {
   }>
 }
 
-export default async function PublicFormPage({ params }: PublicFormPageProps) {
+export default async function PublicFormRoute({ params }: PublicFormPageProps) {
   const { slug } = await params
-  const form = await getPublicFormBySlug(slug)
-
-  if (!form) {
-    notFound()
-  }
-
-  return <PublicFormShell form={form} />
+  return <PublicFormPageClient slug={slug} />
 }

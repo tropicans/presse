@@ -1,12 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 interface PreviewField {
   id: string
   name: string
   label: string
-  type: 'text' | 'textarea' | 'radio' | 'likert' | 'signature'
+  type: 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature'
   required: boolean
   placeholder: string
   pageId: string
@@ -39,6 +39,8 @@ interface PreviewStep {
   fields: PreviewField[]
 }
 
+const CONDITIONAL_ROUTE_SUBMIT = '__SUBMIT__'
+
 interface Props {
   form: PreviewForm
 }
@@ -68,6 +70,10 @@ function createInitialValues(fields: PreviewField[]) {
     acc[field.name] = ''
     return acc
   }, {})
+}
+
+function hasMeaningfulValue(value: string | undefined) {
+  return typeof value === 'string' && value.trim().length > 0
 }
 
 function getDisplayLabel(field: PreviewField, formData: Record<string, string>) {
@@ -109,45 +115,51 @@ function buildStandardSteps(form: PreviewForm, formData: Record<string, string>)
 
   const activeSteps: PreviewStep[] = []
   const visitedPageIds = new Set<string>()
-  let currentPageId = form.pages[0]?.id
+  let currentPageId: string | undefined = form.pages[0]?.id
 
   while (currentPageId && !visitedPageIds.has(currentPageId)) {
     visitedPageIds.add(currentPageId)
+    const currentPageKey: string = currentPageId
 
-    const currentPageIndex = pageIndexById.get(currentPageId) ?? -1
-    const page = currentPageIndex >= 0 ? form.pages[currentPageIndex] : null
+    const currentPageIndex: number = pageIndexById.get(currentPageKey) ?? -1
+    const page: PreviewPage | null = currentPageIndex >= 0 ? form.pages[currentPageIndex] : null
 
     if (!page) {
       break
     }
 
-    const fields = fieldsByPageId.get(page.id) ?? []
+    const fields: PreviewField[] = fieldsByPageId.get(page.id) ?? []
 
     if (fields.length > 0) {
       activeSteps.push({
         id: page.id,
-        title: page.title || `Halaman ${currentPageIndex + 1}`,
-        description: page.description || (currentPageIndex === 0 ? form.description : null),
+        title: page.title?.trim() || '',
+        description: page.description?.trim() || null,
         fields,
       })
     }
 
-    let nextPageId = form.pages[currentPageIndex + 1]?.id
+      let nextPageId: string | undefined = form.pages[currentPageIndex + 1]?.id
 
-    for (const field of fields) {
-      if (field.type !== 'radio') {
-        continue
-      }
+      for (const field of fields) {
+        if (field.type !== 'radio' && field.type !== 'select') {
+          continue
+        }
 
       const selectedValue = formData[field.name] ?? ''
       if (!selectedValue) {
         continue
       }
 
-      const option = field.options.find((item) => sameChoice(item.label, selectedValue))
-      if (!option?.nextPageId) {
-        continue
-      }
+        const option = field.options.find((item) => sameChoice(item.label, selectedValue))
+        if (!option?.nextPageId) {
+          continue
+        }
+
+        if (option.nextPageId === CONDITIONAL_ROUTE_SUBMIT) {
+          nextPageId = undefined
+          break
+        }
 
       const conditionalNextPageIndex = pageIndexById.get(option.nextPageId) ?? -1
       if (conditionalNextPageIndex > currentPageIndex) {
@@ -211,18 +223,41 @@ function buildSteps(form: PreviewForm, formData: Record<string, string>) {
 }
 
 function PreviewSession({ form }: Props) {
+  const previewRef = useRef<HTMLDivElement | null>(null)
   const initialValues = useMemo(() => createInitialValues(form.fields), [form.fields])
   const [formData, setFormData] = useState<Record<string, string>>(initialValues)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [showScrollTop, setShowScrollTop] = useState(false)
   const steps = useMemo(() => buildSteps(form, formData), [form, formData])
   const safeCurrentStepIndex = Math.min(currentStepIndex, Math.max(steps.length - 1, 0))
   const currentStep = steps[safeCurrentStepIndex] ?? steps[0]
+  const activeFields = currentStep?.fields ?? form.fields
   const isMultiStep = steps.length > 1
   const isLastStep = safeCurrentStepIndex >= steps.length - 1
   const hasWebinarBranching = form.workflow === 'WEBINAR'
+  const requiredFieldCount = activeFields.filter((field) => field.required).length
+  const completedRequiredFieldCount = activeFields
+    .filter((field) => field.required)
+    .filter((field) => hasMeaningfulValue(formData[field.name]))
+    .length
+  const answeredFieldCount = activeFields.filter((field) => hasMeaningfulValue(formData[field.name])).length
+
+  const scrollToPreviewTop = () => {
+    previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowScrollTop(window.scrollY > 640)
+    }
+
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const handleChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = event.target
     setFormData((current) => ({
@@ -232,7 +267,16 @@ function PreviewSession({ form }: Props) {
   }
 
   return (
-    <div className="admin-preview-shell">
+    <div ref={previewRef} className="admin-preview-shell">
+      <div className="editorial-preview-windowbar" aria-hidden="true">
+        <div className="editorial-preview-windowdots">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="editorial-preview-windowtag">Preview Langsung</div>
+        <div className="editorial-preview-windowicon">↗</div>
+      </div>
       <div className="admin-preview-card">
         <div className="admin-preview-head">
           <h3>{form.title || 'Tanpa Judul'}</h3>
@@ -242,12 +286,12 @@ function PreviewSession({ form }: Props) {
         <div className="admin-preview-body">
           <div className="admin-preview-note">
             <strong>Preview interaktif</strong>
-            <p>Uji alur halaman dan branching langsung di sini. Data yang Anda isi tidak akan dikirim.</p>
+            <p>Uji alur bagian dan branching langsung di sini. Data yang Anda isi tidak akan dikirim.</p>
           </div>
 
           {hasWebinarBranching && (
             <div className="admin-preview-workflow-note">
-              <strong>Preview flow webinar</strong>
+              <strong>Preview alur webinar</strong>
               <p>Langkah pembuka menentukan apakah peserta internal mengisi NIP/NRP sebelum lanjut ke data presensi umum.</p>
             </div>
           )}
@@ -255,7 +299,7 @@ function PreviewSession({ form }: Props) {
           {isMultiStep && currentStep && (
             <div className="form-step-shell admin-preview-step-shell">
               <div className="form-step-progress" aria-label={`Langkah ${safeCurrentStepIndex + 1} dari ${steps.length}`}>
-                <span className="form-step-badge">Langkah {safeCurrentStepIndex + 1} / {steps.length}</span>
+                <span className="form-step-badge">Langkah {safeCurrentStepIndex + 1} dari {steps.length}</span>
                 <div className="form-step-dots" aria-hidden="true">
                   {steps.map((step, index) => (
                     <span
@@ -265,11 +309,24 @@ function PreviewSession({ form }: Props) {
                   ))}
                 </div>
               </div>
-              <div className="form-step-copy">
-                <h4 className="form-step-title">{currentStep.title}</h4>
-                {currentStep.description && (
-                  <p className="form-step-description">{currentStep.description}</p>
-                )}
+              {(currentStep.title || currentStep.description) && (
+                <div className="form-step-copy">
+                  {currentStep.title && <h4 className="form-step-title">{currentStep.title}</h4>}
+                  {currentStep.description && <p className="form-step-description">{currentStep.description}</p>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!isMultiStep && (
+            <div className="form-step-shell form-step-shell-compact admin-preview-step-shell">
+              <div className="form-step-progress-summary" aria-label="Ringkasan progres preview form">
+                <span className="form-step-badge">{answeredFieldCount}/{activeFields.length} terisi</span>
+                <span className="form-step-summary-copy">
+                  {requiredFieldCount > 0
+                    ? `${requiredFieldCount - completedRequiredFieldCount} pertanyaan wajib tersisa`
+                    : 'Semua field bersifat opsional'}
+                </span>
               </div>
             </div>
           )}
@@ -330,6 +387,29 @@ function PreviewSession({ form }: Props) {
                     })}
                   </div>
                 </fieldset>
+              )
+            }
+
+            if (field.type === 'select') {
+              return (
+                <div key={field.id} className="form-group">
+                  <label className="form-label" htmlFor={field.name}>
+                    {label}
+                    {field.required ? ' *' : ''}
+                  </label>
+                  <select
+                    id={field.name}
+                    name={field.name}
+                    value={formData[field.name] ?? ''}
+                    onChange={handleChange}
+                    className="form-select"
+                  >
+                    <option value="">Pilih salah satu</option>
+                    {field.options.map((option) => (
+                      <option key={option.label} value={option.label}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
               )
             }
 
@@ -404,34 +484,66 @@ function PreviewSession({ form }: Props) {
             return null
           })}
 
-          {isMultiStep ? (
-            <div className="form-navigation">
-              <button
-                type="button"
-                className="submit-btn submit-btn-secondary"
-                onClick={() => setCurrentStepIndex((current) => Math.max(current - 1, 0))}
-                disabled={safeCurrentStepIndex === 0}
-              >
-                Kembali
-              </button>
-              <button
-                type="button"
-                className="submit-btn"
-                onClick={() => {
-                  if (isLastStep) {
-                  setCurrentStepIndex(0)
-                  return
-                }
-
-                  setCurrentStepIndex((current) => Math.min(current + 1, steps.length - 1))
-                }}
-              >
-                {isLastStep ? 'Ulangi Preview' : 'Lanjut'}
-              </button>
+          <div className="form-navigation-shell">
+            <div className="form-navigation-meta" aria-live="polite">
+              <p className="form-navigation-title">
+                {isMultiStep
+                  ? `Langkah ${safeCurrentStepIndex + 1} dari ${steps.length}`
+                  : 'Preview siap diuji'}
+              </p>
+              <p className="form-navigation-caption">
+                {requiredFieldCount > 0
+                  ? `${completedRequiredFieldCount} dari ${requiredFieldCount} pertanyaan wajib sudah terisi`
+                  : `${answeredFieldCount} field sudah terisi`}
+              </p>
             </div>
-          ) : (
-            <button type="button" className="admin-preview-submit" disabled>
-              Submit
+
+            {isMultiStep ? (
+              <div className="form-navigation">
+                <button
+                  type="button"
+                  className="submit-btn submit-btn-secondary"
+                  onClick={() => {
+                    setCurrentStepIndex((current) => Math.max(current - 1, 0))
+                    scrollToPreviewTop()
+                  }}
+                  disabled={safeCurrentStepIndex === 0}
+                >
+                  Kembali
+                </button>
+                <button
+                  type="button"
+                  className="submit-btn"
+                  onClick={() => {
+                    if (isLastStep) {
+                      setCurrentStepIndex(0)
+                      scrollToPreviewTop()
+                      return
+                    }
+
+                    setCurrentStepIndex((current) => Math.min(current + 1, steps.length - 1))
+                    scrollToPreviewTop()
+                  }}
+                >
+                  {isLastStep ? 'Ulangi Preview' : 'Lanjut'}
+                </button>
+              </div>
+            ) : (
+              <div className="form-navigation">
+                <button type="button" className="admin-preview-submit" disabled>
+                  Submit
+                </button>
+              </div>
+            )}
+          </div>
+
+          {showScrollTop && (
+            <button
+              type="button"
+              className="scroll-top-btn"
+              onClick={scrollToPreviewTop}
+            >
+              Ke Atas
             </button>
           )}
         </div>

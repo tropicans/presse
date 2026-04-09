@@ -12,21 +12,35 @@ interface SignaturePadProps {
 export default function SignaturePad({ inputId, onSignatureChange, ariaDescribedBy }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const signaturePadRef = useRef<SignaturePadLib | null>(null)
+  const onSignatureChangeRef = useRef(onSignatureChange)
   const [typedSignature, setTypedSignature] = useState('')
   const [textError, setTextError] = useState<string | null>(null)
+
+  useEffect(() => {
+    onSignatureChangeRef.current = onSignatureChange
+  }, [onSignatureChange])
 
   const resizeCanvas = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
+    const existingStrokes = signaturePadRef.current && !signaturePadRef.current.isEmpty()
+      ? signaturePadRef.current.toData()
+      : null
+
     const ratio = Math.max(window.devicePixelRatio || 1, 1)
     const container = canvas.parentElement
     if (!container) return
 
-    canvas.width = container.offsetWidth * ratio
-    canvas.height = 160 * ratio
-    canvas.style.width = `${container.offsetWidth}px`
-    canvas.style.height = '160px'
+    const containerStyles = window.getComputedStyle(container)
+    const horizontalPadding = Number.parseFloat(containerStyles.paddingLeft || '0')
+      + Number.parseFloat(containerStyles.paddingRight || '0')
+    const nextWidth = Math.max(container.clientWidth - horizontalPadding, 0)
+
+    canvas.width = nextWidth * ratio
+    canvas.height = 140 * ratio
+    canvas.style.width = '100%'
+    canvas.style.height = '140px'
 
     const ctx = canvas.getContext('2d')
     if (ctx) {
@@ -35,6 +49,9 @@ export default function SignaturePad({ inputId, onSignatureChange, ariaDescribed
 
     if (signaturePadRef.current) {
       signaturePadRef.current.clear()
+      if (existingStrokes && existingStrokes.length > 0) {
+        signaturePadRef.current.fromData(existingStrokes)
+      }
     }
   }, [])
 
@@ -67,8 +84,8 @@ export default function SignaturePad({ inputId, onSignatureChange, ariaDescribed
     context.font = 'italic 28px Georgia, serif'
     context.fillText(value, canvas.width / 2, canvas.height / 2)
     setTextError(null)
-    onSignatureChange(canvas.toDataURL('image/png'))
-  }, [onSignatureChange, typedSignature])
+    onSignatureChangeRef.current(canvas.toDataURL('image/png'))
+  }, [typedSignature])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -81,11 +98,13 @@ export default function SignaturePad({ inputId, onSignatureChange, ariaDescribed
       maxWidth: 2.5,
     })
 
-    signaturePadRef.current.addEventListener('endStroke', () => {
+    const handleEndStroke = () => {
       if (signaturePadRef.current && !signaturePadRef.current.isEmpty()) {
-        onSignatureChange(signaturePadRef.current.toDataURL('image/png'))
+        onSignatureChangeRef.current(signaturePadRef.current.toDataURL('image/png'))
       }
-    })
+    }
+
+    signaturePadRef.current.addEventListener('endStroke', handleEndStroke)
 
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
@@ -93,15 +112,16 @@ export default function SignaturePad({ inputId, onSignatureChange, ariaDescribed
     return () => {
       window.removeEventListener('resize', resizeCanvas)
       if (signaturePadRef.current) {
+        signaturePadRef.current.removeEventListener('endStroke', handleEndStroke)
         signaturePadRef.current.off()
       }
     }
-  }, [resizeCanvas, onSignatureChange])
+  }, [resizeCanvas])
 
   const handleClear = () => {
     if (signaturePadRef.current) {
       signaturePadRef.current.clear()
-      onSignatureChange(null)
+      onSignatureChangeRef.current(null)
     }
     setTypedSignature('')
     setTextError(null)
@@ -109,12 +129,14 @@ export default function SignaturePad({ inputId, onSignatureChange, ariaDescribed
 
   return (
     <div className="signature-container">
-      <canvas
-        ref={canvasRef}
-        className="signature-canvas"
-        aria-label="Area tanda tangan"
-        aria-describedby={ariaDescribedBy}
-      />
+      <div className="signature-pad-surface">
+        <canvas
+          ref={canvasRef}
+          className="signature-canvas"
+          aria-label="Area tanda tangan"
+          aria-describedby={ariaDescribedBy}
+        />
+      </div>
       <div className="signature-actions">
         <button type="button" onClick={handleClear} className="signature-clear-btn">
           Hapus Tanda Tangan
@@ -145,7 +167,6 @@ export default function SignaturePad({ inputId, onSignatureChange, ariaDescribed
         </div>
         {textError && <p className="field-error">{textError}</p>}
       </div>
-      <p className="signature-hint">Tanda tangan di area di atas atau gunakan fallback teks.</p>
     </div>
   )
 }

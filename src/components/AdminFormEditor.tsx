@@ -1,14 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import AdminFormPreview from './AdminFormPreview'
+import { getAdminFormStatusLabel } from '@/lib/admin-display'
 
 interface EditableField {
   id: string
   name: string
   label: string
-  type: 'text' | 'textarea' | 'radio' | 'likert' | 'signature'
+  type: 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature'
   required: boolean
   placeholder: string
   pageId: string
@@ -59,16 +60,19 @@ const defaultLikertOptions = [
   { label: '5 - Sangat Setuju', isCorrect: false, points: 0, nextPageId: '' },
 ]
 
-const fieldTypeOptions: Array<EditableField['type']> = ['text', 'textarea', 'radio', 'likert', 'signature']
+const CONDITIONAL_ROUTE_SUBMIT = '__SUBMIT__'
+
+const fieldTypeOptions: Array<EditableField['type']> = ['text', 'textarea', 'radio', 'select', 'likert', 'signature']
 const fieldTypeLabels: Record<EditableField['type'], string> = {
   text: 'Teks Singkat',
   textarea: 'Teks Panjang',
   radio: 'Pilihan',
+  select: 'Dropdown',
   likert: 'Likert',
   signature: 'Tanda Tangan',
 }
 function createOptionsForType(type: EditableField['type'], currentOptions: EditableField['options'] = []) {
-  if (type === 'radio') {
+  if (type === 'radio' || type === 'select') {
     return currentOptions.length
       ? currentOptions.map((option) => ({ ...option }))
       : defaultRadioOptions.map((option) => ({ ...option }))
@@ -91,7 +95,7 @@ function createOptionsForType(type: EditableField['type'], currentOptions: Edita
 function createPage(index: number): EditablePage {
   return {
     id: `page-${crypto.randomUUID()}`,
-    title: `Halaman ${index + 1}`,
+    title: `Bagian ${index + 1}`,
     description: '',
   }
 }
@@ -109,6 +113,20 @@ function createField(type: EditableField['type'], pageId: string): EditableField
   }
 }
 
+function createFormSnapshot(form: AdminFormDetail) {
+  return JSON.stringify({
+    title: form.title,
+    description: form.description ?? '',
+    successMessage: form.successMessage ?? '',
+    status: form.status,
+    mode: form.mode,
+    workflow: form.workflow,
+    quizSettings: form.quizSettings,
+    pages: form.pages,
+    fields: form.fields,
+  })
+}
+
 export default function AdminFormEditor({ formId }: Props) {
   const [form, setForm] = useState<AdminFormDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -116,6 +134,7 @@ export default function AdminFormEditor({ formId }: Props) {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -132,6 +151,7 @@ export default function AdminFormEditor({ formId }: Props) {
         }
 
         setForm(json.data)
+        setLastSavedSnapshot(createFormSnapshot(json.data))
       } catch {
         setError('Gagal memuat form')
       } finally {
@@ -141,6 +161,14 @@ export default function AdminFormEditor({ formId }: Props) {
 
     load()
   }, [formId])
+
+  const isDirty = useMemo(() => {
+    if (!form || !lastSavedSnapshot) {
+      return false
+    }
+
+    return createFormSnapshot(form) !== lastSavedSnapshot
+  }, [form, lastSavedSnapshot])
 
   const getPublicFormPath = (currentForm: Pick<AdminFormDetail, 'slug' | 'status'>) => {
     if (currentForm.status !== 'PUBLISHED') {
@@ -178,12 +206,16 @@ export default function AdminFormEditor({ formId }: Props) {
   }
 
   const getPageLabel = (pageId: string) => {
+    if (pageId === CONDITIONAL_ROUTE_SUBMIT) {
+      return 'submit form'
+    }
+
     if (!form) {
-      return 'halaman berikutnya'
+      return 'bagian berikutnya'
     }
 
     const page = form.pages.find((item) => item.id === pageId)
-    return page?.title || 'halaman berikutnya'
+    return page?.title || 'bagian berikutnya'
   }
 
   const updateField = (fieldId: string, patch: Partial<EditableField>) => {
@@ -479,12 +511,27 @@ export default function AdminFormEditor({ formId }: Props) {
       }
 
       setForm(json.data)
+      setLastSavedSnapshot(createFormSnapshot(json.data))
       setMessage('Form berhasil diperbarui')
     } catch {
       setError('Gagal menyimpan perubahan')
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleDiscardChanges = () => {
+    if (!form || !lastSavedSnapshot) {
+      return
+    }
+
+    const snapshot = JSON.parse(lastSavedSnapshot) as Omit<AdminFormDetail, 'id' | 'slug'>
+    setForm({
+      ...form,
+      ...snapshot,
+    })
+    setMessage(null)
+    setError(null)
   }
 
   if (loading) {
@@ -500,29 +547,85 @@ export default function AdminFormEditor({ formId }: Props) {
   const usesQuizScoring = form.mode === 'QUIZ' || form.mode === 'ATTENDANCE'
 
   return (
-    <div className="admin-wrapper admin-builder-wrapper">
-      <div className="admin-header">
-        <div className="admin-header-left">
-          <h1>Edit Form</h1>
-          <p>{form.slug}</p>
+    <div className="editorial-form-editor-shell">
+      <header className="editorial-form-editor-topbar">
+        <div className="editorial-form-editor-topbar-left">
+          <div className="forms-dashboard-brand">
+            <div className="forms-dashboard-brand-mark" aria-hidden="true" />
+            <div>
+              <strong>Editorial Data Intelligence</strong>
+              <span>Ruang kerja editor form</span>
+            </div>
+          </div>
+
+          <div className="editorial-form-editor-divider" aria-hidden="true" />
+
+          <Link href="/admin/forms" className="editorial-form-editor-backlink">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+            <span>Kembali ke daftar</span>
+          </Link>
         </div>
-        <div className="admin-header-right">
-          <Link href="/admin/forms" className="admin-secondary-btn">Kembali ke daftar</Link>
-          <Link href={`/admin/forms/${form.id}/submissions`} className="admin-secondary-btn">Lihat Submissions</Link>
-          <button onClick={handleSave} disabled={saving} className="admin-export-btn">
-            {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+
+        <div className="editorial-form-editor-topbar-actions">
+          <Link href={`/admin/forms/${form.id}/submissions`} className="editorial-form-editor-ghost-btn">
+            Lihat Kiriman
+          </Link>
+          <button
+            type="button"
+            className="editorial-form-editor-ghost-btn"
+            onClick={handleDiscardChanges}
+            disabled={!isDirty || saving}
+          >
+            Batalkan Perubahan
+          </button>
+          <button
+            type="button"
+            className="editorial-form-editor-primary-btn"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
-      </div>
+      </header>
 
-      {(message || error) && (
-        <div className={`admin-builder-alert ${error ? 'error' : 'success'}`}>
-          {error || message}
+      <div className="editorial-form-editor-content">
+        {(message || error) && (
+          <div className={`admin-builder-alert ${error ? 'error' : 'success'}`}>
+            {error || message}
+          </div>
+        )}
+
+        <div className="editorial-form-editor-statusbar" aria-live="polite">
+          <div>
+            <p className="forms-dashboard-overline">Status Editor</p>
+            <strong>{saving ? 'Menyimpan perubahan...' : isDirty ? 'Perubahan belum disimpan' : 'Semua perubahan tersimpan'}</strong>
+            <span>
+              {isDirty
+                ? 'Simpan setelah selesai mengubah form agar versi publik ikut terbarui.'
+                : 'Versi editor dan data tersimpan sudah sinkron.'}
+            </span>
+          </div>
+          <div className="editorial-form-editor-status-meta">
+            <span className={`forms-dashboard-status-chip ${form.status.toLowerCase()}`}>{getAdminFormStatusLabel(form.status)}</span>
+            <code>{form.slug}</code>
+          </div>
         </div>
-      )}
 
-      <div className="admin-builder-grid">
-        <section className="admin-builder-panel">
+        <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
+          <Link href="/admin" className="admin-breadcrumb-link">Admin</Link>
+          <span className="admin-breadcrumb-separator">/</span>
+          <Link href="/admin/forms" className="admin-breadcrumb-link">Formulir</Link>
+          <span className="admin-breadcrumb-separator">/</span>
+          <span className="admin-breadcrumb-current">{form.title || 'Form tanpa judul'}</span>
+          <span className="admin-breadcrumb-separator">/</span>
+          <span className="admin-breadcrumb-current muted">Editor</span>
+        </nav>
+
+        <div className="admin-builder-grid editorial-form-editor-grid">
+          <section className="admin-builder-panel editorial-form-editor-panel editorial-form-editor-settings-panel">
           <h2>Informasi Form</h2>
           <label className="admin-builder-field">
             <span>Judul</span>
@@ -553,9 +656,9 @@ export default function AdminFormEditor({ formId }: Props) {
               onChange={(e) => setForm({ ...form, status: e.target.value as AdminFormDetail['status'] })}
               className="admin-builder-select"
             >
-              <option value="DRAFT">DRAFT</option>
-              <option value="PUBLISHED">PUBLISHED</option>
-              <option value="ARCHIVED">ARCHIVED</option>
+              <option value="DRAFT">Draft</option>
+              <option value="PUBLISHED">Publik</option>
+              <option value="ARCHIVED">Arsip</option>
             </select>
           </label>
           <label className="admin-builder-field">
@@ -565,19 +668,19 @@ export default function AdminFormEditor({ formId }: Props) {
               onChange={(e) => setForm({ ...form, mode: e.target.value as AdminFormDetail['mode'] })}
               className="admin-builder-select"
             >
-              <option value="STANDARD">STANDARD</option>
+              <option value="STANDARD">Standar</option>
               <option value="QUIZ">QUIZ</option>
               <option value="ATTENDANCE">PRESENSI + QUIZ + EVALUASI</option>
             </select>
           </label>
           <small>
             {usesAttendanceMode
-              ? 'Mode ini ditujukan untuk form gabungan presensi, quiz, dan evaluasi dengan builder multi-halaman seperti Google Forms.'
-              : 'Mode quiz atau standar tetap bisa memakai halaman, section, dan branching sesuai kebutuhan.'}
+               ? 'Mode ini ditujukan untuk form gabungan presensi, quiz, dan evaluasi dengan builder multi-halaman seperti Google Forms.'
+               : 'Mode quiz atau standar tetap bisa memakai halaman, bagian, dan branching sesuai kebutuhan.'}
           </small>
           {usesQuizScoring && (
             <label className="admin-builder-field">
-              <span>Passing Grade (%)</span>
+              <span>Nilai Lulus (%)</span>
               <input
                 type="number"
                 min={1}
@@ -616,7 +719,7 @@ export default function AdminFormEditor({ formId }: Props) {
                 }}
                 disabled={!publicFormPath}
               >
-                {copied ? 'Tersalin' : 'Copy Link'}
+                {copied ? 'Tersalin' : 'Salin Link'}
               </button>
               {publicFormPath ? (
                 <details className="admin-share-menu">
@@ -651,7 +754,7 @@ export default function AdminFormEditor({ formId }: Props) {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Buka Form
+                      Buka Formulir
                     </Link>
                   </div>
                 </details>
@@ -662,41 +765,41 @@ export default function AdminFormEditor({ formId }: Props) {
               )}
             </div>
           </div>
-        </section>
+          </section>
 
-        <section className="admin-builder-panel">
-          <h2>Field Form</h2>
+          <section className="admin-builder-panel editorial-form-editor-panel editorial-form-editor-structure-panel">
+          <h2>Struktur Form</h2>
           <div className="admin-builder-pages-panel">
             <div className="admin-builder-pages-head">
               <div>
-                <h3>Halaman Form</h3>
-                <p>Atur section, beberapa pertanyaan per halaman, dan branching antar halaman seperti Google Forms.</p>
+                <h3>Bagian Form</h3>
+                <p>Atur bagian, kelompok pertanyaan per bagian, dan branching antarbagian seperti Google Forms.</p>
               </div>
               <button
                 type="button"
                 onClick={addPage}
                 className="admin-secondary-btn admin-builder-add-btn"
               >
-                + Tambah Halaman
+                + Tambah Bagian
               </button>
             </div>
             <div className="admin-builder-page-list">
               {form.pages.map((page, index) => (
                 <div key={page.id} className="admin-builder-page-card">
                   <div className="admin-builder-page-card-head">
-                    <strong>{page.title || `Halaman ${index + 1}`}</strong>
+                    <strong>{page.title || `Bagian ${index + 1}`}</strong>
                     <button
                       type="button"
                       onClick={() => removePage(page.id)}
                       className="admin-builder-icon-btn danger"
                       disabled={form.pages.length <= 1}
-                      aria-label={`Hapus ${page.title || `Halaman ${index + 1}`}`}
+                      aria-label={`Hapus ${page.title || `Bagian ${index + 1}`}`}
                     >
                       ✕
                     </button>
                   </div>
                   <label className="admin-builder-field">
-                    <span>Judul Halaman</span>
+                    <span>Judul Bagian</span>
                     <input
                       value={page.title}
                       onChange={(e) => updatePage(page.id, { title: e.target.value })}
@@ -704,7 +807,7 @@ export default function AdminFormEditor({ formId }: Props) {
                     />
                   </label>
                   <label className="admin-builder-field">
-                    <span>Deskripsi Halaman</span>
+                    <span>Deskripsi Bagian</span>
                     <textarea
                       value={page.description}
                       onChange={(e) => updatePage(page.id, { description: e.target.value })}
@@ -713,7 +816,7 @@ export default function AdminFormEditor({ formId }: Props) {
                     />
                   </label>
                   <small>
-                    {form.fields.filter((field) => field.pageId === page.id).length} field pada halaman ini.
+                    {form.fields.filter((field) => field.pageId === page.id).length} pertanyaan pada bagian ini.
                   </small>
                 </div>
               ))}
@@ -780,6 +883,7 @@ export default function AdminFormEditor({ formId }: Props) {
                       ),
                       placeholder: e.target.value === 'signature'
                         || e.target.value === 'radio'
+                        || e.target.value === 'select'
                         || e.target.value === 'likert'
                         ? ''
                         : field.placeholder,
@@ -802,7 +906,7 @@ export default function AdminFormEditor({ formId }: Props) {
                 </label>
 
                 <label className="admin-builder-field">
-                  <span>Halaman</span>
+                  <span>Bagian</span>
                   <select
                     value={field.pageId}
                     onChange={(e) => updateField(field.id, { pageId: e.target.value })}
@@ -825,27 +929,30 @@ export default function AdminFormEditor({ formId }: Props) {
                   </label>
                 )}
 
-                {(field.type === 'radio' || field.type === 'likert') && (
+                {(field.type === 'radio' || field.type === 'select' || field.type === 'likert') && (
                   <div className="admin-builder-field">
                     <span>Opsi</span>
-                    {field.type === 'radio' && form.pages.length > 1 && (
+                    {(field.type === 'radio' || field.type === 'select') && form.pages.length > 1 && (
                       <p className="admin-builder-option-helper">
-                        Branching hanya bisa diarahkan maju. Jika tidak diatur, opsi akan lanjut ke halaman berikutnya secara otomatis.
+                        Menu branching ada di bawah setiap opsi. Arah perpindahan hanya bisa maju ke bagian berikutnya, ke bagian tertentu, atau langsung submit.
                       </p>
                     )}
                     <div className="admin-builder-option-list">
                       {field.options.map((option, optionIndex) => {
-                        const branchTargetPages = field.type === 'radio'
+                        const branchTargetPages = (field.type === 'radio' || field.type === 'select')
                           ? getBranchTargetPages(field.pageId)
                           : []
-                        const nextPageId = branchTargetPages.some((page) => page.id === option.nextPageId)
+                        const nextPageId = option.nextPageId === CONDITIONAL_ROUTE_SUBMIT
+                          || branchTargetPages.some((page) => page.id === option.nextPageId)
                           ? option.nextPageId ?? ''
                           : ''
-                        const routeSummary = nextPageId
-                          ? `Setelah dipilih, langsung lompat ke ${getPageLabel(nextPageId)}.`
-                          : branchTargetPages.length > 0
-                            ? `Setelah dipilih, lanjut otomatis ke ${getPageLabel(branchTargetPages[0].id)}.`
-                            : 'Opsi ini berada di halaman terakhir, jadi tidak punya perpindahan lanjutan.'
+                        const routeSummary = nextPageId === CONDITIONAL_ROUTE_SUBMIT
+                          ? 'Setelah dipilih, form langsung dikirim.'
+                          : nextPageId
+                            ? `Setelah dipilih, langsung lompat ke ${getPageLabel(nextPageId)}.`
+                            : branchTargetPages.length > 0
+                              ? `Setelah dipilih, lanjut otomatis ke ${getPageLabel(branchTargetPages[0].id)}.`
+                            : 'Opsi ini berada di bagian terakhir, jadi alurnya akan lanjut ke submit form.'
 
                         return (
                           <div key={`${field.id}-option-${optionIndex}`} className="admin-builder-option-card">
@@ -856,16 +963,18 @@ export default function AdminFormEditor({ formId }: Props) {
                                 className="admin-builder-input"
                                 placeholder={`Opsi ${optionIndex + 1}`}
                                 />
-                              {field.type === 'radio' && (
+                              {(field.type === 'radio' || field.type === 'select') && (
                                 <>
-                                  <label className="admin-builder-inline-checkbox">
-                                    <input
-                                      type="checkbox"
-                                      checked={option.isCorrect}
-                                      onChange={(e) => updateOption(field.id, optionIndex, { isCorrect: e.target.checked })}
-                                    />
-                                    Benar
-                                  </label>
+                                  {field.type === 'radio' && (
+                                    <label className="admin-builder-inline-checkbox">
+                                      <input
+                                        type="checkbox"
+                                        checked={option.isCorrect}
+                                        onChange={(e) => updateOption(field.id, optionIndex, { isCorrect: e.target.checked })}
+                                      />
+                                      Benar
+                                    </label>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => removeOption(field.id, optionIndex)}
@@ -878,16 +987,17 @@ export default function AdminFormEditor({ formId }: Props) {
                                 </>
                               )}
                             </div>
-                            {field.type === 'radio' && branchTargetPages.length > 0 && (
+                            {(field.type === 'radio' || field.type === 'select') && (
                               <div className="admin-builder-option-route">
                                 <label className="admin-builder-field">
-                                  <span>Arah Setelah Dipilih</span>
+                                  <span>Navigasi Setelah Opsi Ini Dipilih</span>
                                   <select
                                     value={nextPageId}
                                     onChange={(e) => updateOption(field.id, optionIndex, { nextPageId: e.target.value })}
                                     className="admin-builder-select"
                                   >
-                                    <option value="">Lanjut ke halaman berikutnya</option>
+                                    <option value="">{branchTargetPages.length > 0 ? 'Lanjut ke bagian berikutnya' : 'Ikuti alur default'}</option>
+                                    <option value={CONDITIONAL_ROUTE_SUBMIT}>Submit form</option>
                                     {branchTargetPages.map((page) => (
                                       <option key={page.id} value={page.id}>
                                         Lompat ke {page.title || 'Tanpa Judul'}
@@ -898,14 +1008,11 @@ export default function AdminFormEditor({ formId }: Props) {
                                 <p className="admin-builder-option-summary">{routeSummary}</p>
                               </div>
                             )}
-                            {field.type === 'radio' && branchTargetPages.length === 0 && (
-                              <p className="admin-builder-option-summary">{routeSummary}</p>
-                            )}
                           </div>
                         )
                       })}
                     </div>
-                    {field.type === 'radio' ? (
+                    {field.type === 'radio' || field.type === 'select' ? (
                       <>
                         <div className="admin-builder-option-actions">
                           <button
@@ -916,7 +1023,11 @@ export default function AdminFormEditor({ formId }: Props) {
                             + Tambah opsi
                           </button>
                         </div>
-                        <small>Tandai satu opsi benar untuk soal quiz. Jika tidak ada opsi yang ditandai benar, field radio akan diperlakukan sebagai evaluasi biasa. Untuk form multi-halaman, tiap opsi juga bisa diarahkan ke halaman berikutnya atau ke halaman tertentu.</small>
+                        <small>
+                          {field.type === 'radio'
+                            ? 'Tandai satu opsi benar untuk soal quiz. Jika tidak ada opsi yang ditandai benar, field radio akan diperlakukan sebagai evaluasi biasa. Untuk form multi-bagian, tiap opsi juga bisa diarahkan ke bagian berikutnya, ke bagian tertentu, atau langsung submit form.'
+                            : 'Untuk form multi-bagian, tiap opsi dropdown bisa diarahkan ke bagian berikutnya, ke bagian tertentu, atau langsung submit form.'}
+                        </small>
                       </>
                     ) : (
                       <small>Field Likert selalu memakai 5 tingkat. Anda bisa mengubah label tiap tingkat, tetapi jumlah opsinya tetap lima.</small>
@@ -935,10 +1046,10 @@ export default function AdminFormEditor({ formId }: Props) {
               </div>
             ))}
           </div>
-        </section>
+          </section>
 
-        <section className="admin-builder-panel">
-          <h2>Preview Live</h2>
+          <section className="admin-builder-panel editorial-form-editor-panel editorial-form-editor-preview-panel">
+          <h2>Preview Form</h2>
           <AdminFormPreview
             form={{
               title: form.title,
@@ -948,7 +1059,8 @@ export default function AdminFormEditor({ formId }: Props) {
               fields: form.fields,
             }}
           />
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   )
