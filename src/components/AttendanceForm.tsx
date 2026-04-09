@@ -74,8 +74,6 @@ function buildSteps(form: PublicFormDefinition, formData: Record<string, string>
     if (!pages || pages.length === 0) {
       return [{
         id: 'single-step',
-        title: 'Form',
-        description: form.description,
         fieldNames: form.fields.map((field) => field.name),
         fields: form.fields,
       }]
@@ -115,8 +113,6 @@ function buildSteps(form: PublicFormDefinition, formData: Record<string, string>
       if (fields.length > 0) {
         activeSteps.push({
           id: page.id,
-          title: page.title?.trim() || '',
-          description: page.description?.trim() || null,
           fieldNames: fields.map((field) => field.name),
           fields,
         })
@@ -439,12 +435,6 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
               />
             </div>
           </div>
-          {(currentStep.title || currentStep.description) && (
-            <div className="form-step-copy">
-              {currentStep.title && <h2 className="form-step-title">{currentStep.title}</h2>}
-              {currentStep.description && <p className="form-step-description">{currentStep.description}</p>}
-            </div>
-          )}
         </div>
       )}
 
@@ -492,7 +482,7 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
                   </div>
                 </>
               )}
-              {isQuizQuestion && field.type !== 'likert' && !currentStep?.description && (
+              {isQuizQuestion && field.type !== 'likert' && (
                 <p className="field-help">Pilih satu jawaban yang menurut Anda paling tepat.</p>
               )}
               <div
@@ -582,7 +572,7 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
                 {label}
                 {field.required ? ' *' : ''}
               </label>
-              {isQuizQuestion && !currentStep?.description && (
+              {isQuizQuestion && (
                 <p className="field-help">Pilih satu jawaban yang menurut Anda paling tepat.</p>
               )}
               <select

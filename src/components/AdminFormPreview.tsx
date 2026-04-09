@@ -20,8 +20,6 @@ interface PreviewField {
 
 interface PreviewPage {
   id: string
-  title: string
-  description: string
 }
 
 interface PreviewForm {
@@ -34,8 +32,6 @@ interface PreviewForm {
 
 interface PreviewStep {
   id: string
-  title: string
-  description: string | null
   fields: PreviewField[]
 }
 
@@ -91,8 +87,6 @@ function buildStandardSteps(form: PreviewForm, formData: Record<string, string>)
   if (form.pages.length === 0) {
     return [{
       id: 'single-step',
-      title: 'Form',
-      description: form.description,
       fields: form.fields,
     }]
   }
@@ -133,8 +127,6 @@ function buildStandardSteps(form: PreviewForm, formData: Record<string, string>)
     if (fields.length > 0) {
       activeSteps.push({
         id: page.id,
-        title: page.title?.trim() || '',
-        description: page.description?.trim() || null,
         fields,
       })
     }
@@ -186,8 +178,6 @@ function buildWebinarSteps(form: PreviewForm, formData: Record<string, string>) 
   if (participantField) {
     steps.push({
       id: 'participant-type',
-      title: 'Tipe Peserta',
-      description: 'Pilih kategori peserta sebelum melanjutkan ke langkah berikutnya.',
       fields: [participantField],
     })
   }
@@ -198,8 +188,6 @@ function buildWebinarSteps(form: PreviewForm, formData: Record<string, string>) 
   ) {
     steps.push({
       id: 'internal-identity',
-      title: 'Data Internal',
-      description: 'Lengkapi identitas pegawai internal untuk melanjutkan presensi.',
       fields: [internalField],
     })
   }
@@ -207,8 +195,6 @@ function buildWebinarSteps(form: PreviewForm, formData: Record<string, string>) 
   if (sharedFields.length > 0) {
     steps.push({
       id: 'shared-attendance',
-      title: 'Data Presensi',
-      description: 'Lengkapi data umum peserta, quiz, atau evaluasi.',
       fields: sharedFields,
     })
   }
@@ -286,7 +272,7 @@ function PreviewSession({ form }: Props) {
         <div className="admin-preview-body">
           <div className="admin-preview-note">
             <strong>Preview interaktif</strong>
-            <p>Uji alur bagian dan branching langsung di sini. Data yang Anda isi tidak akan dikirim.</p>
+            <p>Uji alur langkah dan branching langsung di sini. Data yang Anda isi tidak akan dikirim.</p>
           </div>
 
           {hasWebinarBranching && (
@@ -309,12 +295,6 @@ function PreviewSession({ form }: Props) {
                   ))}
                 </div>
               </div>
-              {(currentStep.title || currentStep.description) && (
-                <div className="form-step-copy">
-                  {currentStep.title && <h4 className="form-step-title">{currentStep.title}</h4>}
-                  {currentStep.description && <p className="form-step-description">{currentStep.description}</p>}
-                </div>
-              )}
             </div>
           )}
 

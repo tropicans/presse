@@ -51,8 +51,6 @@ export type FormField = TextField | RadioField | SelectField | SignatureField
 
 export interface FormPageDefinition {
   id: string
-  title: string
-  description?: string | null
   fieldIds: string[]
 }
 
@@ -78,8 +76,6 @@ export interface QuizSettings {
 
 export interface FormStepDefinition {
   id: string
-  title: string
-  description?: string | null
   fieldNames: string[]
 }
 
@@ -140,8 +136,6 @@ export interface AdminEditableField {
 
 export interface AdminFormPage {
   id: string
-  title: string
-  description: string
 }
 
 export interface AdminFormDetail {
@@ -524,8 +518,6 @@ function readQuizSettings(settingsJson: Prisma.JsonValue | null): QuizSettings {
 function createDefaultFormPages(fieldIds: string[]): FormPageDefinition[] {
   return [{
     id: 'page-1',
-    title: '',
-    description: null,
     fieldIds,
   }]
 }
@@ -556,12 +548,6 @@ function readFormPages(
     const id = typeof page.id === 'string' && page.id.trim()
       ? page.id.trim()
       : `page-${index + 1}`
-    const title = typeof page.title === 'string'
-      ? page.title.trim()
-      : ''
-    const description = typeof page.description === 'string' && page.description.trim()
-      ? page.description.trim()
-      : null
     const fieldIdsForPage = Array.isArray(page.fieldIds)
       ? page.fieldIds
         .filter((fieldId): fieldId is string => typeof fieldId === 'string' && availableIds.has(fieldId))
@@ -577,26 +563,26 @@ function readFormPages(
 
     return [{
       id,
-      title,
-      description,
       fieldIds: fieldIdsForPage,
     }]
   })
 
   const unassignedFieldIds = fieldIds.filter((fieldId) => !seenFieldIds.has(fieldId))
 
-  if (pages.length === 0) {
+  const nonEmptyPages = pages.filter((page) => page.fieldIds.length > 0)
+
+  if (nonEmptyPages.length === 0) {
     return createDefaultFormPages(fieldIds)
   }
 
   if (unassignedFieldIds.length > 0) {
-    pages[0] = {
-      ...pages[0],
-      fieldIds: [...pages[0].fieldIds, ...unassignedFieldIds],
+    nonEmptyPages[0] = {
+      ...nonEmptyPages[0],
+      fieldIds: [...nonEmptyPages[0].fieldIds, ...unassignedFieldIds],
     }
   }
 
-  return pages
+  return nonEmptyPages
 }
 
 function readFormConditionalRoutes(
@@ -664,8 +650,6 @@ function serializeFormSettings(
     },
     pages: pages?.map((page) => ({
       id: page.id,
-      title: page.title,
-      description: page.description ?? null,
       fieldIds: page.fieldIds,
     })),
     conditionalRoutes: conditionalRoutes?.map((route) => ({
@@ -690,8 +674,6 @@ function buildAttendanceBranching(fields: FormField[]): FormBranchingConfig | un
   const steps: FormStepDefinition[] = [
     {
       id: 'participant-type',
-      title: 'Tipe Peserta',
-      description: 'Pilih kategori peserta webinar sebelum melanjutkan presensi.',
       fieldNames: ['participantType'],
     },
   ]
@@ -699,8 +681,6 @@ function buildAttendanceBranching(fields: FormField[]): FormBranchingConfig | un
   if (fieldNames.has('nipNrp')) {
     steps.push({
       id: 'internal-identity',
-      title: 'Data Internal',
-      description: 'Lengkapi identitas pegawai internal untuk presensi webinar.',
       fieldNames: ['nipNrp'],
     })
   }
@@ -708,8 +688,6 @@ function buildAttendanceBranching(fields: FormField[]): FormBranchingConfig | un
   if (sharedFieldNames.length > 0) {
     steps.push({
       id: 'shared-attendance',
-      title: 'Data Presensi',
-      description: 'Lengkapi data presensi dan identitas umum peserta webinar.',
       fieldNames: sharedFieldNames,
     })
   }
@@ -2211,11 +2189,7 @@ export async function getAdminFormDetail(id: string): Promise<AdminFormDetail | 
     mode: rows.form.mode ?? 'STANDARD',
     workflow: readFormWorkflow(rows.form.slug, rows.form.settingsJson ?? null),
     quizSettings: readQuizSettings(rows.form.settingsJson ?? null),
-    pages: pages.map((page) => ({
-      id: page.id,
-      title: page.title,
-      description: page.description ?? '',
-    })),
+    pages: pages.map((page) => ({ id: page.id })),
     fields: rows.fields.flatMap((field) => {
       const type = resolveFormFieldType(field.type, optionsByField[field.id] ?? [])
       if (!type) {
@@ -2281,17 +2255,11 @@ function normalizeAdminFormPages(
   fields: Array<{ id: string; pageId?: string }>
 ) {
   const uniqueFieldIds = Array.from(new Set(fields.map((field) => field.id)))
-  const fallbackPages = createDefaultFormPages(uniqueFieldIds).map((page) => ({
-    id: page.id,
-    title: page.title,
-    description: page.description ?? '',
-  }))
+  const fallbackPages = createDefaultFormPages(uniqueFieldIds).map((page) => ({ id: page.id }))
   const inputPages = pages && pages.length > 0 ? pages : fallbackPages
 
   const normalizedPages = inputPages.map((page, index) => ({
     id: page.id?.trim() || `page-${index + 1}`,
-    title: page.title?.trim() || '',
-    description: page.description?.trim() || '',
   }))
 
   const pageIds = new Set(normalizedPages.map((page) => page.id))
@@ -2310,8 +2278,6 @@ function normalizeAdminFormPages(
   return normalizedPages
     .map<FormPageDefinition>((page) => ({
       id: page.id,
-      title: page.title,
-      description: page.description || null,
       fieldIds: fieldsByPageId.get(page.id) ?? [],
     }))
 }
@@ -2415,6 +2381,10 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
 
   if (normalizedPayloadFields.length === 0) {
     throw new FormSubmissionError('Form harus memiliki minimal satu field', 400)
+  }
+
+  if (formPages.some((page) => page.fieldIds.length === 0)) {
+    throw new FormSubmissionError('Setiap langkah harus memiliki minimal satu field', 400)
   }
 
   await prisma.$transaction(async (tx) => {

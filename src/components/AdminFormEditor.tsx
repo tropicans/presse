@@ -23,8 +23,6 @@ interface EditableField {
 
 interface EditablePage {
   id: string
-  title: string
-  description: string
 }
 
 interface AdminFormDetail {
@@ -92,11 +90,9 @@ function createOptionsForType(type: EditableField['type'], currentOptions: Edita
   return []
 }
 
-function createPage(index: number): EditablePage {
+function createPage(): EditablePage {
   return {
     id: `page-${crypto.randomUUID()}`,
-    title: `Bagian ${index + 1}`,
-    description: '',
   }
 }
 
@@ -205,17 +201,21 @@ export default function AdminFormEditor({ formId }: Props) {
       : form.pages.slice(1)
   }
 
-  const getPageLabel = (pageId: string) => {
+  const getStepLabel = (pageId: string) => {
     if (pageId === CONDITIONAL_ROUTE_SUBMIT) {
       return 'submit form'
     }
 
     if (!form) {
-      return 'bagian berikutnya'
+      return 'langkah berikutnya'
     }
 
-    const page = form.pages.find((item) => item.id === pageId)
-    return page?.title || 'bagian berikutnya'
+    const pageIndex = form.pages.findIndex((item) => item.id === pageId)
+    return pageIndex >= 0 ? `Langkah ${pageIndex + 1}` : 'langkah berikutnya'
+  }
+
+  const getStepFieldCount = (pageId: string) => {
+    return form?.fields.filter((field) => field.pageId === pageId).length ?? 0
   }
 
   const updateField = (fieldId: string, patch: Partial<EditableField>) => {
@@ -279,18 +279,7 @@ export default function AdminFormEditor({ formId }: Props) {
 
       return {
         ...current,
-        pages: [...current.pages, createPage(current.pages.length)],
-      }
-    })
-  }
-
-  const updatePage = (pageId: string, patch: Partial<EditablePage>) => {
-    setForm((current) => {
-      if (!current) return current
-
-      return {
-        ...current,
-        pages: current.pages.map((page) => page.id === pageId ? { ...page, ...patch } : page),
+        pages: [...current.pages, createPage()],
       }
     })
   }
@@ -474,6 +463,13 @@ export default function AdminFormEditor({ formId }: Props) {
 
   const handleSave = async () => {
     if (!form) return
+
+    const hasEmptyStep = form.pages.some((page) => getStepFieldCount(page.id) === 0)
+    if (hasEmptyStep) {
+      setMessage(null)
+      setError('Setiap langkah harus memiliki minimal satu field sebelum disimpan')
+      return
+    }
 
     setSaving(true)
     setMessage(null)
@@ -673,11 +669,11 @@ export default function AdminFormEditor({ formId }: Props) {
               <option value="ATTENDANCE">PRESENSI + QUIZ + EVALUASI</option>
             </select>
           </label>
-          <small>
-            {usesAttendanceMode
-               ? 'Mode ini ditujukan untuk form gabungan presensi, quiz, dan evaluasi dengan builder multi-halaman seperti Google Forms.'
-               : 'Mode quiz atau standar tetap bisa memakai halaman, bagian, dan branching sesuai kebutuhan.'}
-          </small>
+             <small>
+               {usesAttendanceMode
+                ? 'Mode ini ditujukan untuk form gabungan presensi, quiz, dan evaluasi dengan builder multi-langkah seperti Google Forms.'
+                : 'Mode quiz atau standar tetap bisa memakai langkah dan branching sesuai kebutuhan.'}
+           </small>
           {usesQuizScoring && (
             <label className="admin-builder-field">
               <span>Nilai Lulus (%)</span>
@@ -772,52 +768,40 @@ export default function AdminFormEditor({ formId }: Props) {
           <div className="admin-builder-pages-panel">
             <div className="admin-builder-pages-head">
               <div>
-                <h3>Bagian Form</h3>
-                <p>Atur bagian, kelompok pertanyaan per bagian, dan branching antarbagian seperti Google Forms.</p>
+                <h3>Langkah Form</h3>
+                <p>Kelompokkan pertanyaan per langkah. Setiap langkah harus memiliki minimal satu field.</p>
               </div>
               <button
                 type="button"
                 onClick={addPage}
                 className="admin-secondary-btn admin-builder-add-btn"
               >
-                + Tambah Bagian
+                + Tambah Langkah
               </button>
             </div>
             <div className="admin-builder-page-list">
               {form.pages.map((page, index) => (
                 <div key={page.id} className="admin-builder-page-card">
                   <div className="admin-builder-page-card-head">
-                    <strong>{page.title || `Bagian ${index + 1}`}</strong>
+                    <strong>Langkah {index + 1}</strong>
                     <button
                       type="button"
                       onClick={() => removePage(page.id)}
                       className="admin-builder-icon-btn danger"
                       disabled={form.pages.length <= 1}
-                      aria-label={`Hapus ${page.title || `Bagian ${index + 1}`}`}
+                      aria-label={`Hapus Langkah ${index + 1}`}
                     >
                       ✕
                     </button>
                   </div>
-                  <label className="admin-builder-field">
-                    <span>Judul Bagian</span>
-                    <input
-                      value={page.title}
-                      onChange={(e) => updatePage(page.id, { title: e.target.value })}
-                      className="admin-builder-input"
-                    />
-                  </label>
-                  <label className="admin-builder-field">
-                    <span>Deskripsi Bagian</span>
-                    <textarea
-                      value={page.description}
-                      onChange={(e) => updatePage(page.id, { description: e.target.value })}
-                      className="admin-builder-textarea"
-                      rows={2}
-                    />
-                  </label>
                   <small>
-                    {form.fields.filter((field) => field.pageId === page.id).length} pertanyaan pada bagian ini.
+                    {getStepFieldCount(page.id)} field pada langkah ini.
                   </small>
+                  {getStepFieldCount(page.id) === 0 && (
+                    <small className="admin-builder-warning-text">
+                      Langkah kosong tidak bisa disimpan. Tambahkan field atau pindahkan field ke langkah ini.
+                    </small>
+                  )}
                 </div>
               ))}
             </div>
@@ -906,14 +890,14 @@ export default function AdminFormEditor({ formId }: Props) {
                 </label>
 
                 <label className="admin-builder-field">
-                  <span>Bagian</span>
+                  <span>Langkah</span>
                   <select
                     value={field.pageId}
                     onChange={(e) => updateField(field.id, { pageId: e.target.value })}
                     className="admin-builder-select"
                   >
-                    {form.pages.map((page) => (
-                      <option key={page.id} value={page.id}>{page.title || 'Tanpa Judul'}</option>
+                    {form.pages.map((page, pageIndex) => (
+                      <option key={page.id} value={page.id}>{`Langkah ${pageIndex + 1}`}</option>
                     ))}
                   </select>
                 </label>
@@ -934,7 +918,7 @@ export default function AdminFormEditor({ formId }: Props) {
                     <span>Opsi</span>
                     {(field.type === 'radio' || field.type === 'select') && form.pages.length > 1 && (
                       <p className="admin-builder-option-helper">
-                        Menu branching ada di bawah setiap opsi. Arah perpindahan hanya bisa maju ke bagian berikutnya, ke bagian tertentu, atau langsung submit.
+                        Menu branching ada di bawah setiap opsi. Arah perpindahan hanya bisa maju ke langkah berikutnya, ke langkah tertentu, atau langsung submit.
                       </p>
                     )}
                     <div className="admin-builder-option-list">
@@ -949,10 +933,10 @@ export default function AdminFormEditor({ formId }: Props) {
                         const routeSummary = nextPageId === CONDITIONAL_ROUTE_SUBMIT
                           ? 'Setelah dipilih, form langsung dikirim.'
                           : nextPageId
-                            ? `Setelah dipilih, langsung lompat ke ${getPageLabel(nextPageId)}.`
+                            ? `Setelah dipilih, langsung lompat ke ${getStepLabel(nextPageId)}.`
                             : branchTargetPages.length > 0
-                              ? `Setelah dipilih, lanjut otomatis ke ${getPageLabel(branchTargetPages[0].id)}.`
-                            : 'Opsi ini berada di bagian terakhir, jadi alurnya akan lanjut ke submit form.'
+                              ? `Setelah dipilih, lanjut otomatis ke ${getStepLabel(branchTargetPages[0].id)}.`
+                            : 'Opsi ini berada di langkah terakhir, jadi alurnya akan lanjut ke submit form.'
 
                         return (
                           <div key={`${field.id}-option-${optionIndex}`} className="admin-builder-option-card">
@@ -994,13 +978,13 @@ export default function AdminFormEditor({ formId }: Props) {
                                   <select
                                     value={nextPageId}
                                     onChange={(e) => updateOption(field.id, optionIndex, { nextPageId: e.target.value })}
-                                    className="admin-builder-select"
-                                  >
-                                    <option value="">{branchTargetPages.length > 0 ? 'Lanjut ke bagian berikutnya' : 'Ikuti alur default'}</option>
+                                  className="admin-builder-select"
+                                >
+                                    <option value="">{branchTargetPages.length > 0 ? 'Lanjut ke langkah berikutnya' : 'Ikuti alur default'}</option>
                                     <option value={CONDITIONAL_ROUTE_SUBMIT}>Submit form</option>
                                     {branchTargetPages.map((page) => (
                                       <option key={page.id} value={page.id}>
-                                        Lompat ke {page.title || 'Tanpa Judul'}
+                                        Lompat ke {getStepLabel(page.id)}
                                       </option>
                                     ))}
                                   </select>
@@ -1025,8 +1009,8 @@ export default function AdminFormEditor({ formId }: Props) {
                         </div>
                         <small>
                           {field.type === 'radio'
-                            ? 'Tandai satu opsi benar untuk soal quiz. Jika tidak ada opsi yang ditandai benar, field radio akan diperlakukan sebagai evaluasi biasa. Untuk form multi-bagian, tiap opsi juga bisa diarahkan ke bagian berikutnya, ke bagian tertentu, atau langsung submit form.'
-                            : 'Untuk form multi-bagian, tiap opsi dropdown bisa diarahkan ke bagian berikutnya, ke bagian tertentu, atau langsung submit form.'}
+                            ? 'Tandai satu opsi benar untuk soal quiz. Jika tidak ada opsi yang ditandai benar, field radio akan diperlakukan sebagai evaluasi biasa. Untuk form multi-langkah, tiap opsi juga bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung submit form.'
+                            : 'Untuk form multi-langkah, tiap opsi dropdown bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung submit form.'}
                         </small>
                       </>
                     ) : (
