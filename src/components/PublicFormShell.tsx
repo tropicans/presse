@@ -11,11 +11,12 @@ interface PublicFormShellProps {
 
 export default function PublicFormShell({ form }: PublicFormShellProps) {
   const workflowLabel = form.settings.workflow === 'WEBINAR' ? 'Alur Webinar' : 'Form Standar'
+  const publicFormPath = `/f/${encodeURIComponent(form.slug)}`
 
   return (
     <div className="page-wrapper public-ledger-page">
       <header className="public-ledger-topbar">
-        <Link href="/" className="public-ledger-brand">
+        <Link href={publicFormPath} className="public-ledger-brand">
           <div className="public-ledger-brand-mark" aria-hidden="true" />
           <div>
             <strong>Editorial Data Intelligence</strong>

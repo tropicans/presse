@@ -183,7 +183,7 @@ export default function AdminFormEditor({ formId }: Props) {
   }
 
   const getShareText = (currentForm: Pick<AdminFormDetail, 'title'>, publicUrl: string) => {
-    return `Isi form "${currentForm.title}" di sini: ${publicUrl}`
+    return `Isi formulir "${currentForm.title}" di sini: ${publicUrl}`
   }
 
   const openShareWindow = (url: string) => {
@@ -203,7 +203,7 @@ export default function AdminFormEditor({ formId }: Props) {
 
   const getStepLabel = (pageId: string) => {
     if (pageId === CONDITIONAL_ROUTE_SUBMIT) {
-      return 'submit form'
+      return 'pengiriman form'
     }
 
     if (!form) {
@@ -550,7 +550,7 @@ export default function AdminFormEditor({ formId }: Props) {
             <div className="forms-dashboard-brand-mark" aria-hidden="true" />
             <div>
               <strong>Editorial Data Intelligence</strong>
-              <span>Ruang kerja editor form</span>
+              <span>Ruang kerja penyusunan formulir</span>
             </div>
           </div>
 
@@ -596,12 +596,12 @@ export default function AdminFormEditor({ formId }: Props) {
 
         <div className="editorial-form-editor-statusbar" aria-live="polite">
           <div>
-            <p className="forms-dashboard-overline">Status Editor</p>
+            <p className="forms-dashboard-overline">Status penyuntingan</p>
             <strong>{saving ? 'Menyimpan perubahan...' : isDirty ? 'Perubahan belum disimpan' : 'Semua perubahan tersimpan'}</strong>
             <span>
               {isDirty
                 ? 'Simpan setelah selesai mengubah form agar versi publik ikut terbarui.'
-                : 'Versi editor dan data tersimpan sudah sinkron.'}
+                : 'Versi penyuntingan dan data tersimpan sudah sinkron.'}
             </span>
           </div>
           <div className="editorial-form-editor-status-meta">
@@ -622,7 +622,10 @@ export default function AdminFormEditor({ formId }: Props) {
 
         <div className="admin-builder-grid editorial-form-editor-grid">
           <section className="admin-builder-panel editorial-form-editor-panel editorial-form-editor-settings-panel">
-          <h2>Informasi Form</h2>
+          <h2>Informasi form</h2>
+          <p className="editorial-form-editor-section-note">
+            Atur identitas form, status publikasi, dan pesan yang tampil setelah pengisi mengirim data.
+          </p>
           <label className="admin-builder-field">
             <span>Judul</span>
             <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="admin-builder-input" />
@@ -671,12 +674,12 @@ export default function AdminFormEditor({ formId }: Props) {
           </label>
              <small>
                {usesAttendanceMode
-                ? 'Mode ini ditujukan untuk form gabungan presensi, quiz, dan evaluasi dengan builder multi-langkah seperti Google Forms.'
-                : 'Mode quiz atau standar tetap bisa memakai langkah dan branching sesuai kebutuhan.'}
-           </small>
+                 ? 'Mode ini ditujukan untuk form gabungan presensi, kuis, dan evaluasi dengan builder multi-langkah.'
+                 : 'Mode kuis atau standar tetap bisa memakai langkah dan branching sesuai kebutuhan.'}
+            </small>
           {usesQuizScoring && (
             <label className="admin-builder-field">
-              <span>Nilai Lulus (%)</span>
+              <span>Nilai lulus (%)</span>
               <input
                 type="number"
                 min={1}
@@ -690,12 +693,12 @@ export default function AdminFormEditor({ formId }: Props) {
                 })}
                 className="admin-builder-input admin-builder-points-input"
               />
-              <small>Peserta dinyatakan lulus jika skor mencapai persentase ini dari total nilai quiz.</small>
+              <small>Peserta dinyatakan lulus jika skornya mencapai persentase ini dari total nilai kuis.</small>
             </label>
           )}
           <div className="admin-builder-share-panel">
             <div className="admin-builder-share-head">
-              <h3>Bagikan Form</h3>
+              <h3>Bagikan form</h3>
               <p>
                 {publicFormPath
                   ? 'Gunakan link ini untuk membagikan form ke pengisi.'
@@ -750,7 +753,7 @@ export default function AdminFormEditor({ formId }: Props) {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Buka Formulir
+                      Lihat form publik
                     </Link>
                   </div>
                 </details>
@@ -764,7 +767,10 @@ export default function AdminFormEditor({ formId }: Props) {
           </section>
 
           <section className="admin-builder-panel editorial-form-editor-panel editorial-form-editor-structure-panel">
-          <h2>Struktur Form</h2>
+          <h2>Struktur form</h2>
+          <p className="editorial-form-editor-section-note">
+            Susun langkah, pertanyaan, opsi jawaban, dan alur percabangan dari satu tempat.
+          </p>
           <div className="admin-builder-pages-panel">
             <div className="admin-builder-pages-head">
               <div>
@@ -820,11 +826,11 @@ export default function AdminFormEditor({ formId }: Props) {
           </div>
           <div className="admin-builder-fields">
             {form.fields.map((field, index) => (
-              <div key={field.id} className="admin-builder-card">
-                <div className="admin-builder-card-head">
-                  <strong>{field.name}</strong>
-                  <div className="admin-builder-card-actions">
-                    <span>{fieldTypeLabels[field.type]}</span>
+                <div key={field.id} className="admin-builder-card">
+                  <div className="admin-builder-card-head">
+                    <strong>{field.label || field.name}</strong>
+                    <div className="admin-builder-card-actions">
+                      <span>{fieldTypeLabels[field.type]}</span>
                     <button
                       type="button"
                       onClick={() => moveField(field.id, 'up')}
@@ -1007,10 +1013,10 @@ export default function AdminFormEditor({ formId }: Props) {
                             + Tambah opsi
                           </button>
                         </div>
-                        <small>
+                              <small>
                           {field.type === 'radio'
-                            ? 'Tandai satu opsi benar untuk soal quiz. Jika tidak ada opsi yang ditandai benar, field radio akan diperlakukan sebagai evaluasi biasa. Untuk form multi-langkah, tiap opsi juga bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung submit form.'
-                            : 'Untuk form multi-langkah, tiap opsi dropdown bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung submit form.'}
+                            ? 'Tandai satu opsi benar untuk soal kuis. Jika tidak ada opsi yang ditandai benar, field radio diperlakukan sebagai evaluasi biasa. Untuk form multi-langkah, tiap opsi juga bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung mengirim form.'
+                            : 'Untuk form multi-langkah, tiap opsi dropdown bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung mengirim form.'}
                         </small>
                       </>
                     ) : (
@@ -1033,7 +1039,10 @@ export default function AdminFormEditor({ formId }: Props) {
           </section>
 
           <section className="admin-builder-panel editorial-form-editor-panel editorial-form-editor-preview-panel">
-          <h2>Preview Form</h2>
+          <h2>Pratinjau form</h2>
+          <p className="editorial-form-editor-section-note">
+            Gunakan pratinjau ini untuk mengecek urutan langkah dan pengalaman pengisi sebelum form dipublikasikan.
+          </p>
           <AdminFormPreview
             form={{
               title: form.title,

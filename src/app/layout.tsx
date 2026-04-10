@@ -3,8 +3,8 @@ import './globals.css'
 import Providers from '@/components/Providers'
 
 export const metadata: Metadata = {
-  title: 'Daftar Hadir - Seminar Evaluasi CPNS',
-  description: 'Daftar Hadir Seminar Evaluasi Rancangan Aktualisasi Pelatihan Dasar CPNS Kemensetneg Tahun 2026',
+  title: 'JOTT Editor Form',
+  description: 'Platform pengelolaan formulir publik, kiriman, dan dashboard admin JOTT Editor Form.',
 }
 
 export default function RootLayout({

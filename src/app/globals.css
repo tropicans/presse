@@ -3456,6 +3456,18 @@ body {
   letter-spacing: -0.04em;
 }
 
+.editorial-form-editor-section-note {
+  margin: -10px 0 20px;
+  color: var(--ledger-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.submissions-dashboard-note {
+  margin: 12px 0 0;
+  max-width: 34rem;
+}
+
 .editorial-form-editor-shell .admin-builder-field span,
 .editorial-form-editor-shell .admin-builder-field small,
 .editorial-form-editor-shell .admin-builder-field > small,
@@ -4328,6 +4340,12 @@ body {
   color: rgba(66, 71, 78, 0.84);
 }
 
+.success-followup-message {
+  max-width: 42rem;
+  margin: 12px auto 0;
+  color: var(--ledger-muted);
+}
+
 .public-ledger-success-summary-card {
   border: none;
   border-radius: 22px;
@@ -4576,6 +4594,11 @@ body {
   text-align: left;
 }
 
+.login-suite-shell-minimal {
+  grid-template-columns: minmax(0, 520px);
+  justify-content: center;
+}
+
 .login-suite-copy,
 .login-suite-panel {
   position: relative;
@@ -4625,6 +4648,13 @@ body {
   border: 1px solid rgba(194, 199, 207, 0.3);
 }
 
+.login-suite-panel-minimal {
+  gap: 18px;
+  padding: 28px;
+  text-align: center;
+  justify-items: center;
+}
+
 .login-suite-icon {
   margin: 0;
 }
@@ -4641,6 +4671,19 @@ body {
   font-size: 1.28rem;
   line-height: 1.15;
   letter-spacing: -0.04em;
+}
+
+.login-suite-title-minimal,
+.login-suite-subtitle-minimal,
+.login-suite-panel-minimal .login-suite-panel-title,
+.login-suite-panel-minimal .login-suite-note {
+  max-width: 32rem;
+  text-align: center;
+}
+
+.login-suite-points-minimal {
+  justify-content: center;
+  margin-top: 0;
 }
 
 .login-suite-signin-btn {

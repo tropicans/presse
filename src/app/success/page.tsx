@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getPublicFormBySlug, getPublicSubmissionSummary } from '@/lib/forms'
 
@@ -6,6 +7,25 @@ interface SuccessPageProps {
     slug?: string | string[]
     submissionId?: string | string[]
   }>
+}
+
+export async function generateMetadata({ searchParams }: SuccessPageProps): Promise<Metadata> {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
+  const slugParam = resolvedSearchParams?.slug
+  const slug = Array.isArray(slugParam) ? slugParam[0]?.trim() : slugParam?.trim()
+  const form = slug ? await getPublicFormBySlug(slug) : null
+
+  if (!form) {
+    return {
+      title: 'Pengiriman Berhasil | JOTT Editor Form',
+      description: 'Terima kasih, data Anda telah berhasil dikirim.',
+    }
+  }
+
+  return {
+    title: `Pengiriman Berhasil | ${form.title}`,
+    description: form.successMessage || `Data untuk form ${form.title} telah berhasil dikirim.`,
+  }
 }
 
 export default async function SuccessPage({ searchParams }: SuccessPageProps) {
@@ -21,13 +41,14 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     ? await getPublicSubmissionSummary(slug, submissionId)
     : null
   const formHref = slug ? `/f/${encodeURIComponent(slug)}` : null
+  const fallbackPublicHref = '/f/attendance-template'
   const successMessage = form?.successMessage
     ?? 'Data Anda telah berhasil dikirim.'
 
   return (
     <div className="success-wrapper public-ledger-success-page">
       <header className="public-ledger-topbar public-ledger-topbar-static">
-        <Link href="/" className="public-ledger-brand">
+        <Link href={formHref ?? fallbackPublicHref} className="public-ledger-brand">
           <div className="public-ledger-brand-mark" aria-hidden="true" />
           <div>
             <strong>Editorial Data Intelligence</strong>
@@ -53,10 +74,13 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         <p className="success-message">
           {successMessage}
         </p>
+        <p className="header-subtitle success-followup-message">
+          Simpan halaman ini bila Anda perlu kembali ke form publik ini atau mengisi ulang di lain waktu.
+        </p>
         {summary?.quiz && (
           <div className="success-summary-card public-ledger-success-summary-card">
             <div className="success-summary-head">
-              <h2>Ringkasan Quiz</h2>
+              <h2>Ringkasan kuis</h2>
               <span className={`success-summary-status ${summary.quiz.passed ? 'pass' : 'fail'}`}>
                 {summary.quiz.passed ? 'Lulus' : 'Belum Lulus'}
               </span>
@@ -85,8 +109,11 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
               Isi Form Lagi
             </Link>
           )}
-          <Link href="/" className="success-secondary-link public-ledger-success-link secondary">
-            Kembali ke Beranda
+          <Link
+            href={formHref ?? fallbackPublicHref}
+            className="success-secondary-link public-ledger-success-link secondary"
+          >
+            Kembali ke Form Publik
           </Link>
         </div>
       </div>

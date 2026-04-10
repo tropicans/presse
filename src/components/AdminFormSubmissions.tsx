@@ -216,7 +216,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
             <div className="forms-dashboard-brand-mark" aria-hidden="true" />
             <div>
               <strong>Editorial Data Intelligence</strong>
-              <span>Ruang kerja peninjauan kiriman</span>
+              <span>Ruang kerja peninjauan hasil form</span>
             </div>
           </div>
 
@@ -255,8 +255,11 @@ export default function AdminFormSubmissions({ formId }: Props) {
             <p className="forms-dashboard-overline">Pusat Kiriman</p>
             <strong>{data.form.title}</strong>
             <span>
-              Pantau kiriman, evaluasi hasil quiz, dan unduh data CSV dari satu tampilan editorial.
+              Pantau kiriman, evaluasi hasil kuis, dan unduh CSV dari satu tampilan yang lebih fokus.
             </span>
+            <p className="editorial-form-editor-section-note submissions-dashboard-note">
+              Gunakan filter di bawah untuk mempersempit hasil yang benar-benar ingin Anda tindak lanjuti.
+            </p>
           </div>
           <div className="editorial-form-editor-status-meta">
             <span className={`forms-dashboard-status-chip ${data.form.status.toLowerCase()}`}>{getAdminFormStatusLabel(data.form.status)}</span>
@@ -274,13 +277,13 @@ export default function AdminFormSubmissions({ formId }: Props) {
           <span className="admin-breadcrumb-current">Kiriman</span>
         </nav>
 
-        <section className="forms-dashboard-hero submissions-dashboard-hero">
-          <div className="forms-dashboard-hero-copy">
-            <p className="forms-dashboard-overline">Tinjauan & Ringkasan</p>
-            <h1>Kiriman Form</h1>
-            <p>
-              Menampilkan {numberFormatter.format(data.items.length)} hasil aktif dari total{' '}
-              {numberFormatter.format(data.totalItems)} kiriman untuk form ini.
+          <section className="forms-dashboard-hero submissions-dashboard-hero">
+            <div className="forms-dashboard-hero-copy">
+              <p className="forms-dashboard-overline">Tinjauan Kiriman</p>
+              <h1>Kiriman</h1>
+              <p>
+                Menampilkan {numberFormatter.format(data.items.length)} hasil aktif dari total{' '}
+                {numberFormatter.format(data.totalItems)} kiriman untuk form ini.
             </p>
           </div>
 
@@ -341,7 +344,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
           {hasQuiz && (
             <article className="forms-dashboard-stat-card">
               <div className="forms-dashboard-stat-head">
-                <span>Pass Rate Quiz</span>
+                <span>Tingkat lulus kuis</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m3 17 6-6 4 4 8-8" />
                   <path d="M14 7h7v7" />
@@ -357,11 +360,11 @@ export default function AdminFormSubmissions({ formId }: Props) {
 
         <section className="forms-dashboard-panel forms-dashboard-table-panel" id="submissions-dashboard-table">
           <div className="forms-dashboard-panel-header">
-            <div>
+              <div>
                 <p className="forms-dashboard-overline">Tabel Kiriman</p>
-              <h2>Data Masuk</h2>
-                <p>Filter, urutkan, lalu hapus kiriman yang tidak valid bila diperlukan.</p>
-            </div>
+                <h2>Data Masuk</h2>
+                <p>Filter, urutkan, lalu hapus kiriman yang tidak valid bila memang diperlukan.</p>
+              </div>
 
             <div className="submissions-dashboard-filterbar">
               {hasParticipantType && (
@@ -381,16 +384,16 @@ export default function AdminFormSubmissions({ formId }: Props) {
 
               {hasQuiz && (
                 <label className="submissions-dashboard-filter">
-                  <span>Quiz</span>
+                  <span>Kuis</span>
                   <select
                     value={quizFilter}
                     onChange={(event) => setQuizFilter(event.target.value as typeof quizFilter)}
                     className="forms-dashboard-select"
                   >
-                    <option value="all">Semua hasil</option>
+                    <option value="all">Semua nilai</option>
                     <option value="passed">Lulus</option>
                     <option value="failed">Belum lulus</option>
-                    <option value="ungraded">Tanpa quiz</option>
+                    <option value="ungraded">Tanpa kuis</option>
                   </select>
                 </label>
               )}
@@ -420,7 +423,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
             ) : data.items.length === 0 ? (
               <div className="forms-dashboard-empty-state">
                 <h3>Tidak ada hasil yang cocok</h3>
-                  <p>Ubah filter peserta, filter quiz, atau urutan untuk melihat kiriman lain.</p>
+                  <p>Ubah filter peserta, filter kuis, atau urutan untuk melihat kiriman lain.</p>
               </div>
             ) : (
               <table className="forms-dashboard-table submissions-dashboard-table">
@@ -428,7 +431,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
                   <tr>
                     <th scope="col">Waktu & Metadata</th>
                     {hasParticipantType && <th scope="col">Tipe Peserta</th>}
-                    {hasQuiz && <th scope="col">Hasil Quiz</th>}
+                    {hasQuiz && <th scope="col">Hasil Kuis</th>}
                     {visibleColumns.map((column) => (
                       <th key={column.id} scope="col">{column.label}</th>
                     ))}
@@ -440,13 +443,14 @@ export default function AdminFormSubmissions({ formId }: Props) {
                   {data.items.map((item) => {
                     const signature = signatureColumn ? item.answers[signatureColumn.name] : ''
                     const quizPercentage = getQuizPercentage(item)
+                    const submittedAt = new Date(item.createdAt).toLocaleString('id-ID')
 
                     return (
                       <tr key={item.id}>
                         <td data-label="Waktu & Metadata">
                           <div className="submissions-dashboard-primary-cell">
-                            <strong>{new Date(item.createdAt).toLocaleString('id-ID')}</strong>
-                            <span>ID: {item.id}</span>
+                            <strong>{submittedAt}</strong>
+                            <span>Kiriman: {item.id}</span>
                           </div>
                         </td>
                         {hasParticipantType && (
@@ -457,13 +461,13 @@ export default function AdminFormSubmissions({ formId }: Props) {
                           </td>
                         )}
                         {hasQuiz && (
-                          <td data-label="Hasil Quiz">
+                          <td data-label="Hasil Kuis">
                             {item.meta.quiz ? (
-                              <div className="submissions-dashboard-quiz-card">
-                                <strong>{item.meta.quiz.score}/{item.meta.quiz.maxScore}</strong>
-                                <span>
-                                  {item.meta.quiz.correctAnswers} benar dari {item.meta.quiz.totalQuestions} soal
-                                </span>
+                               <div className="submissions-dashboard-quiz-card">
+                                 <strong>{item.meta.quiz.score}/{item.meta.quiz.maxScore}</strong>
+                                 <span>
+                                   {item.meta.quiz.correctAnswers} benar dari {item.meta.quiz.totalQuestions} soal
+                                 </span>
                                 <em className={`admin-quiz-status ${item.meta.quiz.passed ? 'pass' : 'fail'}`}>
                                   {quizPercentage}% · {item.meta.quiz.passed ? 'Lulus' : 'Belum lulus'}
                                 </em>
@@ -482,7 +486,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
                           {signature ? (
                             <Image
                               src={signature}
-                              alt="Signature"
+                               alt="Tanda tangan pengirim"
                               width={80}
                               height={40}
                               unoptimized
@@ -516,19 +520,19 @@ export default function AdminFormSubmissions({ formId }: Props) {
         <section className="forms-dashboard-insights submissions-dashboard-insights">
           <article className="forms-dashboard-panel submissions-dashboard-breakdown-panel">
             <div className="forms-dashboard-panel-header compact">
-              <div>
+                <div>
                   <p className="forms-dashboard-overline">Ringkasan</p>
-                <h2>Komposisi Hasil</h2>
-                <p>Ringkasan cepat untuk melihat distribusi kiriman yang sedang aktif.</p>
+                  <h2>Komposisi Hasil</h2>
+                  <p>Ringkasan cepat untuk melihat distribusi kiriman yang sedang aktif.</p>
+                </div>
               </div>
-            </div>
 
             <div className="submissions-dashboard-breakdown-list">
               {hasParticipantType && (
                 <div className="submissions-dashboard-breakdown-item">
                   <div>
                     <strong>Peserta Internal</strong>
-                    <span>{numberFormatter.format(internalCount)} data</span>
+                    <span>{numberFormatter.format(internalCount)} kiriman</span>
                   </div>
                   <div className="submissions-dashboard-breakdown-meter" aria-hidden="true">
                     <span style={{ width: `${data.items.length > 0 ? Math.max(10, Math.round((internalCount / data.items.length) * 100)) : 0}%` }} />
@@ -540,7 +544,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
                 <div className="submissions-dashboard-breakdown-item">
                   <div>
                     <strong>Peserta Eksternal</strong>
-                    <span>{numberFormatter.format(externalCount)} data</span>
+                    <span>{numberFormatter.format(externalCount)} kiriman</span>
                   </div>
                   <div className="submissions-dashboard-breakdown-meter muted" aria-hidden="true">
                     <span style={{ width: `${data.items.length > 0 ? Math.max(10, Math.round((externalCount / data.items.length) * 100)) : 0}%` }} />
@@ -551,7 +555,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
               {hasQuiz && (
                 <div className="submissions-dashboard-breakdown-item">
                   <div>
-                    <strong>Kelulusan Quiz</strong>
+                    <strong>Kelulusan kuis</strong>
                     <span>{passRate !== null ? `${passRate}% tingkat kelulusan` : 'Belum ada nilai'}</span>
                   </div>
                   <div className="submissions-dashboard-breakdown-meter accent" aria-hidden="true">
@@ -563,16 +567,16 @@ export default function AdminFormSubmissions({ formId }: Props) {
           </article>
 
           <article className="forms-dashboard-highlight-card">
-            <div className="forms-dashboard-highlight-copy">
-              <p className="forms-dashboard-overline dark">Insight Teratas</p>
-              <strong>{bestQuizPercentage !== null ? `${bestQuizPercentage}%` : numberFormatter.format(data.items.length)}</strong>
-              <h3>{bestQuizSubmission ? 'Nilai Tertinggi' : 'Kiriman Aktif'}</h3>
-              <p>
-                {bestQuizSubmission
-                  ? `Kiriman terbaik memiliki skor ${bestQuizSubmission.meta.quiz?.score}/${bestQuizSubmission.meta.quiz?.maxScore} dan dikirim pada ${new Date(bestQuizSubmission.createdAt).toLocaleString('id-ID')}.`
-                  : 'Belum ada data quiz. Gunakan panel ini untuk memantau volume kiriman aktif.'}
-              </p>
-            </div>
+              <div className="forms-dashboard-highlight-copy">
+                <p className="forms-dashboard-overline dark">Sorotan utama</p>
+                <strong>{bestQuizPercentage !== null ? `${bestQuizPercentage}%` : numberFormatter.format(data.items.length)}</strong>
+                <h3>{bestQuizSubmission ? 'Nilai Tertinggi' : 'Kiriman Aktif'}</h3>
+                <p>
+                  {bestQuizSubmission
+                    ? `Kiriman terbaik memiliki skor ${bestQuizSubmission.meta.quiz?.score}/${bestQuizSubmission.meta.quiz?.maxScore} dan dikirim pada ${new Date(bestQuizSubmission.createdAt).toLocaleString('id-ID')}.`
+                    : 'Belum ada data kuis. Gunakan panel ini untuk memantau volume kiriman aktif.'}
+                </p>
+              </div>
 
             <dl className="forms-dashboard-highlight-list">
               <div>
@@ -601,7 +605,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
           <div className="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-submission-title">
             <div className="admin-modal-head">
               <h3 id="delete-submission-title">Hapus Kiriman</h3>
-              <p>Tindakan ini akan menghapus kiriman dari builder form. Untuk form attendance, data legacy terkait juga ikut dihapus.</p>
+              <p>Kiriman ini akan dihapus dari form builder. Untuk form attendance, data legacy terkait juga ikut dihapus.</p>
             </div>
 
             <div className="admin-modal-actions">

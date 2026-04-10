@@ -260,7 +260,7 @@ function PreviewSession({ form }: Props) {
           <span />
           <span />
         </div>
-        <div className="editorial-preview-windowtag">Preview Langsung</div>
+        <div className="editorial-preview-windowtag">Pratinjau langsung</div>
         <div className="editorial-preview-windowicon">↗</div>
       </div>
       <div className="admin-preview-card">
@@ -271,13 +271,13 @@ function PreviewSession({ form }: Props) {
 
         <div className="admin-preview-body">
           <div className="admin-preview-note">
-            <strong>Preview interaktif</strong>
-            <p>Uji alur langkah dan branching langsung di sini. Data yang Anda isi tidak akan dikirim.</p>
+            <strong>Pratinjau interaktif</strong>
+            <p>Uji alur langkah dan percabangan langsung di sini. Data yang Anda isi tidak akan dikirim.</p>
           </div>
 
           {hasWebinarBranching && (
             <div className="admin-preview-workflow-note">
-              <strong>Preview alur webinar</strong>
+              <strong>Pratinjau alur webinar</strong>
               <p>Langkah pembuka menentukan apakah peserta internal mengisi NIP/NRP sebelum lanjut ke data presensi umum.</p>
             </div>
           )}
@@ -469,7 +469,7 @@ function PreviewSession({ form }: Props) {
               <p className="form-navigation-title">
                 {isMultiStep
                   ? `Langkah ${safeCurrentStepIndex + 1} dari ${steps.length}`
-                  : 'Preview siap diuji'}
+                  : 'Pratinjau siap diuji'}
               </p>
               <p className="form-navigation-caption">
                 {requiredFieldCount > 0
@@ -505,13 +505,13 @@ function PreviewSession({ form }: Props) {
                     scrollToPreviewTop()
                   }}
                 >
-                  {isLastStep ? 'Ulangi Preview' : 'Lanjut'}
+                  {isLastStep ? 'Ulangi pratinjau' : 'Lanjut'}
                 </button>
               </div>
             ) : (
               <div className="form-navigation">
                 <button type="button" className="admin-preview-submit" disabled>
-                  Submit
+                  Kirim
                 </button>
               </div>
             )}

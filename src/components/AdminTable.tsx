@@ -131,9 +131,9 @@ export default function AdminTable() {
         </nav>
 
         <div className="forms-dashboard-topbar-actions">
-          <Link href="/admin/forms" className="forms-dashboard-topbar-link">
-            Editor Form
-          </Link>
+            <Link href="/admin/forms" className="forms-dashboard-topbar-link">
+              Daftar form
+            </Link>
           <button
             type="button"
             className="forms-dashboard-topbar-icon"
@@ -189,7 +189,7 @@ export default function AdminTable() {
           </a>
 
           <div className="forms-dashboard-sidebar-foot">
-            <Link href="/">Kembali ke beranda</Link>
+            <Link href="/admin/login">Kembali ke akses admin</Link>
           </div>
         </aside>
 
@@ -223,7 +223,7 @@ export default function AdminTable() {
               </button>
               <Link href="/admin/forms" className="forms-dashboard-primary-button">
                 <span>+</span>
-                <span>Buka Formulir</span>
+                <span>Buka daftar form</span>
               </Link>
             </div>
           </section>
@@ -244,7 +244,7 @@ export default function AdminTable() {
                 </svg>
               </div>
               <strong>{numberFormatter.format(total)}</strong>
-              <small>Total hasil pencarian attendance yang saat ini aktif.</small>
+              <small>Total hasil pencarian kehadiran yang saat ini aktif.</small>
             </article>
 
             <article className="forms-dashboard-stat-card">

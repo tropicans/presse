@@ -33,7 +33,7 @@ export default function AdminFormsList() {
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [newFormTitle, setNewFormTitle] = useState('Form Baru')
+  const [newFormTitle, setNewFormTitle] = useState('Form baru')
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -76,7 +76,7 @@ export default function AdminFormsList() {
   }
 
   const getShareText = (form: Pick<AdminFormListItem, 'title'>, publicUrl: string) => {
-    return `Isi form "${form.title}" di sini: ${publicUrl}`
+    return `Isi formulir "${form.title}" di sini: ${publicUrl}`
   }
 
   const openShareWindow = (url: string) => {
@@ -144,7 +144,7 @@ export default function AdminFormsList() {
   }
 
   const handleOpenCreateModal = () => {
-    setNewFormTitle('Form Baru')
+    setNewFormTitle('Form baru')
     setShowCreateModal(true)
     setFeedback(null)
   }
@@ -192,7 +192,7 @@ export default function AdminFormsList() {
     }
 
     if (form.submissionCount > 0) {
-      return 'Form yang sudah punya submission tidak bisa dihapus'
+      return 'Form yang sudah punya kiriman tidak bisa dihapus'
     }
 
     return null
@@ -311,7 +311,7 @@ export default function AdminFormsList() {
           <Link href="/admin" className="forms-dashboard-topbar-link">
             Data Kehadiran
           </Link>
-          <Link href="/" className="forms-dashboard-topbar-icon" aria-label="Buka beranda">
+          <Link href="/admin/login" className="forms-dashboard-topbar-icon" aria-label="Buka akses admin">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 10.5 12 3l9 7.5" />
               <path d="M5 9.5V21h14V9.5" />
@@ -388,7 +388,7 @@ export default function AdminFormsList() {
           </button>
 
           <div className="forms-dashboard-sidebar-foot">
-            <Link href="/">Kembali ke beranda</Link>
+            <Link href="/admin/login">Kembali ke akses admin</Link>
           </div>
         </aside>
 
@@ -405,10 +405,10 @@ export default function AdminFormsList() {
             <div className="forms-dashboard-hero-copy">
               <p className="forms-dashboard-overline">Dashboard Admin</p>
               <h1>Formulir</h1>
-              <p>
-                Kelola form publik, lihat performa kiriman, dan pantau hasil webinar dalam
-                satu tampilan editorial yang lebih rapi.
-              </p>
+                <p>
+                 Kelola form publik, lihat performa kiriman, dan pantau hasil webinar dalam
+                 satu tampilan editorial yang lebih rapi.
+                </p>
             </div>
 
             <div className="forms-dashboard-hero-actions">
@@ -463,7 +463,7 @@ export default function AdminFormsList() {
                 </svg>
               </div>
               <strong>{numberFormatter.format(filteredSubmissions)}</strong>
-              <small>Akumulasi kiriman dari hasil filter yang sedang aktif.</small>
+                <small>Akumulasi kiriman dari form yang sedang tampil di dashboard.</small>
             </article>
 
             <article className="forms-dashboard-stat-card">
@@ -598,7 +598,7 @@ export default function AdminFormsList() {
                                 Edit
                               </Link>
                               <Link href={`/admin/forms/${form.id}/submissions`} className="forms-dashboard-action-link">
-                                Hasil
+                                Kiriman
                               </Link>
                               {publicFormPath && (
                                 <button
@@ -641,7 +641,7 @@ export default function AdminFormsList() {
                                       rel="noreferrer"
                                       onClick={(event) => closeShareMenu(event.currentTarget.closest('details'))}
                                     >
-                                      Buka Formulir
+                                      Lihat form publik
                                     </Link>
                                   </div>
                                 </details>
@@ -751,12 +751,12 @@ export default function AdminFormsList() {
         <div className="admin-modal-backdrop" role="presentation">
           <div className="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="create-form-title">
             <div className="admin-modal-head">
-              <h3 id="create-form-title">Buat Form Baru</h3>
+              <h3 id="create-form-title">Buat form baru</h3>
               <p>Tentukan judul awal. Anda bisa mengubah detail dan pertanyaan setelah form dibuat.</p>
             </div>
 
             <label className="admin-builder-field">
-              <span>Judul Form</span>
+                <span>Judul form</span>
               <input
                 value={newFormTitle}
                 onChange={(event) => setNewFormTitle(event.target.value)}
