@@ -21,6 +21,16 @@ x-benchmark-app: &benchmark-app
   depends_on:
     postgres:
       condition: service_healthy
+  healthcheck:
+    test:
+      - CMD
+      - node
+      - -e
+      - "fetch('http://127.0.0.1:3456').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+    interval: 10s
+    timeout: 5s
+    retries: 6
+    start_period: 15s
 
 x-worker: &worker
   <<: *runtime-image
@@ -79,6 +89,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3456').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   worker:
     <<: *worker
@@ -92,22 +112,27 @@ services:
       WORKER_ERROR_MS: 1000
     depends_on:
       app:
-        condition: service_started
+        condition: service_healthy
 
   app-bench-1:
     <<: *benchmark-app
+    profiles: ["bench"]
 
   app-bench-2:
     <<: *benchmark-app
+    profiles: ["bench"]
 
   app-bench-3:
     <<: *benchmark-app
+    profiles: ["bench"]
 
   app-bench-4:
     <<: *benchmark-app
+    profiles: ["bench"]
 
   worker-bench-1:
     <<: *worker
+    profiles: ["bench"]
     command: ["node", "scripts/submission-worker.mjs"]
     environment:
       INTERNAL_WORKER_TOKEN: benchmark-worker-token
@@ -117,10 +142,11 @@ services:
       WORKER_ERROR_MS: 1000
     depends_on:
       app-bench-1:
-        condition: service_started
+        condition: service_healthy
 
   worker-bench-2:
     <<: *worker
+    profiles: ["bench"]
     command: ["node", "scripts/submission-worker.mjs"]
     environment:
       INTERNAL_WORKER_TOKEN: benchmark-worker-token
@@ -130,10 +156,11 @@ services:
       WORKER_ERROR_MS: 1000
     depends_on:
       app-bench-2:
-        condition: service_started
+        condition: service_healthy
 
   proxy-bench:
     image: nginx:1.27-alpine
+    profiles: ["bench"]
     container_name: jott-proxy-bench
     restart: unless-stopped
     ports:
