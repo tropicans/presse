@@ -1,5 +1,6 @@
 import { revalidatePath } from 'next/cache'
-import { Prisma } from '@prisma/client'
+import type { JsonValue, Sql } from '@prisma/client/runtime/client'
+import { PrismaClientKnownRequestError, join, sqltag as sql } from '@prisma/client/runtime/client'
 import { prisma } from '@/lib/prisma'
 
 const MAX_TEXT_LENGTH = 500
@@ -202,8 +203,8 @@ interface SubmissionJobRow {
   id: string
   submissionId: string
   formId: string
-  payloadJson: Prisma.JsonValue
-  pathJson: Prisma.JsonValue | null
+  payloadJson: JsonValue
+  pathJson: JsonValue | null
   attempts: number
 }
 
@@ -235,7 +236,7 @@ interface FormRow {
   successMessage: string | null
   status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
   mode?: FormMode
-  settingsJson?: Prisma.JsonValue | null
+  settingsJson?: JsonValue | null
   updatedAt?: Date
   submissionCount?: number
 }
@@ -264,7 +265,7 @@ interface SubmissionRow {
   createdAt: Date
   fieldId: string
   valueText: string | null
-  pathJson: Prisma.JsonValue | null
+  pathJson: JsonValue | null
 }
 
 interface SubmissionAnswerRow {
@@ -480,7 +481,7 @@ function normalizePassingPercentage(value: unknown) {
 
 function readFormWorkflow(
   slug: string,
-  settingsJson: Prisma.JsonValue | null
+  settingsJson: JsonValue | null
 ): FormWorkflow {
   if (slug === ATTENDANCE_FORM_SLUG) {
     return 'WEBINAR'
@@ -494,7 +495,7 @@ function readFormWorkflow(
   return workflow === 'WEBINAR' ? 'WEBINAR' : 'STANDARD'
 }
 
-function readQuizSettings(settingsJson: Prisma.JsonValue | null): QuizSettings {
+function readQuizSettings(settingsJson: JsonValue | null): QuizSettings {
   if (!settingsJson || typeof settingsJson !== 'object' || Array.isArray(settingsJson)) {
     return {
       passingPercentage: DEFAULT_QUIZ_PASS_PERCENTAGE,
@@ -523,7 +524,7 @@ function createDefaultFormPages(fieldIds: string[]): FormPageDefinition[] {
 }
 
 function readFormPages(
-  settingsJson: Prisma.JsonValue | null,
+  settingsJson: JsonValue | null,
   fieldIds: string[]
 ): FormPageDefinition[] {
   if (!settingsJson || typeof settingsJson !== 'object' || Array.isArray(settingsJson)) {
@@ -586,7 +587,7 @@ function readFormPages(
 }
 
 function readFormConditionalRoutes(
-  settingsJson: Prisma.JsonValue | null,
+  settingsJson: JsonValue | null,
   fieldIds: string[],
   pageIds: string[]
 ): FormConditionalRoute[] {
@@ -879,7 +880,7 @@ function buildSubmissionMeta(
   }
 }
 
-function readSubmissionMeta(pathJson: Prisma.JsonValue | null): AdminFormSubmissionItem['meta'] {
+function readSubmissionMeta(pathJson: JsonValue | null): AdminFormSubmissionItem['meta'] {
   if (!pathJson || typeof pathJson !== 'object' || Array.isArray(pathJson)) {
     return {
       participantType: null,
@@ -1523,7 +1524,7 @@ function buildSubmissionAnswerValueRows(rows: PublicFormRowsResult, values: Reco
     const fieldName = mapFieldName(field)
     const value = values[fieldName] ?? ''
 
-    return Prisma.sql`(
+    return sql`(
       ${randomId('answer')},
       ${field.id},
       ${value}
@@ -1542,7 +1543,7 @@ function buildSubmissionAnswerValueRowsFromSnapshot(
   fields: SubmissionJobSnapshotField[],
   values: Record<string, string>
 ) {
-  return fields.map((field) => Prisma.sql`(
+  return fields.map((field) => sql`(
     ${randomId('answer')},
     ${field.id},
     ${values[field.name] ?? ''}
@@ -1559,13 +1560,13 @@ function buildFormSubmissionMutation(
   const answerRows = buildSubmissionAnswerValueRows(rows, values)
 
   if (answerRows.length === 0) {
-    return Prisma.sql`
+    return sql`
       INSERT INTO submissions (id, form_id, path_json, created_at, completed_at)
       VALUES (${submissionId}, ${rows.form.id}, ${pathJson}::jsonb, NOW(), NOW())
     `
   }
 
-  return Prisma.sql`
+  return sql`
     WITH submission_insert AS (
       INSERT INTO submissions (id, form_id, path_json, created_at, completed_at)
       VALUES (${submissionId}, ${rows.form.id}, ${pathJson}::jsonb, NOW(), NOW())
@@ -1588,7 +1589,7 @@ function buildFormSubmissionMutation(
       NOW()
     FROM submission_insert
     CROSS JOIN (
-      VALUES ${Prisma.join(answerRows)}
+      VALUES ${join(answerRows)}
     ) AS answers(id, field_id, value_text)
   `
 }
@@ -1598,19 +1599,19 @@ function buildFormSubmissionMutationFromSnapshot(
   fields: SubmissionJobSnapshotField[],
   values: Record<string, string>,
   submissionId: string,
-  pathJson: Prisma.JsonValue | null
+  pathJson: JsonValue | null
 ) {
   const serializedPath = pathJson ? JSON.stringify(pathJson) : null
   const answerRows = buildSubmissionAnswerValueRowsFromSnapshot(fields, values)
 
   if (answerRows.length === 0) {
-    return Prisma.sql`
+    return sql`
       INSERT INTO submissions (id, form_id, path_json, created_at, completed_at)
       VALUES (${submissionId}, ${formId}, ${serializedPath}::jsonb, NOW(), NOW())
     `
   }
 
-  return Prisma.sql`
+  return sql`
     WITH submission_insert AS (
       INSERT INTO submissions (id, form_id, path_json, created_at, completed_at)
       VALUES (${submissionId}, ${formId}, ${serializedPath}::jsonb, NOW(), NOW())
@@ -1633,7 +1634,7 @@ function buildFormSubmissionMutationFromSnapshot(
       NOW()
     FROM submission_insert
     CROSS JOIN (
-      VALUES ${Prisma.join(answerRows)}
+      VALUES ${join(answerRows)}
     ) AS answers(id, field_id, value_text)
   `
 }
@@ -1642,7 +1643,7 @@ async function enqueueSubmissionJob(
   rows: PublicFormRowsResult,
   values: Record<string, string>,
   submissionId: string,
-  path: Prisma.JsonValue | null,
+  path: JsonValue | null,
   dedupeFieldName?: string,
   dedupeValue?: string
 ) {
@@ -1686,7 +1687,7 @@ function buildAttendanceAndSubmissionJobMutation(
   rows: PublicFormRowsResult,
   values: Record<string, string>,
   submissionId: string,
-  path: Prisma.JsonValue | null,
+  path: JsonValue | null,
   dedupeFieldName: string,
   dedupeValue: string
 ) {
@@ -1695,7 +1696,7 @@ function buildAttendanceAndSubmissionJobMutation(
     fields: buildSubmissionFieldSnapshot(rows),
   } satisfies SubmissionJobPayload)
 
-  return Prisma.sql`
+  return sql`
     WITH attendance_insert AS (
       INSERT INTO attendances (
         nama_lengkap,
@@ -1748,7 +1749,7 @@ function buildAttendanceAndSubmissionJobMutation(
 }
 
 function isDuplicateAttendanceError(error: unknown) {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+  if (!(error instanceof PrismaClientKnownRequestError)) {
     return false
   }
 
@@ -1771,7 +1772,7 @@ function isDuplicateAttendanceError(error: unknown) {
 }
 
 function isRetryableRawDbError(error: unknown) {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2010') {
+  if (!(error instanceof PrismaClientKnownRequestError) || error.code !== 'P2010') {
     return false
   }
 
@@ -1791,7 +1792,7 @@ function wait(ms: number) {
   })
 }
 
-async function executeRawWithRetry(statement: Prisma.Sql, maxAttempts = 4) {
+async function executeRawWithRetry(statement: Sql, maxAttempts = 4) {
   let attempt = 0
 
   while (true) {
@@ -1810,7 +1811,7 @@ async function executeRawWithRetry(statement: Prisma.Sql, maxAttempts = 4) {
   }
 }
 
-function parseSubmissionJobPayload(payloadJson: Prisma.JsonValue): SubmissionJobPayload {
+function parseSubmissionJobPayload(payloadJson: JsonValue): SubmissionJobPayload {
   const payload = payloadJson as unknown
 
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
@@ -2035,7 +2036,7 @@ export async function getPublicSubmissionSummary(
   const rows = await prisma.$queryRaw<Array<{
     id: string
     title: string
-    pathJson: Prisma.JsonValue | null
+    pathJson: JsonValue | null
   }>>`
     SELECT
       s.id,
