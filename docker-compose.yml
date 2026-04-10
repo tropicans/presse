@@ -1,5 +1,5 @@
 x-runtime-image: &runtime-image
-  image: jott-runtime:local
+  image: isian-runtime:local
 
 x-runtime-build: &runtime-build
   build:
@@ -49,7 +49,7 @@ x-worker: &worker
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: jott-postgres
+    container_name: isian-postgres
     restart: unless-stopped
     command:
       - postgres
@@ -60,20 +60,20 @@ services:
     ports:
       - "5443:5432"
     environment:
-      POSTGRES_DB: jott_attendance
-      POSTGRES_USER: jott_user
+      POSTGRES_DB: isian_attendance
+      POSTGRES_USER: isian_user
       POSTGRES_PASSWORD: jott_secret_2026
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jott_user -d jott_attendance"]
+      test: ["CMD-SHELL", "pg_isready -U isian_user -d isian_attendance"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   app:
     <<: [*runtime-image, *runtime-build]
-    container_name: jott-app
+    container_name: isian-app
     restart: unless-stopped
     ports:
       - "3456:3456"
@@ -102,7 +102,7 @@ services:
 
   worker:
     <<: *worker
-    container_name: jott-worker
+    container_name: isian-worker
     command: ["node", "scripts/submission-worker.mjs"]
     environment:
       INTERNAL_WORKER_TOKEN: benchmark-worker-token
@@ -161,7 +161,7 @@ services:
   proxy-bench:
     image: nginx:1.27-alpine
     profiles: ["bench"]
-    container_name: jott-proxy-bench
+    container_name: isian-proxy-bench
     restart: unless-stopped
     ports:
       - "3457:3456"

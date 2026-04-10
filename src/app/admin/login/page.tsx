@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
       <section className="entry-suite-card login-suite-card login-suite-shell login-suite-shell-minimal">
         <div className="login-suite-panel login-suite-panel-minimal">
           <Link href="/" className="login-suite-backlink">
-            Kembali ke akses admin
+            Kembali ke beranda
           </Link>
 
           <div className="login-icon entry-suite-icon login-suite-icon">

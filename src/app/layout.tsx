@@ -3,8 +3,8 @@ import './globals.css'
 import Providers from '@/components/Providers'
 
 export const metadata: Metadata = {
-  title: 'JOTT Editor Form',
-  description: 'Platform pengelolaan formulir publik, kiriman, dan dashboard admin JOTT Editor Form.',
+  title: 'isian',
+  description: 'Platform pengelolaan formulir publik, kiriman, dan dashboard admin isian.',
 }
 
 export default function RootLayout({

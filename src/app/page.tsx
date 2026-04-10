@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation'
 import { getAdminSession } from '@/lib/auth'
 
 export const metadata: Metadata = {
-  title: 'Masuk Admin | JOTT Editor Form',
-  description: 'Akses cepat ke dashboard admin JOTT Editor Form menggunakan akun Google yang sudah diizinkan.',
+  title: 'Masuk Admin | isian',
+  description: 'Akses cepat ke dashboard admin isian menggunakan akun Google yang sudah diizinkan.',
 }
 
 export default async function HomePage() {

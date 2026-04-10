@@ -25,6 +25,10 @@ interface AdminFormListItem {
 }
 
 const numberFormatter = new Intl.NumberFormat('id-ID')
+const dateTimeFormatter = new Intl.DateTimeFormat('id-ID', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+})
 
 export default function AdminFormsList() {
   const router = useRouter()
@@ -137,7 +141,7 @@ export default function AdminFormsList() {
     openShareWindow(`https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`)
   }
 
-  const closeShareMenu = (menu: HTMLDetailsElement | null) => {
+  const closeDetailsMenu = (menu: HTMLDetailsElement | null) => {
     if (menu) {
       menu.open = false
     }
@@ -296,7 +300,7 @@ export default function AdminFormsList() {
         <div className="forms-dashboard-brand">
           <div className="forms-dashboard-brand-mark" aria-hidden="true" />
           <div>
-            <strong>Editorial Data Intelligence</strong>
+            <strong>isian</strong>
             <span>Dashboard admin formulir</span>
           </div>
         </div>
@@ -405,10 +409,15 @@ export default function AdminFormsList() {
             <div className="forms-dashboard-hero-copy">
               <p className="forms-dashboard-overline">Dashboard Admin</p>
               <h1>Formulir</h1>
-                <p>
-                 Kelola form publik, lihat performa kiriman, dan pantau hasil webinar dalam
-                 satu tampilan editorial yang lebih rapi.
-                </p>
+              <p>
+                Kelola form publik, lihat performa kiriman, dan pantau hasil webinar dalam satu
+                tampilan editorial yang lebih rapi.
+              </p>
+              <div className="forms-dashboard-hero-pills" aria-label="Ringkasan status form">
+                <span>{numberFormatter.format(publishedCount)} publik</span>
+                <span>{numberFormatter.format(draftCount)} draft</span>
+                <span>{numberFormatter.format(archivedCount)} arsip</span>
+              </div>
             </div>
 
             <div className="forms-dashboard-hero-actions">
@@ -548,8 +557,8 @@ export default function AdminFormsList() {
                 <p>Ubah kata kunci pencarian atau filter status untuk melihat form lain.</p>
               </div>
             ) : (
-              <div className="forms-dashboard-table-wrap">
-                <table className="forms-dashboard-table">
+              <div className="forms-dashboard-table-wrap forms-dashboard-table-wrap-compact">
+                <table className="forms-dashboard-table forms-dashboard-table-compact">
                   <thead>
                     <tr>
                       <th scope="col">Judul &amp; Deskripsi</th>
@@ -565,6 +574,7 @@ export default function AdminFormsList() {
                       const publicFormPath = getPublicFormPath(form)
                       const deleteDisabledReason = getDeleteDisabledReason(form)
                       const isDeleting = deletingId === form.id
+                      const updatedAtLabel = dateTimeFormatter.format(new Date(form.updatedAt))
 
                       return (
                         <tr key={form.id}>
@@ -577,6 +587,30 @@ export default function AdminFormsList() {
                               <code>{form.slug}</code>
                               {publicFormPath && <span>{publicFormPath}</span>}
                             </div>
+                            <dl className="forms-dashboard-table-overview">
+                              <div>
+                                <dt>Status</dt>
+                                <dd>
+                                  <span className={`forms-dashboard-status-chip ${form.status.toLowerCase()}`}>
+                                    {getAdminFormStatusLabel(form.status)}
+                                  </span>
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Mode</dt>
+                                <dd>
+                                  <span className="forms-dashboard-mode-chip">{getAdminFormModeLabel(form.mode)}</span>
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Kiriman</dt>
+                                <dd>{numberFormatter.format(form.submissionCount)}</dd>
+                              </div>
+                              <div>
+                                <dt>Diperbarui</dt>
+                                <dd>{updatedAtLabel}</dd>
+                              </div>
+                            </dl>
                           </td>
                           <td data-label="Status">
                             <span className={`forms-dashboard-status-chip ${form.status.toLowerCase()}`}>
@@ -590,10 +624,10 @@ export default function AdminFormsList() {
                             {numberFormatter.format(form.submissionCount)}
                           </td>
                           <td data-label="Diperbarui">
-                            {new Date(form.updatedAt).toLocaleString('id-ID')}
+                            {updatedAtLabel}
                           </td>
                           <td data-label="Aksi">
-                            <div className="forms-dashboard-row-actions">
+                            <div className="forms-dashboard-row-actions forms-dashboard-row-actions-primary">
                               <Link href={`/admin/forms/${form.id}`} className="forms-dashboard-action-link">
                                 Edit
                               </Link>
@@ -609,52 +643,79 @@ export default function AdminFormsList() {
                                   {copiedSlug === form.slug ? 'Tersalin' : 'Salin Link'}
                                 </button>
                               )}
-                              {publicFormPath && (
-                                <details className="forms-dashboard-share-menu">
-                                  <summary className="forms-dashboard-action-link">Bagikan</summary>
-                                  <div className="forms-dashboard-share-panel">
-                                    <button
-                                      type="button"
-                                      className="forms-dashboard-share-link"
-                                      onClick={() => handleShareWhatsApp(form)}
-                                    >
-                                      WhatsApp
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="forms-dashboard-share-link"
-                                      onClick={() => handleShareX(form)}
-                                    >
-                                      X
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="forms-dashboard-share-link"
-                                      onClick={() => handleShareThreads(form)}
-                                    >
-                                      Threads
-                                    </button>
-                                    <Link
-                                      href={publicFormPath}
-                                      className="forms-dashboard-share-link"
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      onClick={(event) => closeShareMenu(event.currentTarget.closest('details'))}
-                                    >
-                                      Lihat form publik
-                                    </Link>
-                                  </div>
-                                </details>
-                              )}
-                              <button
-                                type="button"
-                                className="forms-dashboard-action-link danger"
-                                onClick={() => handleDeleteForm(form)}
-                                disabled={Boolean(deleteDisabledReason) || isDeleting}
-                                title={deleteDisabledReason ?? 'Hapus form ini secara permanen'}
-                              >
-                                {isDeleting ? 'Menghapus...' : 'Hapus'}
-                              </button>
+                            </div>
+                            <div className="forms-dashboard-row-actions forms-dashboard-row-actions-secondary">
+                              <details className="forms-dashboard-share-menu forms-dashboard-more-menu">
+                                <summary className="forms-dashboard-action-link forms-dashboard-action-link-subtle">
+                                  Lainnya
+                                </summary>
+                                <div className="forms-dashboard-share-panel forms-dashboard-more-panel">
+                                  <Link
+                                    href={`/admin/forms/${form.id}/preview`}
+                                    className="forms-dashboard-share-link"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={(event) => closeDetailsMenu(event.currentTarget.closest('details'))}
+                                  >
+                                    Preview Desktop
+                                  </Link>
+                                  <Link
+                                    href={`/admin/forms/${form.id}/preview?device=mobile`}
+                                    className="forms-dashboard-share-link"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={(event) => closeDetailsMenu(event.currentTarget.closest('details'))}
+                                  >
+                                    Preview Mobile
+                                  </Link>
+                                  {publicFormPath && (
+                                    <details className="forms-dashboard-share-menu forms-dashboard-inline-share-menu">
+                                      <summary className="forms-dashboard-share-link">Bagikan</summary>
+                                      <div className="forms-dashboard-share-panel forms-dashboard-inline-share-panel">
+                                        <button
+                                          type="button"
+                                          className="forms-dashboard-share-link"
+                                          onClick={() => handleShareWhatsApp(form)}
+                                        >
+                                          WhatsApp
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="forms-dashboard-share-link"
+                                          onClick={() => handleShareX(form)}
+                                        >
+                                          X
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="forms-dashboard-share-link"
+                                          onClick={() => handleShareThreads(form)}
+                                        >
+                                          Threads
+                                        </button>
+                                        <Link
+                                          href={publicFormPath}
+                                          className="forms-dashboard-share-link"
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          onClick={(event) => closeDetailsMenu(event.currentTarget.closest('details'))}
+                                        >
+                                          Lihat form publik
+                                        </Link>
+                                      </div>
+                                    </details>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className="forms-dashboard-share-link danger"
+                                    onClick={() => handleDeleteForm(form)}
+                                    disabled={Boolean(deleteDisabledReason) || isDeleting}
+                                    title={deleteDisabledReason ?? 'Hapus form ini secara permanen'}
+                                  >
+                                    {isDeleting ? 'Menghapus...' : 'Hapus Form'}
+                                  </button>
+                                </div>
+                              </details>
                             </div>
                             {deleteDisabledReason && (
                               <p className="forms-dashboard-row-note">{deleteDisabledReason}</p>

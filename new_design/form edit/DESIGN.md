@@ -1,4 +1,4 @@
-# Design System Specification: Editorial Data Intelligence
+# Design System Specification: isian
 
 ## 1. Overview & Creative North Star
 

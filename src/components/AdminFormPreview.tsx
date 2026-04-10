@@ -1,44 +1,17 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-
-interface PreviewField {
-  id: string
-  name: string
-  label: string
-  type: 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature'
-  required: boolean
-  placeholder: string
-  pageId: string
-  options: Array<{
-    label: string
-    isCorrect: boolean
-    points: number
-    nextPageId?: string
-  }>
-}
-
-interface PreviewPage {
-  id: string
-}
-
-interface PreviewForm {
-  title: string
-  description: string | null
-  workflow: 'STANDARD' | 'WEBINAR'
-  pages: PreviewPage[]
-  fields: PreviewField[]
-}
+import type { AdminPreviewField, AdminPreviewForm, AdminPreviewPage } from '@/lib/admin-form-preview'
 
 interface PreviewStep {
   id: string
-  fields: PreviewField[]
+  fields: AdminPreviewField[]
 }
 
 const CONDITIONAL_ROUTE_SUBMIT = '__SUBMIT__'
 
 interface Props {
-  form: PreviewForm
+  form: AdminPreviewForm
 }
 
 function sameChoice(left: string, right: string) {
@@ -61,7 +34,7 @@ function parseLikertOption(option: string) {
   }
 }
 
-function createInitialValues(fields: PreviewField[]) {
+function createInitialValues(fields: AdminPreviewField[]) {
   return fields.reduce<Record<string, string>>((acc, field) => {
     acc[field.name] = ''
     return acc
@@ -72,7 +45,7 @@ function hasMeaningfulValue(value: string | undefined) {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-function getDisplayLabel(field: PreviewField, formData: Record<string, string>) {
+function getDisplayLabel(field: AdminPreviewField, formData: Record<string, string>) {
   if (
     field.name === 'unitKerja'
     && sameChoice(formData.participantType ?? '', 'Eksternal')
@@ -83,7 +56,7 @@ function getDisplayLabel(field: PreviewField, formData: Record<string, string>) 
   return field.label
 }
 
-function buildStandardSteps(form: PreviewForm, formData: Record<string, string>) {
+function buildStandardSteps(form: AdminPreviewForm, formData: Record<string, string>) {
   if (form.pages.length === 0) {
     return [{
       id: 'single-step',
@@ -91,7 +64,7 @@ function buildStandardSteps(form: PreviewForm, formData: Record<string, string>)
     }]
   }
 
-  const fieldsByPageId = new Map<string, PreviewField[]>()
+  const fieldsByPageId = new Map<string, AdminPreviewField[]>()
   const pageIndexById = new Map(form.pages.map((page, index) => [page.id, index]))
 
   for (const page of form.pages) {
@@ -116,13 +89,13 @@ function buildStandardSteps(form: PreviewForm, formData: Record<string, string>)
     const currentPageKey: string = currentPageId
 
     const currentPageIndex: number = pageIndexById.get(currentPageKey) ?? -1
-    const page: PreviewPage | null = currentPageIndex >= 0 ? form.pages[currentPageIndex] : null
+    const page: AdminPreviewPage | null = currentPageIndex >= 0 ? form.pages[currentPageIndex] : null
 
     if (!page) {
       break
     }
 
-    const fields: PreviewField[] = fieldsByPageId.get(page.id) ?? []
+    const fields: AdminPreviewField[] = fieldsByPageId.get(page.id) ?? []
 
     if (fields.length > 0) {
       activeSteps.push({
@@ -166,7 +139,7 @@ function buildStandardSteps(form: PreviewForm, formData: Record<string, string>)
   return activeSteps
 }
 
-function buildWebinarSteps(form: PreviewForm, formData: Record<string, string>) {
+function buildWebinarSteps(form: AdminPreviewForm, formData: Record<string, string>) {
   const participantField = form.fields.find((field) => field.name === 'participantType')
   const internalField = form.fields.find((field) => field.name === 'nipNrp')
   const sharedFields = form.fields.filter((field) => (
@@ -202,7 +175,7 @@ function buildWebinarSteps(form: PreviewForm, formData: Record<string, string>) 
   return steps
 }
 
-function buildSteps(form: PreviewForm, formData: Record<string, string>) {
+function buildSteps(form: AdminPreviewForm, formData: Record<string, string>) {
   return form.workflow === 'WEBINAR'
     ? buildWebinarSteps(form, formData)
     : buildStandardSteps(form, formData)

@@ -120,7 +120,7 @@ export default function AdminTable() {
         <div className="forms-dashboard-brand">
           <div className="forms-dashboard-brand-mark" aria-hidden="true" />
           <div>
-            <strong>Editorial Data Intelligence</strong>
+            <strong>isian</strong>
             <span>Pusat kendali kehadiran</span>
           </div>
         </div>

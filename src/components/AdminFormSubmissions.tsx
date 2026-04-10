@@ -215,7 +215,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
           <div className="forms-dashboard-brand">
             <div className="forms-dashboard-brand-mark" aria-hidden="true" />
             <div>
-              <strong>Editorial Data Intelligence</strong>
+              <strong>isian</strong>
               <span>Ruang kerja peninjauan hasil form</span>
             </div>
           </div>

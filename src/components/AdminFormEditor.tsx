@@ -4,26 +4,10 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import AdminFormPreview from './AdminFormPreview'
 import { getAdminFormStatusLabel } from '@/lib/admin-display'
+import { getAdminPreviewStorageKey, type AdminPreviewField, type AdminPreviewForm, type AdminPreviewPage } from '@/lib/admin-form-preview'
 
-interface EditableField {
-  id: string
-  name: string
-  label: string
-  type: 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature'
-  required: boolean
-  placeholder: string
-  pageId: string
-  options: Array<{
-    label: string
-    isCorrect: boolean
-    points: number
-    nextPageId?: string
-  }>
-}
-
-interface EditablePage {
-  id: string
-}
+type EditableField = AdminPreviewField
+type EditablePage = AdminPreviewPage
 
 interface AdminFormDetail {
   id: string
@@ -123,6 +107,28 @@ function createFormSnapshot(form: AdminFormDetail) {
   })
 }
 
+function createPreviewForm(form: Pick<AdminFormDetail, 'title' | 'description' | 'workflow' | 'pages' | 'fields'>): AdminPreviewForm {
+  return {
+    title: form.title,
+    description: form.description,
+    workflow: form.workflow,
+    pages: form.pages,
+    fields: form.fields,
+  }
+}
+
+function persistPreviewSnapshot(form: Pick<AdminFormDetail, 'id' | 'title' | 'description' | 'workflow' | 'pages' | 'fields'>) {
+  window.localStorage.setItem(getAdminPreviewStorageKey(form.id), JSON.stringify({
+    formId: form.id,
+    updatedAt: new Date().toISOString(),
+    form: createPreviewForm(form),
+  }))
+}
+
+function clearPreviewSnapshot(formId: string) {
+  window.localStorage.removeItem(getAdminPreviewStorageKey(formId))
+}
+
 export default function AdminFormEditor({ formId }: Props) {
   const [form, setForm] = useState<AdminFormDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -156,6 +162,31 @@ export default function AdminFormEditor({ formId }: Props) {
     }
 
     load()
+  }, [formId])
+
+  useEffect(() => {
+    if (!form) {
+      return
+    }
+
+    try {
+      persistPreviewSnapshot(form)
+    } catch {}
+  }, [form])
+
+  useEffect(() => {
+    const clearCurrentPreviewSnapshot = () => {
+      try {
+        clearPreviewSnapshot(formId)
+      } catch {}
+    }
+
+    window.addEventListener('pagehide', clearCurrentPreviewSnapshot)
+
+    return () => {
+      window.removeEventListener('pagehide', clearCurrentPreviewSnapshot)
+      clearCurrentPreviewSnapshot()
+    }
   }, [formId])
 
   const isDirty = useMemo(() => {
@@ -455,6 +486,22 @@ export default function AdminFormEditor({ formId }: Props) {
     openShareWindow(`https://www.threads.net/intent/post?text=${encodeURIComponent(getShareText(form, publicUrl))}`)
   }
 
+  const handleOpenPreviewTab = (device: 'desktop' | 'mobile' = 'desktop') => {
+    if (!form) {
+      return
+    }
+
+    try {
+      persistPreviewSnapshot(form)
+    } catch {
+      setError('Gagal menyiapkan pratinjau tab baru')
+      setMessage(null)
+      return
+    }
+
+    window.open(`/admin/forms/${form.id}/preview?device=${device}`, '_blank', 'noopener,noreferrer')
+  }
+
   const closeShareMenu = (menu: HTMLDetailsElement | null) => {
     if (menu) {
       menu.open = false
@@ -549,7 +596,7 @@ export default function AdminFormEditor({ formId }: Props) {
           <div className="forms-dashboard-brand">
             <div className="forms-dashboard-brand-mark" aria-hidden="true" />
             <div>
-              <strong>Editorial Data Intelligence</strong>
+              <strong>isian</strong>
               <span>Ruang kerja penyusunan formulir</span>
             </div>
           </div>
@@ -1043,14 +1090,24 @@ export default function AdminFormEditor({ formId }: Props) {
           <p className="editorial-form-editor-section-note">
             Gunakan pratinjau ini untuk mengecek urutan langkah dan pengalaman pengisi sebelum form dipublikasikan.
           </p>
+          <div className="editorial-form-editor-preview-actions">
+            <button
+              type="button"
+              className="admin-link-btn"
+              onClick={() => handleOpenPreviewTab('desktop')}
+            >
+              Buka di tab baru
+            </button>
+            <button
+              type="button"
+              className="admin-link-btn"
+              onClick={() => handleOpenPreviewTab('mobile')}
+            >
+              Buka mode mobile
+            </button>
+          </div>
           <AdminFormPreview
-            form={{
-              title: form.title,
-              description: form.description,
-              workflow: form.workflow,
-              pages: form.pages,
-              fields: form.fields,
-            }}
+            form={createPreviewForm(form)}
           />
           </section>
         </div>

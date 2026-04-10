@@ -16,14 +16,14 @@ export async function generateMetadata({ params }: PublicFormPageProps): Promise
 
   if (!form) {
     return {
-      title: 'Form Publik Tidak Ditemukan | JOTT Editor Form',
+      title: 'Form Publik Tidak Ditemukan | isian',
       description: 'Form publik yang Anda cari tidak tersedia atau belum dipublikasikan.',
     }
   }
 
   return {
-    title: `${form.title} | JOTT Editor Form`,
-    description: form.description || 'Isi form publik JOTT Editor Form dengan data yang benar sebelum dikirim.',
+    title: `${form.title} | isian`,
+    description: form.description || 'Isi form publik isian dengan data yang benar sebelum dikirim.',
   }
 }
 

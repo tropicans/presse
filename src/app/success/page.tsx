@@ -17,7 +17,7 @@ export async function generateMetadata({ searchParams }: SuccessPageProps): Prom
 
   if (!form) {
     return {
-      title: 'Pengiriman Berhasil | JOTT Editor Form',
+      title: 'Pengiriman Berhasil | isian',
       description: 'Terima kasih, data Anda telah berhasil dikirim.',
     }
   }
@@ -51,7 +51,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         <Link href={formHref ?? fallbackPublicHref} className="public-ledger-brand">
           <div className="public-ledger-brand-mark" aria-hidden="true" />
           <div>
-            <strong>Editorial Data Intelligence</strong>
+            <strong>isian</strong>
             <span>Bukti pengiriman</span>
           </div>
         </Link>
