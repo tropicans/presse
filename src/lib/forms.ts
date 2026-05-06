@@ -1,11 +1,13 @@
 import { revalidatePath } from 'next/cache'
 import type { JsonValue, Sql } from '@prisma/client/runtime/client'
 import { PrismaClientKnownRequestError, join, sqltag as sql } from '@prisma/client/runtime/client'
+import ExcelJS from 'exceljs'
 import { prisma } from '@/lib/prisma'
 
 const MAX_TEXT_LENGTH = 500
 const MAX_SIGNATURE_LENGTH = 500000
 const DEFAULT_QUIZ_PASS_PERCENTAGE = 70
+const ADMIN_EXCEL_EXPORT_ROW_LIMIT = 500
 const ATTENDANCE_FORM_SLUG = 'attendance-template'
 const ATTENDANCE_FORM_ID = 'attendance-template-form'
 const ATTENDANCE_PARTICIPANT_TYPE_OPTIONS = ['Internal', 'Eksternal'] as const
@@ -25,6 +27,7 @@ interface BaseField {
   label: string
   type: FormFieldType
   required?: boolean
+  isQuizQuestion?: boolean
 }
 
 export interface TextField extends BaseField {
@@ -37,11 +40,13 @@ export interface TextField extends BaseField {
 export interface RadioField extends BaseField {
   type: 'radio' | 'likert'
   options: string[]
+  isQuizQuestion?: boolean
 }
 
 export interface SelectField extends BaseField {
   type: 'select'
   options: string[]
+  isQuizQuestion?: boolean
 }
 
 export interface SignatureField extends BaseField {
@@ -766,8 +771,11 @@ function buildSubmissionPath(form: PublicFormDefinition, values: Record<string, 
 
 function buildPublicOptionsByField(options: FieldOptionRow[]) {
   return options.reduce<Record<string, string[]>>((acc, option) => {
+    const value = option.value || option.label
     acc[option.fieldId] ??= []
-    acc[option.fieldId].push(option.value || option.label)
+    if (!acc[option.fieldId].some((existing) => sameChoice(existing, value))) {
+      acc[option.fieldId].push(value)
+    }
     return acc
   }, {})
 }
@@ -790,12 +798,12 @@ function buildFormSettings(form: Pick<FormRow, 'slug' | 'settingsJson'>, fields:
     ? readFormPages(form.settingsJson ?? null, fields.map((field) => field.id))
     : undefined
 
-  return {
+  const hasQuizFields = fields.some((field) => field.isQuizQuestion)
+  const settings: FormSettings = {
     workflow,
     uniqueFields: workflow === 'WEBINAR' ? ['nipNrp'] : undefined,
     legacyTarget: form.slug === ATTENDANCE_FORM_SLUG ? 'attendance' : undefined,
     branching: workflow === 'WEBINAR' ? buildAttendanceBranching(fields) : undefined,
-    quiz: readQuizSettings(form.settingsJson ?? null),
     pages,
     conditionalRoutes: workflow === 'STANDARD' && pages
       ? readFormConditionalRoutes(
@@ -805,8 +813,13 @@ function buildFormSettings(form: Pick<FormRow, 'slug' | 'settingsJson'>, fields:
         )
       : undefined,
   }
-}
 
+  if (hasQuizFields) {
+    settings.quiz = readQuizSettings(form.settingsJson ?? null)
+  }
+
+  return settings
+}
 function evaluateQuizSubmission(
   form: PublicFormDefinition,
   rows: NonNullable<Awaited<ReturnType<typeof getPublicFormRows>>>,
@@ -1402,6 +1415,7 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
         type: mappedType,
         required: field.required,
         options: optionsByField[field.id] ?? [],
+        isQuizQuestion: fieldOptions.some((option) => option.isCorrect),
       }]
     }
 
@@ -1413,6 +1427,7 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
         type: mappedType,
         required: field.required,
         options: optionsByField[field.id] ?? [],
+        isQuizQuestion: fieldOptions.some((option) => option.isCorrect),
       }]
     }
 
@@ -2400,7 +2415,12 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
     `
 
     const fieldCount = Number(fieldCountRows[0]?.count ?? BigInt(0))
-    const tempOrderBase = 2_000_000_000
+    const maxOrderRows = await tx.$queryRaw<Array<{ max_order: number | null }>>`
+      SELECT MAX("order")::integer AS max_order
+      FROM form_fields
+      WHERE form_id = ${id}
+    `
+    const tempOrderBase = Math.max(Number(maxOrderRows[0]?.max_order ?? 0), fieldCount) + normalizedPayloadFields.length + 1
 
     await tx.$executeRaw`
       UPDATE forms
@@ -2849,13 +2869,19 @@ export async function deleteAdminFormSubmission(formId: string, submissionId: st
   return { success: true }
 }
 
-function escapeCsvValue(value: string) {
-  const normalized = value.replace(/\r?\n/g, ' ').trim()
-  const escaped = normalized.replace(/"/g, '""')
-  return `"${escaped}"`
+function isDataImage(value: string) {
+  return /^data:image\/(png|jpeg|jpg);base64,/i.test(value)
 }
 
-export async function exportAdminFormSubmissionsCsv(
+function getExcelImageExtension(value: string): 'png' | 'jpeg' {
+  return /^data:image\/(jpeg|jpg);base64,/i.test(value) ? 'jpeg' : 'png'
+}
+
+function getDataImageBase64(value: string) {
+  return value.replace(/^data:image\/(png|jpeg|jpg);base64,/i, '')
+}
+
+export async function exportAdminFormSubmissionsWorkbook(
   id: string,
   filters?: Partial<AdminSubmissionFilters>
 ) {
@@ -2863,6 +2889,13 @@ export async function exportAdminFormSubmissionsCsv(
 
   if (!data) {
     throw new FormSubmissionError('Form tidak ditemukan', 404)
+  }
+
+  if (data.items.length > ADMIN_EXCEL_EXPORT_ROW_LIMIT) {
+    throw new FormSubmissionError(
+      `Export Excel dibatasi ${ADMIN_EXCEL_EXPORT_ROW_LIMIT} kiriman. Persempit hasil dengan filter sebelum mengunduh.`,
+      413
+    )
   }
 
   const exportableColumns = data.columns.filter((column) => column.name !== 'participantType')
@@ -2873,10 +2906,29 @@ export async function exportAdminFormSubmissionsCsv(
     ...(hasQuiz ? ['Skor Quiz', 'Jawaban Benar', 'Total Soal', 'Status Quiz'] : []),
   ]
   const headersWithMeta = ['Waktu Submit', ...metaHeaders, ...exportableColumns.map((column) => column.label)]
-  const lines = [headersWithMeta.map(escapeCsvValue).join(',')]
+  const workbook = new ExcelJS.Workbook()
+  workbook.creator = 'isian'
+  workbook.created = new Date()
 
-  for (const item of data.items) {
-    const row = [
+  const sheet = workbook.addWorksheet('Kiriman')
+  sheet.columns = headersWithMeta.map((header) => ({
+    header,
+    key: header,
+    width: header.toLowerCase().includes('tanda tangan') ? 24 : 26,
+  }))
+
+  const headerRow = sheet.getRow(1)
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF1A365D' },
+  }
+  headerRow.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+  headerRow.height = 28
+
+  data.items.forEach((item) => {
+    const rowValues = [
       new Date(item.createdAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }),
       ...(hasParticipantType ? [item.meta.participantType ?? '-'] : []),
       ...(hasQuiz
@@ -2887,15 +2939,50 @@ export async function exportAdminFormSubmissionsCsv(
             item.meta.quiz ? (item.meta.quiz.passed ? 'Lulus' : 'Belum lulus') : '-',
           ]
         : []),
-      ...exportableColumns.map((column) => item.answers[column.name] ?? ''),
+      ...exportableColumns.map((column) => column.type === 'signature' ? '' : item.answers[column.name] ?? ''),
     ]
-    lines.push(row.map(escapeCsvValue).join(','))
-  }
+    const row = sheet.addRow(rowValues)
+    row.height = exportableColumns.some((column) => column.type === 'signature' && isDataImage(item.answers[column.name] ?? '')) ? 76 : 32
+
+    exportableColumns.forEach((column, index) => {
+      const value = item.answers[column.name] ?? ''
+
+      if (column.type !== 'signature' || !isDataImage(value)) {
+        return
+      }
+
+      try {
+        const imageId = workbook.addImage({
+          base64: getDataImageBase64(value),
+          extension: getExcelImageExtension(value),
+        })
+        const columnIndex = 1 + metaHeaders.length + index
+        sheet.addImage(imageId, {
+          tl: { col: columnIndex, row: row.number - 1 },
+          ext: { width: 170, height: 64 },
+        })
+      } catch {
+        row.getCell(1 + metaHeaders.length + index + 1).value = 'Tanda tangan tidak dapat dirender'
+      }
+    })
+  })
+
+  sheet.eachRow((row) => {
+    row.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      }
+      cell.alignment = { vertical: 'middle', wrapText: true }
+    })
+  })
 
   const fileSlug = slugify(data.form.slug || data.form.title) || 'form-submissions'
 
   return {
-    filename: `${fileSlug}-${new Date().toISOString().slice(0, 10)}.csv`,
-    content: `\uFEFF${lines.join('\n')}`,
+    filename: `${fileSlug}-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    workbook,
   }
 }

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
+import ExcelJS from 'exceljs'
 import { getAdminSession } from '@/lib/auth'
 import {
-  exportAdminFormSubmissionsCsv,
+  exportAdminFormSubmissionsWorkbook,
   FormSubmissionError,
   normalizeAdminSubmissionFilters,
 } from '@/lib/forms'
@@ -37,7 +38,7 @@ export async function GET(request: Request, context: RouteContext) {
       sortBy === 'newest' || sortBy === 'oldest' || sortBy === 'score-desc' || sortBy === 'score-asc'
         ? sortBy
         : undefined
-    const result = await exportAdminFormSubmissionsCsv(
+    const result = await exportAdminFormSubmissionsWorkbook(
       id,
       normalizeAdminSubmissionFilters({
         participantType: normalizedParticipantType,
@@ -45,10 +46,11 @@ export async function GET(request: Request, context: RouteContext) {
         sortBy: normalizedSortBy,
       })
     )
+    const buffer = await result.workbook.xlsx.writeBuffer()
 
-    return new NextResponse(result.content, {
+    return new NextResponse(buffer as ExcelJS.Buffer, {
       headers: {
-        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="${result.filename}"`,
       },
     })
