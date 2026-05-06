@@ -30,6 +30,10 @@ function createConditionalRouteKey(fieldId: string, optionLabel: string) {
 
 const CONDITIONAL_ROUTE_SUBMIT = '__SUBMIT__'
 
+function isQuizField(field: FormField) {
+  return 'isQuizQuestion' in field && field.isQuizQuestion === true
+}
+
 function parseLikertOption(option: string) {
   const match = option.match(/^(\d+)\s*-\s*(.+)$/)
 
@@ -210,7 +214,7 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
   const visibleQuizQuestionNumbers = useMemo(() => {
     const entries = steps
       .flatMap((step) => step.fields)
-      .filter((field) => field.isQuizQuestion)
+      .filter(isQuizField)
       .map((field, index) => [field.id, index + 1] as const)
 
     return new Map(entries)
@@ -484,7 +488,7 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
         const hintId = `${field.name}-hint`
         const describedBy = fieldErrors[field.name] ? errorId : undefined
         const label = getDisplayLabel(field, formData, form)
-        const isQuizQuestion = field.isQuizQuestion === true
+        const isQuizQuestion = isQuizField(field)
         const questionNumber = visibleQuizQuestionNumbers.get(field.id) ?? fieldIndex + 1
         const questionLabel = `Soal ${questionNumber}`
 
