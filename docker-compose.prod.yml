@@ -6,8 +6,9 @@ services:
     environment:
       NEXTAUTH_URL: ${NEXTAUTH_URL:?NEXTAUTH_URL wajib diisi}
       RATE_LIMIT_SINGLE_INSTANCE_OK: ${RATE_LIMIT_SINGLE_INSTANCE_OK:?RATE_LIMIT_SINGLE_INSTANCE_OK wajib diisi untuk production single-instance}
-    ports:
-      - "127.0.0.1:${APP_BIND_PORT:-3456}:3456"
+    ports: !reset []
+    expose:
+      - "3456"
 
   worker:
     environment:
