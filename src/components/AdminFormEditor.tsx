@@ -197,8 +197,8 @@ export default function AdminFormEditor({ formId }: Props) {
     return createFormSnapshot(form) !== lastSavedSnapshot
   }, [form, lastSavedSnapshot])
 
-  const getPublicFormPath = (currentForm: Pick<AdminFormDetail, 'slug' | 'status'>) => {
-    if (currentForm.status !== 'PUBLISHED') {
+  const getPublicFormPath = (currentForm: Pick<AdminFormDetail, 'slug' | 'status'>, hasUnsavedChanges = false) => {
+    if (currentForm.status !== 'PUBLISHED' || hasUnsavedChanges) {
       return null
     }
 
@@ -585,7 +585,7 @@ export default function AdminFormEditor({ formId }: Props) {
     return <div className="admin-wrapper"><div className="admin-empty"><p>{error || 'Form tidak ditemukan'}</p></div></div>
   }
 
-  const publicFormPath = getPublicFormPath(form)
+  const publicFormPath = getPublicFormPath(form, isDirty)
   const usesAttendanceMode = form.mode === 'ATTENDANCE'
   const usesQuizScoring = form.mode === 'QUIZ' || form.mode === 'ATTENDANCE'
 
@@ -749,7 +749,9 @@ export default function AdminFormEditor({ formId }: Props) {
               <p>
                 {publicFormPath
                   ? 'Gunakan link ini untuk membagikan form ke pengisi.'
-                  : 'Publikasikan form terlebih dahulu untuk mengaktifkan link publik.'}
+                  : isDirty
+                    ? 'Simpan perubahan terlebih dahulu agar status publikasi aktif.'
+                    : 'Publikasikan form terlebih dahulu untuk mengaktifkan link publik.'}
               </p>
             </div>
             <div className="admin-builder-share-url">

@@ -18,7 +18,7 @@ export default function PublicFormPage({ form }: PublicFormPageProps) {
           <div className="public-ledger-brand-mark" aria-hidden="true" />
           <div>
             <strong>isian</strong>
-            <span>Portal pengisian publik</span>
+            <span>Portal pengisian</span>
           </div>
         </Link>
       </header>
@@ -34,7 +34,7 @@ export default function PublicFormPage({ form }: PublicFormPageProps) {
             href="/f/attendance-template"
             className="public-retry-btn public-ledger-retry-btn"
           >
-            Buka Form Publik
+            Buka Form
           </Link>
         </div>
       </div>

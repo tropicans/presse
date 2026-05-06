@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import SignaturePad from './SignaturePad'
 import type { PublicFormDefinition, FormField, FormStepDefinition } from '@/lib/forms'
@@ -206,11 +206,11 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
   const progressPercentage = isMultiStep
     ? ((currentStepIndex + 1) / steps.length) * 100
     : 100
-  const isQuizExperience = Boolean(form.settings.quiz)
+  const firstCurrentStepFieldName = currentStep?.fields[0]?.name
   const visibleQuizQuestionNumbers = useMemo(() => {
     const entries = steps
       .flatMap((step) => step.fields)
-      .filter((field) => field.type === 'radio' || field.type === 'select' || field.type === 'likert')
+      .filter((field) => field.isQuizQuestion)
       .map((field, index) => [field.id, index + 1] as const)
 
     return new Map(entries)
@@ -220,13 +220,18 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  const scrollToField = (fieldName: string) => {
+  const getFocusableFieldElement = useCallback((fieldName: string) => {
     const escapedName = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
       ? CSS.escape(fieldName)
       : fieldName
-    const target = document.getElementById(fieldName)
+
+    return document.getElementById(fieldName)
       ?? document.getElementById(`${fieldName}-typed-signature`)
       ?? document.querySelector(`[name="${escapedName}"]`)
+  }, [])
+
+  const scrollToField = (fieldName: string) => {
+    const target = getFocusableFieldElement(fieldName)
 
     if (!(target instanceof HTMLElement)) {
       return
@@ -235,6 +240,24 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     target.scrollIntoView({ behavior: 'smooth', block: 'center' })
     target.focus({ preventScroll: true })
   }
+
+  const focusStepField = useCallback((fieldName: string | undefined, shouldScroll: boolean) => {
+    if (!fieldName) {
+      return
+    }
+
+    const target = getFocusableFieldElement(fieldName)
+
+    if (!(target instanceof HTMLElement)) {
+      return
+    }
+
+    if (shouldScroll) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+
+    target.focus({ preventScroll: true })
+  }, [getFocusableFieldElement])
 
   useEffect(() => {
     setFormData(initialValues)
@@ -245,6 +268,14 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
   useEffect(() => {
     setCurrentStepIndex((current) => Math.min(current, Math.max(steps.length - 1, 0)))
   }, [steps.length])
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      focusStepField(firstCurrentStepFieldName, currentStepIndex > 0)
+    }, 0)
+
+    return () => window.clearTimeout(timeout)
+  }, [firstCurrentStepFieldName, currentStepIndex, focusStepField])
 
   useEffect(() => {
     const onScroll = () => {
@@ -361,7 +392,6 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     }
 
     setCurrentStepIndex((current) => Math.min(current + 1, steps.length - 1))
-    scrollToFormTop()
   }
 
   const handlePreviousStep = () => {
@@ -454,8 +484,7 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
         const hintId = `${field.name}-hint`
         const describedBy = fieldErrors[field.name] ? errorId : undefined
         const label = getDisplayLabel(field, formData, form)
-        const isQuizQuestion = isQuizExperience
-          && (field.type === 'radio' || field.type === 'select' || field.type === 'likert')
+        const isQuizQuestion = field.isQuizQuestion === true
         const questionNumber = visibleQuizQuestionNumbers.get(field.id) ?? fieldIndex + 1
         const questionLabel = `Soal ${questionNumber}`
 
@@ -484,6 +513,9 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
               )}
               {isQuizQuestion && field.type !== 'likert' && (
                 <p className="field-help">Pilih satu jawaban yang menurut Anda paling tepat.</p>
+              )}
+              {!isQuizQuestion && (
+                <p className="field-help">Pilih salah satu opsi yang sesuai.</p>
               )}
               <div
                 className={field.type === 'likert'
@@ -572,8 +604,10 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
                 {label}
                 {field.required ? ' *' : ''}
               </label>
-              {isQuizQuestion && (
+              {isQuizQuestion ? (
                 <p className="field-help">Pilih satu jawaban yang menurut Anda paling tepat.</p>
+              ) : (
+                <p className="field-help">Pilih salah satu opsi yang sesuai.</p>
               )}
               <select
                 id={field.name}
@@ -678,10 +712,11 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
             </button>
           ) : (
             <button
-              type="submit"
+              type="button"
               disabled={isSubmitting}
               className="submit-btn"
               aria-busy={isSubmitting}
+              onClick={() => formRef.current?.requestSubmit()}
             >
               {isSubmitting ? (
                 <>

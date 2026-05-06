@@ -78,6 +78,19 @@ function formatAnswer(value: string | undefined) {
   return normalized.length > 0 ? normalized : '-'
 }
 
+function isSignatureImage(value: string | undefined) {
+  return value?.startsWith('data:image/') ?? false
+}
+
+function getAnswerPreview(value: string | undefined, type: SubmissionColumn['type']) {
+  if (type === 'signature' && isSignatureImage(value)) {
+    return 'Tanda tangan tersimpan'
+  }
+
+  const normalized = formatAnswer(value)
+  return normalized.length > 140 ? `${normalized.slice(0, 140)}…` : normalized
+}
+
 function getQuizPercentage(item: SubmissionItem) {
   if (!item.meta.quiz) {
     return null
@@ -164,9 +177,9 @@ export default function AdminFormSubmissions({ formId }: Props) {
     quizStatus: quizFilter,
     sortBy,
   })
-  const visibleColumns = data.columns.filter(
-    (column) => column.type !== 'signature' && column.name !== 'participantType'
-  )
+  const answerColumns = data.columns.filter((column) => column.name !== 'participantType')
+  const firstAnswerColumns = answerColumns.slice(0, 3)
+  const remainingAnswerColumns = answerColumns.slice(3)
   const hasParticipantType = data.hasParticipantType
   const hasQuiz = data.hasQuiz
   const quizItems = data.items.filter((item) => item.meta.quiz)
@@ -206,7 +219,6 @@ export default function AdminFormSubmissions({ formId }: Props) {
   }, null)
 
   const bestQuizPercentage = bestQuizSubmission ? getQuizPercentage(bestQuizSubmission) : null
-  const signatureColumn = data.columns.find((column) => column.type === 'signature')
 
   return (
     <div className="editorial-form-editor-shell">
@@ -238,7 +250,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
             href={`/api/admin/forms/${data.form.id}/export?${exportParams.toString()}`}
             className="editorial-form-editor-primary-btn"
           >
-            Unduh CSV
+            Unduh Excel
           </a>
         </div>
       </header>
@@ -255,9 +267,10 @@ export default function AdminFormSubmissions({ formId }: Props) {
             <p className="forms-dashboard-overline">Pusat Kiriman</p>
             <strong>{data.form.title}</strong>
             <span>
-              Pantau kiriman, evaluasi hasil kuis, dan unduh CSV dari satu tampilan yang lebih fokus.
+              Pantau kiriman, evaluasi hasil kuis, dan unduh Excel dari satu tampilan yang lebih fokus.
             </span>
             <p className="editorial-form-editor-section-note submissions-dashboard-note">
+              Export Excel aman sampai 500 kiriman per unduhan. Jika hasil lebih banyak, gunakan filter dulu agar file tidak terlalu berat.
               Gunakan filter di bawah untuk mempersempit hasil yang benar-benar ingin Anda tindak lanjuti.
             </p>
           </div>
@@ -426,93 +439,103 @@ export default function AdminFormSubmissions({ formId }: Props) {
                   <p>Ubah filter peserta, filter kuis, atau urutan untuk melihat kiriman lain.</p>
               </div>
             ) : (
-              <table className="forms-dashboard-table submissions-dashboard-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Waktu & Metadata</th>
-                    {hasParticipantType && <th scope="col">Tipe Peserta</th>}
-                    {hasQuiz && <th scope="col">Hasil Kuis</th>}
-                    {visibleColumns.map((column) => (
-                      <th key={column.id} scope="col">{column.label}</th>
-                    ))}
-                    <th scope="col">Tanda Tangan</th>
-                      <th scope="col">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.items.map((item) => {
-                    const signature = signatureColumn ? item.answers[signatureColumn.name] : ''
-                    const quizPercentage = getQuizPercentage(item)
-                    const submittedAt = new Date(item.createdAt).toLocaleString('id-ID')
+              <div className="submissions-dashboard-card-list">
+                {data.items.map((item) => {
+                  const quizPercentage = getQuizPercentage(item)
+                  const submittedAt = new Date(item.createdAt).toLocaleString('id-ID')
 
-                    return (
-                      <tr key={item.id}>
-                        <td data-label="Waktu & Metadata">
-                          <div className="submissions-dashboard-primary-cell">
-                            <strong>{submittedAt}</strong>
-                            <span>Kiriman: {item.id}</span>
-                          </div>
-                        </td>
-                        {hasParticipantType && (
-                          <td data-label="Tipe Peserta">
+                  return (
+                    <article key={item.id} className="submissions-dashboard-card">
+                      <div className="submissions-dashboard-card-head">
+                        <div className="submissions-dashboard-primary-cell">
+                          <span>Waktu Submit</span>
+                          <strong>{submittedAt}</strong>
+                          <code>{item.id}</code>
+                        </div>
+                        <div className="submissions-dashboard-card-badges">
+                          {hasParticipantType && (
                             <span className={`submissions-dashboard-participant-chip ${getParticipantClass(item.meta.participantType)}`}>
                               {getParticipantLabel(item.meta.participantType)}
                             </span>
-                          </td>
-                        )}
-                        {hasQuiz && (
-                          <td data-label="Hasil Kuis">
-                            {item.meta.quiz ? (
-                               <div className="submissions-dashboard-quiz-card">
-                                 <strong>{item.meta.quiz.score}/{item.meta.quiz.maxScore}</strong>
-                                 <span>
-                                   {item.meta.quiz.correctAnswers} benar dari {item.meta.quiz.totalQuestions} soal
-                                 </span>
-                                <em className={`admin-quiz-status ${item.meta.quiz.passed ? 'pass' : 'fail'}`}>
-                                  {quizPercentage}% · {item.meta.quiz.passed ? 'Lulus' : 'Belum lulus'}
-                                </em>
-                              </div>
-                            ) : (
-                              '-'
-                            )}
-                          </td>
-                        )}
-                        {visibleColumns.map((column) => (
-                          <td key={column.id} data-label={column.label}>
-                            {formatAnswer(item.answers[column.name])}
-                          </td>
-                        ))}
-                        <td data-label="Tanda Tangan">
-                          {signature ? (
-                            <Image
-                              src={signature}
-                               alt="Tanda tangan pengirim"
-                              width={80}
-                              height={40}
-                              unoptimized
-                              className="signature-thumb"
-                            />
-                          ) : (
-                            '-'
                           )}
-                        </td>
-                        <td data-label="Aksi">
-                          <div className="forms-dashboard-row-actions">
-                            <button
-                              type="button"
-                              onClick={() => setPendingDeleteId(item.id)}
-                              className="forms-dashboard-action-link danger"
-                              title="Hapus kiriman"
-                            >
-                              Hapus
-                            </button>
+                          {hasQuiz && item.meta.quiz && (
+                            <span className={`admin-quiz-status ${item.meta.quiz.passed ? 'pass' : 'fail'}`}>
+                              {quizPercentage}% · {item.meta.quiz.passed ? 'Lulus' : 'Belum lulus'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <dl className="submissions-dashboard-answer-grid">
+                        {firstAnswerColumns.map((column) => (
+                          <div key={column.id} className={column.type === 'signature' ? 'signature' : undefined}>
+                            <dt>{column.label}</dt>
+                            <dd>
+                              {column.type === 'signature' && isSignatureImage(item.answers[column.name]) ? (
+                                <Image
+                                  src={item.answers[column.name]}
+                                  alt="Tanda tangan pengirim"
+                                  width={220}
+                                  height={90}
+                                  unoptimized
+                                  className="submissions-dashboard-signature-image"
+                                />
+                              ) : (
+                                getAnswerPreview(item.answers[column.name], column.type)
+                              )}
+                            </dd>
                           </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                        ))}
+                      </dl>
+
+                      {remainingAnswerColumns.length > 0 && (
+                        <details className="submissions-dashboard-details">
+                          <summary>Lihat {remainingAnswerColumns.length} jawaban lainnya</summary>
+                          <dl className="submissions-dashboard-answer-grid expanded">
+                            {remainingAnswerColumns.map((column) => (
+                              <div key={column.id} className={column.type === 'signature' ? 'signature' : undefined}>
+                                <dt>{column.label}</dt>
+                                <dd>
+                                  {column.type === 'signature' && isSignatureImage(item.answers[column.name]) ? (
+                                    <Image
+                                      src={item.answers[column.name]}
+                                      alt="Tanda tangan pengirim"
+                                      width={220}
+                                      height={90}
+                                      unoptimized
+                                      className="submissions-dashboard-signature-image"
+                                    />
+                                  ) : (
+                                    getAnswerPreview(item.answers[column.name], column.type)
+                                  )}
+                                </dd>
+                              </div>
+                            ))}
+                          </dl>
+                        </details>
+                      )}
+
+                      {hasQuiz && item.meta.quiz && (
+                        <div className="submissions-dashboard-quiz-card">
+                          <strong>{item.meta.quiz.score}/{item.meta.quiz.maxScore}</strong>
+                          <span>{item.meta.quiz.correctAnswers} benar dari {item.meta.quiz.totalQuestions} soal</span>
+                        </div>
+                      )}
+
+                      <div className="submissions-dashboard-card-actions">
+                        <button
+                          type="button"
+                          onClick={() => setPendingDeleteId(item.id)}
+                          className="forms-dashboard-action-link danger"
+                          title="Hapus kiriman"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
             )}
           </div>
         </section>

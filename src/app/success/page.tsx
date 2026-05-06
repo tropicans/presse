@@ -41,27 +41,11 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     ? await getPublicSubmissionSummary(slug, submissionId)
     : null
   const formHref = slug ? `/f/${encodeURIComponent(slug)}` : null
-  const fallbackPublicHref = '/f/attendance-template'
   const successMessage = form?.successMessage
     ?? 'Data Anda telah berhasil dikirim.'
 
   return (
     <div className="success-wrapper public-ledger-success-page">
-      <header className="public-ledger-topbar public-ledger-topbar-static">
-        <Link href={formHref ?? fallbackPublicHref} className="public-ledger-brand">
-          <div className="public-ledger-brand-mark" aria-hidden="true" />
-          <div>
-            <strong>isian</strong>
-            <span>Bukti pengiriman</span>
-          </div>
-        </Link>
-
-        {formHref && (
-          <div className="public-ledger-topbar-meta">
-            <span className="public-ledger-chip">Kiriman tersimpan</span>
-          </div>
-        )}
-      </header>
 
       <div className="success-card public-ledger-success-card">
         <div className="success-icon">
@@ -69,13 +53,9 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-        <p className="public-ledger-eyebrow">Konfirmasi Pengiriman</p>
-        <h1 className="success-title">Terima Kasih!</h1>
+        <h1 className="success-title">Konfirmasi Pengiriman</h1>
         <p className="success-message">
           {successMessage}
-        </p>
-        <p className="header-subtitle success-followup-message">
-          Simpan halaman ini bila Anda perlu kembali ke form publik ini atau mengisi ulang di lain waktu.
         </p>
         {summary?.quiz && (
           <div className="success-summary-card public-ledger-success-summary-card">
@@ -109,12 +89,6 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
               Isi Form Lagi
             </Link>
           )}
-          <Link
-            href={formHref ?? fallbackPublicHref}
-            className="success-secondary-link public-ledger-success-link secondary"
-          >
-            Kembali ke Form Publik
-          </Link>
         </div>
       </div>
     </div>
