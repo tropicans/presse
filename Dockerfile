@@ -18,6 +18,17 @@ COPY . .
 # Generate Prisma client for build-time types
 RUN npx prisma generate
 
+# Next.js evaluates route modules while collecting page data during image builds.
+# Runtime containers still receive real values from compose env; these placeholders
+# only let build-time module evaluation complete without embedding real secrets.
+ENV DATABASE_URL="postgresql://build:build@localhost:5432/build?schema=public"
+ENV NEXTAUTH_URL="http://localhost:3456"
+ENV NEXTAUTH_SECRET="build-time-placeholder-secret"
+ENV GOOGLE_CLIENT_ID="build-time-placeholder.apps.googleusercontent.com"
+ENV GOOGLE_CLIENT_SECRET="build-time-placeholder-secret"
+ENV ADMIN_EMAILS="admin@example.com"
+ENV INTERNAL_WORKER_TOKEN="build-time-placeholder-token"
+
 # Build Next.js standalone output
 RUN npm run build
 
