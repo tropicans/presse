@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
+import { readRequiredEnv } from './env'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -10,9 +11,10 @@ function createPrismaClient() {
   const poolMin = Number(process.env.DB_POOL_MIN ?? '4')
   const connectionTimeoutMillis = Number(process.env.DB_POOL_CONNECTION_TIMEOUT_MS ?? '10000')
   const idleTimeoutMillis = Number(process.env.DB_POOL_IDLE_TIMEOUT_MS ?? '30000')
+  const connectionString = readRequiredEnv(process.env, 'DATABASE_URL')
 
   const adapter = new PrismaPg({
-    connectionString: process.env.DATABASE_URL!,
+    connectionString,
     max: Number.isFinite(poolMax) ? poolMax : 20,
     min: Number.isFinite(poolMin) ? poolMin : 4,
     connectionTimeoutMillis: Number.isFinite(connectionTimeoutMillis)

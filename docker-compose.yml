@@ -9,15 +9,19 @@ x-runtime-build: &runtime-build
 x-benchmark-app: &benchmark-app
   <<: *runtime-image
   restart: unless-stopped
-  env_file:
-    - .env.production
-  environment:
-    DB_POOL_MAX: 20
-    DB_POOL_MIN: 4
-    DB_POOL_CONNECTION_TIMEOUT_MS: 10000
-    DB_POOL_IDLE_TIMEOUT_MS: 30000
-    SUBMISSION_JOB_DELAY_SECONDS: 5
-    INTERNAL_WORKER_TOKEN: benchmark-worker-token
+  environment: &app-env
+    DATABASE_URL: ${DATABASE_URL:?DATABASE_URL wajib diisi}
+    NEXTAUTH_URL: ${NEXTAUTH_URL:?NEXTAUTH_URL wajib diisi}
+    NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?NEXTAUTH_SECRET wajib diisi}
+    GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID wajib diisi}
+    GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?GOOGLE_CLIENT_SECRET wajib diisi}
+    ADMIN_EMAILS: ${ADMIN_EMAILS:?ADMIN_EMAILS wajib diisi}
+    INTERNAL_WORKER_TOKEN: ${INTERNAL_WORKER_TOKEN:?INTERNAL_WORKER_TOKEN wajib diisi}
+    DB_POOL_MAX: ${DB_POOL_MAX:-20}
+    DB_POOL_MIN: ${DB_POOL_MIN:-4}
+    DB_POOL_CONNECTION_TIMEOUT_MS: ${DB_POOL_CONNECTION_TIMEOUT_MS:-10000}
+    DB_POOL_IDLE_TIMEOUT_MS: ${DB_POOL_IDLE_TIMEOUT_MS:-30000}
+    SUBMISSION_JOB_DELAY_SECONDS: ${SUBMISSION_JOB_DELAY_SECONDS:-5}
   depends_on:
     postgres:
       condition: service_healthy
@@ -26,22 +30,20 @@ x-benchmark-app: &benchmark-app
       - CMD
       - node
       - -e
-      - "fetch('http://127.0.0.1:3456').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
-    interval: 10s
+      - "fetch('http://127.0.0.1:3456/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+    interval: 30s
     timeout: 5s
-    retries: 6
-    start_period: 15s
+    retries: 5
+    start_period: 30s
 
 x-worker: &worker
   <<: *runtime-image
   restart: unless-stopped
-  env_file:
-    - .env.production
   environment:
-    INTERNAL_WORKER_TOKEN: benchmark-worker-token
-    WORKER_BATCH_SIZE: 25
-    WORKER_IDLE_MS: 100
-    WORKER_ERROR_MS: 1000
+    <<: *app-env
+    WORKER_BATCH_SIZE: ${WORKER_BATCH_SIZE:-25}
+    WORKER_IDLE_MS: ${WORKER_IDLE_MS:-100}
+    WORKER_ERROR_MS: ${WORKER_ERROR_MS:-1000}
   depends_on:
     postgres:
       condition: service_healthy
@@ -60,13 +62,13 @@ services:
     ports:
       - "5443:5432"
     environment:
-      POSTGRES_DB: isian_attendance
-      POSTGRES_USER: isian_user
-      POSTGRES_PASSWORD: jott_secret_2026
+      POSTGRES_DB: ${POSTGRES_DB:-isian_attendance}
+      POSTGRES_USER: ${POSTGRES_USER:-isian_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD wajib diisi}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U isian_user -d isian_attendance"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-isian_user} -d $${POSTGRES_DB:-isian_attendance}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -77,15 +79,9 @@ services:
     restart: unless-stopped
     ports:
       - "3456:3456"
-    env_file:
-      - .env.production
     environment:
-      DB_POOL_MAX: 40
-      DB_POOL_MIN: 4
-      DB_POOL_CONNECTION_TIMEOUT_MS: 10000
-      DB_POOL_IDLE_TIMEOUT_MS: 30000
-      SUBMISSION_JOB_DELAY_SECONDS: 5
-      INTERNAL_WORKER_TOKEN: benchmark-worker-token
+      <<: *app-env
+      DB_POOL_MAX: ${DB_POOL_MAX:-40}
     depends_on:
       postgres:
         condition: service_healthy
@@ -94,22 +90,22 @@ services:
         - CMD
         - node
         - -e
-        - "fetch('http://127.0.0.1:3456').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
-      interval: 10s
+        - "fetch('http://127.0.0.1:3456/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
       timeout: 5s
-      retries: 6
-      start_period: 15s
+      retries: 5
+      start_period: 30s
 
   worker:
     <<: *worker
     container_name: isian-worker
     command: ["node", "scripts/submission-worker.mjs"]
     environment:
-      INTERNAL_WORKER_TOKEN: benchmark-worker-token
+      <<: *app-env
       WORKER_BASE_URL: http://app:3456
-      WORKER_BATCH_SIZE: 25
-      WORKER_IDLE_MS: 100
-      WORKER_ERROR_MS: 1000
+      WORKER_BATCH_SIZE: ${WORKER_BATCH_SIZE:-25}
+      WORKER_IDLE_MS: ${WORKER_IDLE_MS:-100}
+      WORKER_ERROR_MS: ${WORKER_ERROR_MS:-1000}
     depends_on:
       app:
         condition: service_healthy
@@ -135,11 +131,11 @@ services:
     profiles: ["bench"]
     command: ["node", "scripts/submission-worker.mjs"]
     environment:
-      INTERNAL_WORKER_TOKEN: benchmark-worker-token
+      <<: *app-env
       WORKER_BASE_URL: http://app-bench-1:3456
-      WORKER_BATCH_SIZE: 25
+      WORKER_BATCH_SIZE: ${WORKER_BATCH_SIZE:-25}
       WORKER_IDLE_MS: 50
-      WORKER_ERROR_MS: 1000
+      WORKER_ERROR_MS: ${WORKER_ERROR_MS:-1000}
     depends_on:
       app-bench-1:
         condition: service_healthy
@@ -149,11 +145,11 @@ services:
     profiles: ["bench"]
     command: ["node", "scripts/submission-worker.mjs"]
     environment:
-      INTERNAL_WORKER_TOKEN: benchmark-worker-token
+      <<: *app-env
       WORKER_BASE_URL: http://app-bench-2:3456
-      WORKER_BATCH_SIZE: 25
+      WORKER_BATCH_SIZE: ${WORKER_BATCH_SIZE:-25}
       WORKER_IDLE_MS: 50
-      WORKER_ERROR_MS: 1000
+      WORKER_ERROR_MS: ${WORKER_ERROR_MS:-1000}
     depends_on:
       app-bench-2:
         condition: service_healthy

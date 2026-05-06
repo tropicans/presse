@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processQueuedSubmissionJobs } from '@/lib/forms'
+import { readRequiredEnv } from '@/lib/env'
 
 const DEFAULT_BATCH_SIZE = 25
 
 export async function POST(request: NextRequest) {
   const token = request.headers.get('x-worker-token')?.trim()
-  const expectedToken = process.env.INTERNAL_WORKER_TOKEN?.trim()
+  const expectedToken = readRequiredEnv(process.env, 'INTERNAL_WORKER_TOKEN')
 
-  if (!expectedToken || token !== expectedToken) {
+  if (token !== expectedToken) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

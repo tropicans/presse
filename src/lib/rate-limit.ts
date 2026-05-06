@@ -1,7 +1,7 @@
 /**
  * In-memory rate limiter using sliding window counters.
- * Suitable for single-instance deployments (no Redis needed).
- * For multi-instance, replace with Redis-based rate limiter.
+ * Production multi-instance deployments must set RATE_LIMIT_SINGLE_INSTANCE_OK=true
+ * or replace this module with a shared store implementation.
  */
 
 interface RateLimitEntry {
@@ -10,6 +10,7 @@ interface RateLimitEntry {
 }
 
 const store = new Map<string, RateLimitEntry>()
+const allowProductionSingleInstanceRateLimit = process.env.RATE_LIMIT_SINGLE_INSTANCE_OK === 'true'
 
 // Cleanup expired entries every 60 seconds
 setInterval(() => {
@@ -38,6 +39,8 @@ export function rateLimit(
   key: string,
   config: RateLimitConfig
 ): RateLimitResult {
+  assertRateLimitStoreAllowed()
+
   const now = Date.now()
   const entry = store.get(key)
 
@@ -72,6 +75,12 @@ export function rateLimit(
   }
 }
 
+function assertRateLimitStoreAllowed() {
+  if (process.env.NODE_ENV === 'production' && !allowProductionSingleInstanceRateLimit) {
+    throw new Error('RATE_LIMIT_SINGLE_INSTANCE_OK wajib true untuk production single-instance atau gunakan shared rate limiter')
+  }
+}
+
 /**
  * Extract client IP from request headers.
  * Works behind proxies (X-Forwarded-For) and direct connections.
@@ -82,4 +91,8 @@ export function getClientIp(headers: Headers): string {
     headers.get('x-real-ip') ||
     'unknown'
   )
+}
+
+export function clearRateLimitStoreForTest() {
+  store.clear()
 }
