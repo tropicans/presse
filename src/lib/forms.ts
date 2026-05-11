@@ -996,9 +996,10 @@ export function normalizeAdminSubmissionPagination(
 
 function paginateAdminSubmissions(
   items: AdminFormSubmissionItem[],
-  pagination?: Partial<AdminSubmissionPagination>
+  pagination?: Partial<AdminSubmissionPagination>,
+  maxPageSize = MAX_ADMIN_SUBMISSION_PAGE_SIZE
 ) {
-  const normalizedPagination = normalizeAdminSubmissionPagination(pagination)
+  const normalizedPagination = normalizeAdminSubmissionPagination(pagination, maxPageSize)
   const start = (normalizedPagination.page - 1) * normalizedPagination.pageSize
   return items.slice(start, start + normalizedPagination.pageSize)
 }
@@ -2834,7 +2835,12 @@ export async function listAdminFormSubmissions(
 
   const allItems = Array.from(itemsById.values())
   const filteredItems = applyAdminSubmissionFilters(allItems, filters)
-  const normalizedPagination = normalizeAdminSubmissionPagination(pagination)
+  const normalizedPagination = normalizeAdminSubmissionPagination(
+    pagination,
+    pagination?.pageSize === ADMIN_EXCEL_EXPORT_ROW_LIMIT
+      ? ADMIN_EXCEL_EXPORT_ROW_LIMIT
+      : MAX_ADMIN_SUBMISSION_PAGE_SIZE
+  )
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / normalizedPagination.pageSize))
   const safePage = Math.min(normalizedPagination.page, totalPages)
   const safePagination = { ...normalizedPagination, page: safePage }
@@ -2855,7 +2861,7 @@ export async function listAdminFormSubmissions(
       label: field.label,
       type: field.type,
     })),
-    items: paginateAdminSubmissions(filteredItems, safePagination),
+    items: paginateAdminSubmissions(filteredItems, safePagination, normalizedPagination.pageSize),
     filteredItems: filteredItems.length,
     page: safePagination.page,
     pageSize: safePagination.pageSize,
