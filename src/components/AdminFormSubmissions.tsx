@@ -241,7 +241,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
             <div className="forms-dashboard-brand-mark" aria-hidden="true" />
             <div>
               <strong>isian</strong>
-              <span>Ruang kerja peninjauan hasil form</span>
+              <span>Hasil Form</span>
             </div>
           </div>
 
@@ -251,7 +251,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6" />
             </svg>
-            <span>Kembali ke daftar</span>
+            <span>Kembali ke Formulir</span>
           </Link>
         </div>
 
@@ -263,7 +263,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
             href={`/api/admin/forms/${data.form.id}/export?${exportParams.toString()}`}
             className="editorial-form-editor-primary-btn"
           >
-            Unduh Excel
+            Download All Excel
           </a>
         </div>
       </header>
@@ -277,14 +277,13 @@ export default function AdminFormSubmissions({ formId }: Props) {
 
         <div className="editorial-form-editor-statusbar" aria-live="polite">
           <div>
-            <p className="forms-dashboard-overline">Pusat Kiriman</p>
+            <p className="forms-dashboard-overline">Kiriman Form</p>
             <strong>{data.form.title}</strong>
             <span>
-              Pantau kiriman, evaluasi hasil kuis, dan unduh Excel dari satu tampilan yang lebih fokus.
+              Lihat kiriman, evaluasi kuis, dan unduh semua hasil tersaring ke Excel.
             </span>
             <p className="editorial-form-editor-section-note submissions-dashboard-note">
-              Export Excel aman sampai 500 kiriman per unduhan. Jika hasil lebih banyak, gunakan filter dulu agar file tidak terlalu berat.
-              Gunakan filter di bawah untuk mempersempit hasil yang benar-benar ingin Anda tindak lanjuti.
+              Download All Excel mengambil semua kiriman sesuai filter saat ini, maksimal 500 kiriman per file.
             </p>
           </div>
           <div className="editorial-form-editor-status-meta">
@@ -338,7 +337,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
               </svg>
             </div>
             <strong>{numberFormatter.format(data.filteredItems)}</strong>
-            <small>Jumlah hasil sesuai filter yang sedang aktif.</small>
+            <small>Berdasarkan filter saat ini.</small>
           </article>
 
           <article className="forms-dashboard-stat-card">
@@ -350,7 +349,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
               </svg>
             </div>
             <strong>{numberFormatter.format(data.totalItems)}</strong>
-              <small>Jumlah semua kiriman yang tersimpan untuk form ini.</small>
+              <small>Semua kiriman untuk form ini.</small>
           </article>
 
           {hasParticipantType && (
@@ -363,7 +362,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
                 </svg>
               </div>
               <strong>{numberFormatter.format(internalCount)}</strong>
-              <small>{numberFormatter.format(externalCount)} kiriman lain berasal dari peserta eksternal.</small>
+              <small>Pada halaman ini: {numberFormatter.format(externalCount)} kiriman lain berasal dari peserta eksternal.</small>
             </article>
           )}
 
@@ -378,7 +377,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
               </div>
               <strong>{passRate !== null ? `${passRate}%` : '-'}</strong>
               <small>
-                {numberFormatter.format(passedQuizCount)} lulus, {numberFormatter.format(failedQuizCount)} belum lulus.
+                Pada halaman ini: {numberFormatter.format(passedQuizCount)} lulus, {numberFormatter.format(failedQuizCount)} belum lulus.
               </small>
             </article>
           )}
@@ -587,7 +586,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
                 <div>
                   <p className="forms-dashboard-overline">Ringkasan</p>
                   <h2>Komposisi Hasil</h2>
-                  <p>Ringkasan cepat untuk melihat distribusi kiriman yang sedang aktif.</p>
+                  <p>Pada halaman ini.</p>
                 </div>
               </div>
 
@@ -644,7 +643,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
 
             <dl className="forms-dashboard-highlight-list">
               <div>
-                  <dt>Tersaring</dt>
+                  <dt>Halaman ini</dt>
                 <dd>{numberFormatter.format(data.items.length)}</dd>
               </div>
               <div>

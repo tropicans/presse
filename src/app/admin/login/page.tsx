@@ -57,10 +57,10 @@ export default function AdminLoginPage() {
   const isRedirectingToGoogle = loading || (status === 'unauthenticated' && !authQuery.error)
   const title = isAccessDenied
     ? 'Akses admin ditolak untuk akun ini'
-    : 'Menghubungkan Anda ke login Google admin'
+    : 'Masuk ke admin dengan Google'
   const subtitle = isAccessDenied
-    ? 'Gunakan akun Google yang sudah didaftarkan sebagai admin, lalu coba lagi.'
-    : 'Anda tidak perlu melewati dua layar lagi. Halaman ini langsung mengarahkan Anda ke login Google.'
+    ? 'Gunakan akun Google yang terdaftar sebagai admin.'
+    : 'Anda akan diarahkan ke login Google.'
   const buttonLabel = isRedirectingToGoogle ? 'Mengarahkan ke Google...' : 'Masuk dengan akun Google lain'
 
   return (
@@ -86,8 +86,8 @@ export default function AdminLoginPage() {
             </p>
             <h2 className="login-suite-panel-title">
               {isAccessDenied
-                ? 'Akun ini belum masuk daftar admin'
-                : 'Anda akan langsung dibawa ke halaman login Google'}
+                ? 'Akun belum terdaftar sebagai admin'
+                : 'Login Google admin'}
             </h2>
           </div>
 

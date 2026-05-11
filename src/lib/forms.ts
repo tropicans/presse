@@ -715,7 +715,11 @@ function buildAttendanceBranching(fields: FormField[]): FormBranchingConfig | un
   }
 }
 
-function hasLegacyAttendanceShape(form: PublicFormDefinition) {
+export function shouldUseLegacyAttendanceSubmission(form: PublicFormDefinition) {
+  if (form.slug !== ATTENDANCE_FORM_SLUG || form.settings.legacyTarget !== 'attendance') {
+    return false
+  }
+
   const fieldNames = new Set(form.fields.map((field) => field.name))
 
   return [
@@ -975,7 +979,8 @@ const DEFAULT_ADMIN_SUBMISSION_PAGE_SIZE = 20
 const MAX_ADMIN_SUBMISSION_PAGE_SIZE = 100
 
 export function normalizeAdminSubmissionPagination(
-  pagination?: Partial<AdminSubmissionPagination>
+  pagination?: Partial<AdminSubmissionPagination>,
+  maxPageSize = MAX_ADMIN_SUBMISSION_PAGE_SIZE
 ): AdminSubmissionPagination {
   const requestedPage = pagination?.page ?? 1
   const requestedPageSize = pagination?.pageSize ?? DEFAULT_ADMIN_SUBMISSION_PAGE_SIZE
@@ -983,7 +988,7 @@ export function normalizeAdminSubmissionPagination(
     ? Math.floor(requestedPage)
     : 1
   const pageSize = Number.isFinite(requestedPageSize) && requestedPageSize > 0
-    ? Math.min(Math.floor(requestedPageSize), MAX_ADMIN_SUBMISSION_PAGE_SIZE)
+    ? Math.min(Math.floor(requestedPageSize), maxPageSize)
     : DEFAULT_ADMIN_SUBMISSION_PAGE_SIZE
 
   return { page, pageSize }
@@ -1971,11 +1976,11 @@ export async function createAttendanceSubmission(payload: Record<string, unknown
   const form = mapPublicFormRowsToDefinition(rows)
   const values = validateFormSubmission(form, payload)
 
-  if (!hasLegacyAttendanceShape(form)) {
-    return createFormsEngineSubmission(rows, values, buildSubmissionMeta(form, rows, values))
+  if (shouldUseLegacyAttendanceSubmission(form)) {
+    return createWebinarSubmission(form, rows, values)
   }
 
-  return createWebinarSubmission(form, rows, values)
+  return createFormsEngineSubmission(rows, values, buildSubmissionMeta(form, rows, values))
 }
 
 export async function createPublicFormSubmission(
@@ -1991,11 +1996,7 @@ export async function createPublicFormSubmission(
   const form = mapPublicFormRowsToDefinition(rows)
   const values = validateFormSubmission(form, payload)
 
-  if (form.settings.legacyTarget === 'attendance' && hasLegacyAttendanceShape(form)) {
-    return createWebinarSubmission(form, rows, values)
-  }
-
-  if (form.settings.workflow === 'WEBINAR' && hasLegacyAttendanceShape(form)) {
+  if (shouldUseLegacyAttendanceSubmission(form)) {
     return createWebinarSubmission(form, rows, values)
   }
 
@@ -2930,13 +2931,17 @@ export async function exportAdminFormSubmissionsWorkbook(
   id: string,
   filters?: Partial<AdminSubmissionFilters>
 ) {
-  const data = await listAdminFormSubmissions(id, filters)
+  const data = await listAdminFormSubmissions(
+    id,
+    filters,
+    { page: 1, pageSize: ADMIN_EXCEL_EXPORT_ROW_LIMIT }
+  )
 
   if (!data) {
     throw new FormSubmissionError('Form tidak ditemukan', 404)
   }
 
-  if (data.items.length > ADMIN_EXCEL_EXPORT_ROW_LIMIT) {
+  if (data.filteredItems > ADMIN_EXCEL_EXPORT_ROW_LIMIT) {
     throw new FormSubmissionError(
       `Export Excel dibatasi ${ADMIN_EXCEL_EXPORT_ROW_LIMIT} kiriman. Persempit hasil dengan filter sebelum mengunduh.`,
       413

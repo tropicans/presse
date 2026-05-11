@@ -305,22 +305,12 @@ export default function AdminFormsList() {
           </div>
         </div>
 
-        <nav className="forms-dashboard-topnav" aria-label="Navigasi dashboard">
-          <Link href="/admin/forms" className="active">Ringkasan</Link>
-          <a href="#forms-dashboard-table">Formulir</a>
-          <a href="#forms-dashboard-insights">Insight</a>
+        <nav className="forms-dashboard-topnav" aria-label="Navigasi admin">
+          <Link href="/admin/forms" className="active">Formulir</Link>
+          <Link href="/admin">Kehadiran</Link>
         </nav>
 
         <div className="forms-dashboard-topbar-actions">
-          <Link href="/admin" className="forms-dashboard-topbar-link">
-            Data Kehadiran
-          </Link>
-          <Link href="/admin/login" className="forms-dashboard-topbar-icon" aria-label="Buka akses admin">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 10.5 12 3l9 7.5" />
-              <path d="M5 9.5V21h14V9.5" />
-            </svg>
-          </Link>
           <button
             type="button"
             className="forms-dashboard-topbar-icon"
@@ -339,8 +329,8 @@ export default function AdminFormsList() {
       <div className="forms-dashboard-layout">
         <aside className="forms-dashboard-sidebar" aria-label="Sidebar dashboard">
           <div className="forms-dashboard-sidebar-head">
-            <h2>Arsip Formulir</h2>
-            <p>Data & ringkasan</p>
+            <h2>Formulir</h2>
+            <p>Navigasi halaman</p>
           </div>
 
           <nav className="forms-dashboard-sidebar-nav">
@@ -351,7 +341,7 @@ export default function AdminFormsList() {
                 <rect x="3" y="14" width="7" height="7" rx="1.5" />
                 <rect x="14" y="14" width="7" height="7" rx="1.5" />
               </svg>
-              <span>Ringkasan</span>
+              <span>Formulir</span>
             </Link>
             <a href="#forms-dashboard-table">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -360,7 +350,7 @@ export default function AdminFormsList() {
                 <path d="M9 13h6" />
                 <path d="M9 17h6" />
               </svg>
-              <span>Semua Form</span>
+              <span>Daftar Form</span>
             </a>
             <a href="#forms-dashboard-insights">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -369,7 +359,7 @@ export default function AdminFormsList() {
                 <path d="M16 19v-4" />
                 <path d="M22 19V9" />
               </svg>
-              <span>Webinar & quiz</span>
+              <span>Insight</span>
             </a>
             <Link href="/admin">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -381,15 +371,6 @@ export default function AdminFormsList() {
             </Link>
           </nav>
 
-          <button
-            type="button"
-            className="forms-dashboard-sidebar-cta"
-            onClick={handleOpenCreateModal}
-            disabled={creating}
-          >
-            <span>+</span>
-            <span>Buat Form Baru</span>
-          </button>
 
           <div className="forms-dashboard-sidebar-foot">
             <Link href="/admin/login">Kembali ke akses admin</Link>
@@ -410,8 +391,7 @@ export default function AdminFormsList() {
               <p className="forms-dashboard-overline">Dashboard Admin</p>
               <h1>Formulir</h1>
               <p>
-                Kelola form publik, lihat performa kiriman, dan pantau hasil webinar dalam satu
-                tampilan editorial yang lebih rapi.
+                Kelola form publik, lihat kiriman, dan pantau hasil tanpa menu yang berulang.
               </p>
               <div className="forms-dashboard-hero-pills" aria-label="Ringkasan status form">
                 <span>{numberFormatter.format(publishedCount)} publik</span>
@@ -472,7 +452,7 @@ export default function AdminFormsList() {
                 </svg>
               </div>
               <strong>{numberFormatter.format(filteredSubmissions)}</strong>
-                <small>Akumulasi kiriman dari form yang sedang tampil di dashboard.</small>
+              <small>Berdasarkan filter saat ini.</small>
             </article>
 
             <article className="forms-dashboard-stat-card">
@@ -485,7 +465,7 @@ export default function AdminFormsList() {
                 </svg>
               </div>
               <strong>{numberFormatter.format(filteredQuizForms.length)}</strong>
-              <small>Form quiz dan attendance yang punya ringkasan hasil webinar.</small>
+              <small>Berdasarkan filter saat ini.</small>
             </article>
 
             <article className="forms-dashboard-stat-card">
@@ -498,7 +478,7 @@ export default function AdminFormsList() {
               </div>
               <strong>{filteredQuizPassRate !== null ? `${filteredQuizPassRate}%` : '-'}</strong>
               <small>
-                {numberFormatter.format(filteredPassedQuiz)} lulus dari{' '}
+                Berdasarkan filter saat ini: {numberFormatter.format(filteredPassedQuiz)} lulus dari{' '}
                 {numberFormatter.format(filteredQuizSubmissions)} percobaan quiz.
               </small>
             </article>
@@ -508,7 +488,7 @@ export default function AdminFormsList() {
             <div className="forms-dashboard-panel-header">
               <div>
                 <p className="forms-dashboard-overline">Daftar Form</p>
-                <h2>Semua Form Aktif</h2>
+                <h2>Daftar Form</h2>
                 <p>{tableSummary}</p>
               </div>
 
@@ -549,7 +529,7 @@ export default function AdminFormsList() {
             ) : forms.length === 0 ? (
               <div className="forms-dashboard-empty-state">
                 <h3>Belum ada form</h3>
-                <p>Mulai dengan membuat form pertama dari tombol di samping atau di header.</p>
+                <p>Mulai dengan membuat form pertama dari tombol Buat Form di atas.</p>
               </div>
             ) : filteredForms.length === 0 ? (
               <div className="forms-dashboard-empty-state">
@@ -632,16 +612,44 @@ export default function AdminFormsList() {
                                 Edit
                               </Link>
                               <Link href={`/admin/forms/${form.id}/submissions`} className="forms-dashboard-action-link">
-                                Kiriman
+                                Lihat Kiriman
                               </Link>
                               {publicFormPath && (
-                                <button
-                                  type="button"
-                                  className="forms-dashboard-action-link"
-                                  onClick={() => handleCopyPublicUrl(form)}
-                                >
-                                  {copiedSlug === form.slug ? 'Tersalin' : 'Salin Link'}
-                                </button>
+                                <details className="forms-dashboard-share-menu">
+                                  <summary className="forms-dashboard-action-link">Bagikan</summary>
+                                  <div className="forms-dashboard-share-panel">
+                                    <button
+                                      type="button"
+                                      className="forms-dashboard-share-link"
+                                      onClick={() => handleShareWhatsApp(form)}
+                                    >
+                                      WhatsApp
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="forms-dashboard-share-link"
+                                      onClick={() => handleShareX(form)}
+                                    >
+                                      X
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="forms-dashboard-share-link"
+                                      onClick={() => handleShareThreads(form)}
+                                    >
+                                      Threads
+                                    </button>
+                                    <Link
+                                      href={publicFormPath}
+                                      className="forms-dashboard-share-link"
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      onClick={(event) => closeDetailsMenu(event.currentTarget.closest('details'))}
+                                    >
+                                      Buka form publik
+                                    </Link>
+                                  </div>
+                                </details>
                               )}
                             </div>
                             <div className="forms-dashboard-row-actions forms-dashboard-row-actions-secondary">
@@ -657,7 +665,7 @@ export default function AdminFormsList() {
                                     rel="noreferrer"
                                     onClick={(event) => closeDetailsMenu(event.currentTarget.closest('details'))}
                                   >
-                                    Preview Desktop
+                                    Preview desktop
                                   </Link>
                                   <Link
                                     href={`/admin/forms/${form.id}/preview?device=mobile`}
@@ -666,44 +674,16 @@ export default function AdminFormsList() {
                                     rel="noreferrer"
                                     onClick={(event) => closeDetailsMenu(event.currentTarget.closest('details'))}
                                   >
-                                    Preview Mobile
+                                    Preview mobile
                                   </Link>
                                   {publicFormPath && (
-                                    <details className="forms-dashboard-share-menu forms-dashboard-inline-share-menu">
-                                      <summary className="forms-dashboard-share-link">Bagikan</summary>
-                                      <div className="forms-dashboard-share-panel forms-dashboard-inline-share-panel">
-                                        <button
-                                          type="button"
-                                          className="forms-dashboard-share-link"
-                                          onClick={() => handleShareWhatsApp(form)}
-                                        >
-                                          WhatsApp
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="forms-dashboard-share-link"
-                                          onClick={() => handleShareX(form)}
-                                        >
-                                          X
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="forms-dashboard-share-link"
-                                          onClick={() => handleShareThreads(form)}
-                                        >
-                                          Threads
-                                        </button>
-                                        <Link
-                                          href={publicFormPath}
-                                          className="forms-dashboard-share-link"
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          onClick={(event) => closeDetailsMenu(event.currentTarget.closest('details'))}
-                                        >
-                                          Lihat form publik
-                                        </Link>
-                                      </div>
-                                    </details>
+                                    <button
+                                      type="button"
+                                      className="forms-dashboard-share-link"
+                                      onClick={() => handleCopyPublicUrl(form)}
+                                    >
+                                      {copiedSlug === form.slug ? 'Tersalin' : 'Salin link'}
+                                    </button>
                                   )}
                                   <button
                                     type="button"
@@ -712,7 +692,7 @@ export default function AdminFormsList() {
                                     disabled={Boolean(deleteDisabledReason) || isDeleting}
                                     title={deleteDisabledReason ?? 'Hapus form ini secara permanen'}
                                   >
-                                    {isDeleting ? 'Menghapus...' : 'Hapus Form'}
+                                    {isDeleting ? 'Menghapus...' : 'Hapus'}
                                   </button>
                                 </div>
                               </details>
@@ -736,7 +716,7 @@ export default function AdminFormsList() {
                 <div>
                   <p className="forms-dashboard-overline">Aktivitas Kiriman</p>
                   <h2>Distribusi Kiriman per Form</h2>
-                  <p>Ringkasan ini memakai total kiriman per form yang tampil pada filter saat ini.</p>
+                  <p>Berdasarkan filter saat ini.</p>
                 </div>
                 <span className="forms-dashboard-panel-tag">Filter aktif</span>
               </div>

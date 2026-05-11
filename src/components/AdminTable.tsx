@@ -121,7 +121,7 @@ export default function AdminTable() {
           <div className="forms-dashboard-brand-mark" aria-hidden="true" />
           <div>
             <strong>isian</strong>
-            <span>Pusat kendali kehadiran</span>
+            <span>Dashboard admin</span>
           </div>
         </div>
 
@@ -131,9 +131,6 @@ export default function AdminTable() {
         </nav>
 
         <div className="forms-dashboard-topbar-actions">
-            <Link href="/admin/forms" className="forms-dashboard-topbar-link">
-              Daftar form
-            </Link>
           <button
             type="button"
             className="forms-dashboard-topbar-icon"
@@ -152,7 +149,7 @@ export default function AdminTable() {
       <div className="forms-dashboard-layout">
         <aside className="forms-dashboard-sidebar" aria-label="Sidebar attendance">
           <div className="forms-dashboard-sidebar-head">
-            <h2>Arsip Kehadiran</h2>
+            <h2>Kehadiran</h2>
             <p>Seminar Evaluasi CPNS</p>
           </div>
 
@@ -179,7 +176,7 @@ export default function AdminTable() {
                 <rect x="3" y="14" width="7" height="7" rx="1.5" />
                 <rect x="14" y="14" width="7" height="7" rx="1.5" />
               </svg>
-              <span>Editor Form</span>
+              <span>Formulir</span>
             </Link>
           </nav>
 
@@ -221,10 +218,6 @@ export default function AdminTable() {
               >
                 {loading ? 'Memuat...' : 'Muat Ulang Data'}
               </button>
-              <Link href="/admin/forms" className="forms-dashboard-primary-button">
-                <span>+</span>
-                <span>Buka daftar form</span>
-              </Link>
             </div>
           </section>
 
@@ -244,7 +237,7 @@ export default function AdminTable() {
                 </svg>
               </div>
               <strong>{numberFormatter.format(total)}</strong>
-              <small>Total hasil pencarian kehadiran yang saat ini aktif.</small>
+              <small>Berdasarkan pencarian saat ini.</small>
             </article>
 
             <article className="forms-dashboard-stat-card">
@@ -270,7 +263,7 @@ export default function AdminTable() {
                 </svg>
               </div>
               <strong>{numberFormatter.format(coachCount + mentorCount + pengujiCount)}</strong>
-              <small>{coachCount} coach, {mentorCount} mentor, {pengujiCount} penguji pada halaman ini.</small>
+              <small>Pada halaman ini: {coachCount} coach, {mentorCount} mentor, {pengujiCount} penguji.</small>
             </article>
 
             <article className="forms-dashboard-stat-card">
@@ -286,7 +279,7 @@ export default function AdminTable() {
                 </svg>
               </div>
               <strong>{numberFormatter.format(uniqueUnitKerja)}</strong>
-              <small>Jumlah unit kerja unik pada daftar kehadiran di halaman aktif.</small>
+              <small>Pada halaman ini.</small>
             </article>
           </section>
 
@@ -436,7 +429,7 @@ export default function AdminTable() {
                 <div>
                   <p className="forms-dashboard-overline">Ringkasan Peran</p>
                   <h2>Komposisi Peran</h2>
-                  <p>Distribusi role pada halaman aktif membantu membaca pola kehadiran lebih cepat.</p>
+                  <p>Pada halaman ini.</p>
                 </div>
               </div>
 

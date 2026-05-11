@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   FormSubmissionError,
   normalizeAdminSubmissionPagination,
+  shouldUseLegacyAttendanceSubmission,
   type PublicFormDefinition,
   validateFormSubmission,
 } from './forms'
@@ -106,5 +107,47 @@ describe('normalizeAdminSubmissionPagination', () => {
 
   it('caps submissions pagination page size', () => {
     expect(normalizeAdminSubmissionPagination({ page: 3, pageSize: 500 })).toEqual({ page: 3, pageSize: 100 })
+  })
+
+  it('allows explicit larger page size for bounded exports', () => {
+    expect(normalizeAdminSubmissionPagination({ page: 1, pageSize: 500 }, 500)).toEqual({ page: 1, pageSize: 500 })
+  })
+})
+
+describe('shouldUseLegacyAttendanceSubmission', () => {
+  const legacyFields: PublicFormDefinition['fields'] = [
+    { id: 'participantType', name: 'participantType', label: 'Tipe Peserta', type: 'radio', required: true, options: ['Internal', 'Eksternal'] },
+    { id: 'namaLengkap', name: 'namaLengkap', label: 'Nama Lengkap', type: 'text', required: true },
+    { id: 'nipNrp', name: 'nipNrp', label: 'NIP/NRP', type: 'text', required: true },
+    { id: 'jabatan', name: 'jabatan', label: 'Jabatan', type: 'text', required: true },
+    { id: 'unitKerja', name: 'unitKerja', label: 'Unit Kerja', type: 'text', required: true },
+    { id: 'sebagai', name: 'sebagai', label: 'Sebagai', type: 'radio', required: true, options: ['Peserta'] },
+    { id: 'signature', name: 'signature', label: 'Tanda Tangan', type: 'signature', required: true },
+  ]
+
+  it('keeps cloned webinar forms in the forms engine', () => {
+    expect(shouldUseLegacyAttendanceSubmission({
+      id: 'form_clone',
+      slug: 'daftar-hadir-402571',
+      title: 'Daftar Hadir',
+      description: null,
+      successMessage: null,
+      submitLabel: 'Kirim',
+      fields: legacyFields,
+      settings: { workflow: 'WEBINAR' },
+    })).toBe(false)
+  })
+
+  it('uses legacy attendance only for attendance template', () => {
+    expect(shouldUseLegacyAttendanceSubmission({
+      id: 'attendance-template-form',
+      slug: 'attendance-template',
+      title: 'Daftar Hadir',
+      description: null,
+      successMessage: null,
+      submitLabel: 'Kirim',
+      fields: legacyFields,
+      settings: { workflow: 'WEBINAR', legacyTarget: 'attendance' },
+    })).toBe(true)
   })
 })
