@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { FormSubmissionError, type PublicFormDefinition, validateFormSubmission } from './forms'
+import {
+  FormSubmissionError,
+  normalizeAdminSubmissionPagination,
+  type PublicFormDefinition,
+  validateFormSubmission,
+} from './forms'
 
 function buildForm(): PublicFormDefinition {
   return {
@@ -86,5 +91,20 @@ describe('validateFormSubmission', () => {
       role: 'Admin',
       signature: 'data:image/png;base64,abc',
     })
+  })
+})
+
+describe('normalizeAdminSubmissionPagination', () => {
+  it('defaults submissions pagination to first page with bounded page size', () => {
+    expect(normalizeAdminSubmissionPagination()).toEqual({ page: 1, pageSize: 20 })
+  })
+
+  it('normalizes invalid submissions pagination input', () => {
+    expect(normalizeAdminSubmissionPagination({ page: 0, pageSize: 0 })).toEqual({ page: 1, pageSize: 20 })
+    expect(normalizeAdminSubmissionPagination({ page: Number.NaN, pageSize: Number.POSITIVE_INFINITY })).toEqual({ page: 1, pageSize: 20 })
+  })
+
+  it('caps submissions pagination page size', () => {
+    expect(normalizeAdminSubmissionPagination({ page: 3, pageSize: 500 })).toEqual({ page: 3, pageSize: 100 })
   })
 })

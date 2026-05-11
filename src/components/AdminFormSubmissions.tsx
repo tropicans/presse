@@ -37,6 +37,10 @@ interface SubmissionData {
     status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
   }
   totalItems: number
+  filteredItems: number
+  page: number
+  pageSize: number
+  totalPages: number
   hasParticipantType: boolean
   hasQuiz: boolean
   columns: SubmissionColumn[]
@@ -109,6 +113,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
   const [participantFilter, setParticipantFilter] = useState<'all' | 'internal' | 'external'>('all')
   const [quizFilter, setQuizFilter] = useState<'all' | 'passed' | 'failed' | 'ungraded'>('all')
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'score-desc' | 'score-asc'>('newest')
+  const [page, setPage] = useState(1)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -119,6 +124,8 @@ export default function AdminFormSubmissions({ formId }: Props) {
         participantType: participantFilter,
         quizStatus: quizFilter,
         sortBy,
+        page: page.toString(),
+        pageSize: '20',
       })
       const res = await fetch(`/api/admin/forms/${formId}/submissions?${params.toString()}`)
       const json = await res.json()
@@ -134,12 +141,16 @@ export default function AdminFormSubmissions({ formId }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [formId, participantFilter, quizFilter, sortBy])
+  }, [formId, participantFilter, quizFilter, sortBy, page])
 
   useEffect(() => {
     void load()
   }, [load])
 
+
+  useEffect(() => {
+    setPage(1)
+  }, [participantFilter, quizFilter, sortBy])
   const handleDelete = async (submissionId: string) => {
     setDeleting(true)
     try {
@@ -219,6 +230,8 @@ export default function AdminFormSubmissions({ formId }: Props) {
   }, null)
 
   const bestQuizPercentage = bestQuizSubmission ? getQuizPercentage(bestQuizSubmission) : null
+  const firstVisibleItem = data.filteredItems > 0 ? ((data.page - 1) * data.pageSize) + 1 : 0
+  const lastVisibleItem = Math.min(data.page * data.pageSize, data.filteredItems)
 
   return (
     <div className="editorial-form-editor-shell">
@@ -295,8 +308,8 @@ export default function AdminFormSubmissions({ formId }: Props) {
               <p className="forms-dashboard-overline">Tinjauan Kiriman</p>
               <h1>Kiriman</h1>
               <p>
-                Menampilkan {numberFormatter.format(data.items.length)} hasil aktif dari total{' '}
-                {numberFormatter.format(data.totalItems)} kiriman untuk form ini.
+                Menampilkan {numberFormatter.format(firstVisibleItem)}-{numberFormatter.format(lastVisibleItem)} dari{' '}
+                {numberFormatter.format(data.filteredItems)} hasil tersaring, total {numberFormatter.format(data.totalItems)} kiriman.
             </p>
           </div>
 
@@ -324,8 +337,8 @@ export default function AdminFormSubmissions({ formId }: Props) {
                 <path d="M3 12h18" />
               </svg>
             </div>
-            <strong>{numberFormatter.format(data.items.length)}</strong>
-            <small>Menampilkan hasil sesuai filter yang sedang aktif.</small>
+            <strong>{numberFormatter.format(data.filteredItems)}</strong>
+            <small>Jumlah hasil sesuai filter yang sedang aktif.</small>
           </article>
 
           <article className="forms-dashboard-stat-card">
@@ -538,6 +551,34 @@ export default function AdminFormSubmissions({ formId }: Props) {
               </div>
             )}
           </div>
+
+          {data.filteredItems > 0 && (
+            <div className="attendance-dashboard-pagination">
+              <span className="attendance-dashboard-pagination-info">
+                Menampilkan {numberFormatter.format(firstVisibleItem)}-{numberFormatter.format(lastVisibleItem)} dari{' '}
+                {numberFormatter.format(data.filteredItems)} kiriman tersaring · Halaman {numberFormatter.format(data.page)} dari{' '}
+                {numberFormatter.format(data.totalPages)}
+              </span>
+              <div className="attendance-dashboard-pagination-buttons">
+                <button
+                  type="button"
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  disabled={data.page <= 1 || loading}
+                  className="forms-dashboard-action-link"
+                >
+                  ← Sebelumnya
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPage((current) => Math.min(data.totalPages, current + 1))}
+                  disabled={data.page >= data.totalPages || loading}
+                  className="forms-dashboard-action-link"
+                >
+                  Selanjutnya →
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="forms-dashboard-insights submissions-dashboard-insights">

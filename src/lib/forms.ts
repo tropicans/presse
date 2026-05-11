@@ -225,12 +225,20 @@ export interface AdminFormSubmissionsResult {
     type: FormFieldType
   }>
   items: AdminFormSubmissionItem[]
+  filteredItems: number
+  page: number
+  pageSize: number
+  totalPages: number
 }
-
 export interface AdminSubmissionFilters {
   participantType: 'all' | 'internal' | 'external'
   quizStatus: 'all' | 'passed' | 'failed' | 'ungraded'
   sortBy: 'newest' | 'oldest' | 'score-desc' | 'score-asc'
+}
+
+export interface AdminSubmissionPagination {
+  page: number
+  pageSize: number
 }
 
 interface FormRow {
@@ -961,6 +969,33 @@ export function normalizeAdminSubmissionFilters(
         ? filters.sortBy
         : defaults.sortBy,
   }
+}
+
+const DEFAULT_ADMIN_SUBMISSION_PAGE_SIZE = 20
+const MAX_ADMIN_SUBMISSION_PAGE_SIZE = 100
+
+export function normalizeAdminSubmissionPagination(
+  pagination?: Partial<AdminSubmissionPagination>
+): AdminSubmissionPagination {
+  const requestedPage = pagination?.page ?? 1
+  const requestedPageSize = pagination?.pageSize ?? DEFAULT_ADMIN_SUBMISSION_PAGE_SIZE
+  const page = Number.isFinite(requestedPage) && requestedPage > 0
+    ? Math.floor(requestedPage)
+    : 1
+  const pageSize = Number.isFinite(requestedPageSize) && requestedPageSize > 0
+    ? Math.min(Math.floor(requestedPageSize), MAX_ADMIN_SUBMISSION_PAGE_SIZE)
+    : DEFAULT_ADMIN_SUBMISSION_PAGE_SIZE
+
+  return { page, pageSize }
+}
+
+function paginateAdminSubmissions(
+  items: AdminFormSubmissionItem[],
+  pagination?: Partial<AdminSubmissionPagination>
+) {
+  const normalizedPagination = normalizeAdminSubmissionPagination(pagination)
+  const start = (normalizedPagination.page - 1) * normalizedPagination.pageSize
+  return items.slice(start, start + normalizedPagination.pageSize)
 }
 
 function getQuizScoreRatio(item: AdminFormSubmissionItem) {
@@ -2756,7 +2791,8 @@ export async function deleteAdminForm(id: string) {
 
 export async function listAdminFormSubmissions(
   id: string,
-  filters?: Partial<AdminSubmissionFilters>
+  filters?: Partial<AdminSubmissionFilters>,
+  pagination?: Partial<AdminSubmissionPagination>
 ): Promise<AdminFormSubmissionsResult | null> {
   const detail = await getAdminFormDetail(id)
 
@@ -2796,6 +2832,11 @@ export async function listAdminFormSubmissions(
   }
 
   const allItems = Array.from(itemsById.values())
+  const filteredItems = applyAdminSubmissionFilters(allItems, filters)
+  const normalizedPagination = normalizeAdminSubmissionPagination(pagination)
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / normalizedPagination.pageSize))
+  const safePage = Math.min(normalizedPagination.page, totalPages)
+  const safePagination = { ...normalizedPagination, page: safePage }
 
   return {
     form: {
@@ -2813,7 +2854,11 @@ export async function listAdminFormSubmissions(
       label: field.label,
       type: field.type,
     })),
-    items: applyAdminSubmissionFilters(allItems, filters),
+    items: paginateAdminSubmissions(filteredItems, safePagination),
+    filteredItems: filteredItems.length,
+    page: safePagination.page,
+    pageSize: safePagination.pageSize,
+    totalPages,
   }
 }
 
