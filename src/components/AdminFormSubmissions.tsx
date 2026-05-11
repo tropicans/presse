@@ -188,6 +188,14 @@ export default function AdminFormSubmissions({ formId }: Props) {
     quizStatus: quizFilter,
     sortBy,
   })
+  const exportPageSize = 500
+  const exportPages = Math.max(1, Math.ceil(data.filteredItems / exportPageSize))
+  const getExportHref = (exportPage: number) => {
+    const params = new URLSearchParams(exportParams)
+    params.set('page', exportPage.toString())
+    params.set('pageSize', exportPageSize.toString())
+    return `/api/admin/forms/${data.form.id}/export?${params.toString()}`
+  }
   const answerColumns = data.columns.filter((column) => column.name !== 'participantType')
   const firstAnswerColumns = answerColumns.slice(0, 3)
   const remainingAnswerColumns = answerColumns.slice(3)
@@ -259,12 +267,31 @@ export default function AdminFormSubmissions({ formId }: Props) {
           <Link href={`/admin/forms/${data.form.id}`} className="editorial-form-editor-ghost-btn">
             Edit Formulir
           </Link>
-          <a
-            href={`/api/admin/forms/${data.form.id}/export?${exportParams.toString()}`}
-            className="editorial-form-editor-primary-btn"
-          >
-            Download All Excel
-          </a>
+          {exportPages === 1 ? (
+            <a
+              href={getExportHref(1)}
+              className="editorial-form-editor-primary-btn"
+            >
+              Download All Excel
+            </a>
+          ) : (
+            <details className="forms-dashboard-share-menu">
+              <summary className="editorial-form-editor-primary-btn">Download Excel</summary>
+              <div className="forms-dashboard-share-menu-panel">
+                {Array.from({ length: exportPages }, (_, index) => {
+                  const exportPage = index + 1
+                  const start = (index * exportPageSize) + 1
+                  const end = Math.min(exportPage * exportPageSize, data.filteredItems)
+
+                  return (
+                    <a key={exportPage} href={getExportHref(exportPage)}>
+                      Part {numberFormatter.format(exportPage)} ({numberFormatter.format(start)}-{numberFormatter.format(end)})
+                    </a>
+                  )
+                })}
+              </div>
+            </details>
+          )}
         </div>
       </header>
 
@@ -283,7 +310,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
               Lihat kiriman, evaluasi kuis, dan unduh semua hasil tersaring ke Excel.
             </span>
             <p className="editorial-form-editor-section-note submissions-dashboard-note">
-              Download All Excel mengambil semua kiriman sesuai filter saat ini, maksimal 500 kiriman per file.
+              Download Excel mengambil semua kiriman sesuai filter saat ini. Jika lebih dari 500 kiriman, unduh per part.
             </p>
           </div>
           <div className="editorial-form-editor-status-meta">

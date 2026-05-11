@@ -26,6 +26,8 @@ export async function GET(request: Request, context: RouteContext) {
     const participantType = url.searchParams.get('participantType')
     const quizStatus = url.searchParams.get('quizStatus')
     const sortBy = url.searchParams.get('sortBy')
+    const page = Number(url.searchParams.get('page'))
+    const pageSize = Number(url.searchParams.get('pageSize'))
     const normalizedParticipantType =
       participantType === 'all' || participantType === 'internal' || participantType === 'external'
         ? participantType
@@ -44,7 +46,8 @@ export async function GET(request: Request, context: RouteContext) {
         participantType: normalizedParticipantType,
         quizStatus: normalizedQuizStatus,
         sortBy: normalizedSortBy,
-      })
+      }),
+      { page, pageSize }
     )
     const buffer = await result.workbook.xlsx.writeBuffer()
 

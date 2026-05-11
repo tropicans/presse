@@ -2929,24 +2929,24 @@ function getDataImageBase64(value: string) {
 
 export async function exportAdminFormSubmissionsWorkbook(
   id: string,
-  filters?: Partial<AdminSubmissionFilters>
+  filters?: Partial<AdminSubmissionFilters>,
+  pagination?: Partial<AdminSubmissionPagination>
 ) {
+  const exportPagination = normalizeAdminSubmissionPagination(
+    pagination,
+    ADMIN_EXCEL_EXPORT_ROW_LIMIT
+  )
   const data = await listAdminFormSubmissions(
     id,
     filters,
-    { page: 1, pageSize: ADMIN_EXCEL_EXPORT_ROW_LIMIT }
+    exportPagination
   )
 
   if (!data) {
     throw new FormSubmissionError('Form tidak ditemukan', 404)
   }
 
-  if (data.filteredItems > ADMIN_EXCEL_EXPORT_ROW_LIMIT) {
-    throw new FormSubmissionError(
-      `Export Excel dibatasi ${ADMIN_EXCEL_EXPORT_ROW_LIMIT} kiriman. Persempit hasil dengan filter sebelum mengunduh.`,
-      413
-    )
-  }
+
 
   const exportableColumns = data.columns.filter((column) => column.name !== 'participantType')
   const hasParticipantType = data.hasParticipantType
@@ -3030,9 +3030,10 @@ export async function exportAdminFormSubmissionsWorkbook(
   })
 
   const fileSlug = slugify(data.form.slug || data.form.title) || 'form-submissions'
+  const suffix = data.totalPages > 1 ? `-part-${data.page}` : ''
 
   return {
-    filename: `${fileSlug}-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    filename: `${fileSlug}-${new Date().toISOString().slice(0, 10)}${suffix}.xlsx`,
     workbook,
   }
 }
