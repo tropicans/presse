@@ -5300,39 +5300,41 @@ body {
 
 .public-ledger-page,
 .public-ledger-success-page {
-  --public-primary: #8EC5E8;
-  --public-primary-strong: #346289;
-  --public-primary-soft: #D8EEF9;
-  --public-bg: #F5FBFE;
-  --public-card: rgba(255, 255, 255, 0.94);
-  --public-panel: rgba(234, 247, 253, 0.82);
-  --public-panel-strong: rgba(216, 238, 249, 0.9);
-  --public-text: #123549;
-  --public-muted: rgba(18, 53, 73, 0.72);
-  --public-border: rgba(52, 98, 137, 0.16);
-  --public-focus: rgba(142, 197, 232, 0.62);
+  /* Civic Ledger Calm Design System Variables */
+  --public-primary: #13A18E;              /* Vibrant Teal Interaction */
+  --public-primary-strong: #00483F;       /* Deep Teal Foundation */
+  --public-primary-soft: rgba(19, 161, 142, 0.08); /* Soft Teal Accent */
+  --public-bg: #F4F7F6;                   /* Calm Light Gray-Teal Canvas */
+  --public-card: #FFFFFF;                 /* Clear White Card Surface */
+  --public-panel: #EDF2F0;                /* Soft Panel Surface */
+  --public-panel-strong: #DEE6E3;         /* Hover state for choice chips */
+  --public-text: #192724;                 /* Soft Charcoal Ink */
+  --public-muted: rgba(25, 39, 36, 0.72); /* Supporting Muted Text */
+  --public-border: rgba(19, 161, 142, 0.14); /* Subtle Teal Border */
+  --public-focus: rgba(19, 161, 142, 0.35);  /* Teal Focus Ring */
   background:
-    radial-gradient(circle at top right, rgba(142, 197, 232, 0.26), transparent 24%),
-    radial-gradient(circle at top left, rgba(216, 238, 249, 0.9), transparent 28%),
+    radial-gradient(circle at top right, rgba(19, 161, 142, 0.12), transparent 24%),
+    radial-gradient(circle at top left, rgba(52, 98, 137, 0.08), transparent 28%),
     var(--public-bg);
 }
 
 html[data-theme='dark'] .public-ledger-page,
 html[data-theme='dark'] .public-ledger-success-page {
-  --public-primary: #8EC5E8;
-  --public-primary-strong: #A8D4EF;
-  --public-primary-soft: rgba(142, 197, 232, 0.16);
-  --public-bg: #07111A;
-  --public-card: rgba(11, 23, 34, 0.94);
-  --public-panel: rgba(16, 32, 46, 0.92);
-  --public-panel-strong: rgba(22, 43, 61, 0.96);
-  --public-text: #EDF6FC;
-  --public-muted: rgba(203, 224, 239, 0.74);
-  --public-border: rgba(142, 197, 232, 0.2);
-  --public-focus: rgba(142, 197, 232, 0.72);
+  /* Civic Ledger Calm Dark Mode Variables */
+  --public-primary: #13A18E;
+  --public-primary-strong: #006256;       /* Deep Teal Interaction */
+  --public-primary-soft: rgba(19, 161, 142, 0.16);
+  --public-bg: #071017;                   /* Deep Ink/Navy Base */
+  --public-card: #0F1A24;                 /* Rich Navy Card Surface */
+  --public-panel: #152633;                /* Panel Surface */
+  --public-panel-strong: #1D3244;         /* Hover/Active Choice Chips */
+  --public-text: #EDF6FC;                 /* Clear Light Text */
+  --public-muted: rgba(237, 246, 252, 0.72);
+  --public-border: rgba(19, 161, 142, 0.22);
+  --public-focus: rgba(19, 161, 142, 0.55);
   background:
-    radial-gradient(circle at top right, rgba(142, 197, 232, 0.18), transparent 24%),
-    radial-gradient(circle at top left, rgba(52, 98, 137, 0.22), transparent 28%),
+    radial-gradient(circle at top right, rgba(19, 161, 142, 0.12), transparent 24%),
+    radial-gradient(circle at top left, rgba(52, 98, 137, 0.12), transparent 28%),
     var(--public-bg);
 }
 
@@ -5344,13 +5346,24 @@ html[data-theme='dark'] .public-ledger-success-page {
 }
 
 .public-ledger-header {
-  background: linear-gradient(135deg, #8EC5E8, #A8D4EF);
-  color: #123549;
+  background: linear-gradient(135deg, var(--public-primary-strong), var(--public-primary));
+  color: #ffffff;
+}
+
+html[data-theme='dark'] .public-ledger-header {
+  background: linear-gradient(135deg, #0F1A24, #152633);
+  color: var(--public-text);
+  border-bottom: 1px solid var(--public-border);
 }
 
 .public-ledger-eyebrow,
 .public-ledger-header .header-subtitle {
-  color: rgba(18, 53, 73, 0.78);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+html[data-theme='dark'] .public-ledger-eyebrow,
+html[data-theme='dark'] .public-ledger-header .header-subtitle {
+  color: var(--public-muted);
 }
 
 .public-ledger-header .header-title,
@@ -5372,6 +5385,12 @@ html[data-theme='dark'] .public-ledger-success-page {
 .public-ledger-brand-mark,
 .public-ledger-page .form-step-badge,
 .public-ledger-page .form-step-bar-fill {
+  background: linear-gradient(135deg, var(--public-primary), var(--public-primary-strong));
+}
+
+html[data-theme='dark'] .public-ledger-brand-mark,
+html[data-theme='dark'] .public-ledger-page .form-step-badge,
+html[data-theme='dark'] .public-ledger-page .form-step-bar-fill {
   background: linear-gradient(135deg, var(--public-primary), var(--public-primary-strong));
 }
 
@@ -5408,9 +5427,11 @@ html[data-theme='dark'] .public-ledger-success-page {
 .public-ledger-page .form-textarea:focus,
 .public-ledger-page .form-select:focus,
 .public-ledger-page .signature-fallback-input:focus {
+  border-color: var(--public-primary);
+  outline: none;
   box-shadow:
-    inset 0 0 0 2px var(--public-focus),
-    0 0 0 4px rgba(142, 197, 232, 0.16);
+    inset 0 0 0 1px var(--public-primary),
+    0 0 0 4px var(--public-focus);
 }
 
 .public-ledger-page .radio-label:hover,
@@ -5424,23 +5445,79 @@ html[data-theme='dark'] .public-ledger-success-page {
   background: var(--public-primary);
 }
 
+/* Standardized Form Action Buttons */
 .public-ledger-page .submit-btn,
 .public-ledger-page .signature-apply-btn,
 .public-ledger-page .public-ledger-retry-btn,
 .public-ledger-success-link {
-  background: linear-gradient(135deg, #8EC5E8, #A8D4EF);
-  color: #123549;
-  border: 1px solid rgba(18, 53, 73, 0.08);
-  box-shadow: 0 14px 30px rgba(52, 98, 137, 0.18);
+  background: linear-gradient(135deg, var(--public-primary), var(--public-primary-strong)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 72, 63, 0.12) !important;
+  box-shadow: 0 8px 20px rgba(19, 161, 142, 0.16) !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
 }
 
+.public-ledger-page .submit-btn:hover:not(:disabled),
+.public-ledger-page .signature-apply-btn:hover,
+.public-ledger-page .public-ledger-retry-btn:hover,
+.public-ledger-success-link:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 10px 24px rgba(19, 161, 142, 0.26) !important;
+  background: linear-gradient(135deg, var(--public-primary-strong), var(--public-primary)) !important;
+}
+
+.public-ledger-page .submit-btn:active:not(:disabled),
+.public-ledger-page .signature-apply-btn:active,
+.public-ledger-page .public-ledger-retry-btn:active,
+.public-ledger-success-link:active {
+  transform: translateY(0) !important;
+}
+
+.public-ledger-page .submit-btn:disabled,
+.public-ledger-page .signature-apply-btn:disabled,
+.public-ledger-page .public-ledger-retry-btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  background: var(--public-panel) !important;
+  color: var(--public-muted) !important;
+  border-color: var(--public-border) !important;
+  box-shadow: none !important;
+}
+
+/* Secondary Actions */
 .public-ledger-page .submit-btn-secondary,
 .public-ledger-page .signature-clear-btn,
 .public-ledger-success-link.secondary {
-  background: var(--public-card);
-  color: var(--public-text);
-  border: 1px solid var(--public-border);
-  box-shadow: none;
+  background: var(--public-card) !important;
+  color: var(--public-primary-strong) !important;
+  border: 1px solid var(--public-border) !important;
+  box-shadow: none !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+}
+
+.public-ledger-page .submit-btn-secondary:hover:not(:disabled),
+.public-ledger-page .signature-clear-btn:hover,
+.public-ledger-success-link.secondary:hover {
+  transform: translateY(-1px) !important;
+  background: var(--public-panel-strong) !important;
+  color: var(--public-primary-strong) !important;
+}
+
+.public-ledger-page .submit-btn-secondary:active:not(:disabled),
+.public-ledger-page .signature-clear-btn:active,
+.public-ledger-success-link.secondary:active {
+  transform: translateY(0) !important;
+}
+
+.public-ledger-page .submit-btn-secondary:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  background: var(--public-panel) !important;
+  color: var(--public-muted) !important;
+  border-color: var(--public-border) !important;
+  box-shadow: none !important;
 }
 
 .public-ledger-page .submit-btn:focus-visible,
@@ -5450,8 +5527,8 @@ html[data-theme='dark'] .public-ledger-success-page {
 .public-ledger-page .public-ledger-retry-btn:focus-visible,
 .public-ledger-success-link:focus-visible,
 .theme-toggle:focus-visible {
-  outline: 3px solid var(--public-focus, rgba(142, 197, 232, 0.62));
-  outline-offset: 3px;
+  outline: 3px solid var(--public-focus) !important;
+  outline-offset: 3px !important;
 }
 
 html[data-theme='dark'] .theme-toggle {
@@ -5462,83 +5539,6 @@ html[data-theme='dark'] .theme-toggle {
 
 html[data-theme='dark'] .theme-toggle:hover {
   background: rgba(22, 43, 61, 0.98);
-}
-
-html[data-theme='dark'] .public-ledger-page .submit-btn,
-html[data-theme='dark'] .public-ledger-page .signature-apply-btn,
-html[data-theme='dark'] .public-ledger-page .public-ledger-retry-btn,
-html[data-theme='dark'] .public-ledger-success-link {
-  color: #07111A;
-}
-
-html[data-theme='dark'] .public-ledger-header .header-title {
-  color: #123549;
-}
-
-html[data-theme='dark'] .public-ledger-header .header-subtitle,
-html[data-theme='dark'] .public-ledger-header .public-ledger-eyebrow {
-  color: rgba(18, 53, 73, 0.78);
-}
-
-html[data-theme='dark'] .public-ledger-page .form-step-badge,
-html[data-theme='dark'] .public-ledger-page .submit-btn,
-html[data-theme='dark'] .public-ledger-page .signature-apply-btn,
-html[data-theme='dark'] .public-ledger-page .public-ledger-retry-btn,
-html[data-theme='dark'] .public-ledger-success-link {
-  color: #123549;
-}
-
-html[data-theme='dark'] .public-ledger-page .form-step-badge,
-html[data-theme='dark'] .public-ledger-page .form-step-bar-fill {
-  background: linear-gradient(135deg, #8EC5E8, #A8D4EF);
-}
-
-html[data-theme='dark'] .public-ledger-page .submit-btn,
-html[data-theme='dark'] .public-ledger-page .signature-apply-btn,
-html[data-theme='dark'] .public-ledger-page .public-ledger-retry-btn,
-html[data-theme='dark'] .public-ledger-success-link {
-  background: linear-gradient(135deg, #8EC5E8, #A8D4EF);
-  border-color: rgba(18, 53, 73, 0.12);
-  box-shadow: 0 14px 30px rgba(142, 197, 232, 0.18);
-}
-
-html[data-theme='dark'] .public-ledger-topbar,
-html[data-theme='dark'] .public-ledger-card,
-html[data-theme='dark'] .public-ledger-success-card {
-  background: var(--public-card);
-  color: var(--public-text);
-  border-color: var(--public-border);
-}
-
-html[data-theme='dark'] .public-ledger-page .form-step-shell,
-html[data-theme='dark'] .public-ledger-page .quiz-question-card,
-html[data-theme='dark'] .public-ledger-page .signature-container,
-html[data-theme='dark'] .public-ledger-page .form-navigation-shell,
-html[data-theme='dark'] .public-ledger-success-summary-card {
-  background: var(--public-panel);
-  color: var(--public-text);
-  box-shadow: inset 0 0 0 1px var(--public-border);
-}
-
-html[data-theme='dark'] .public-ledger-page .form-input,
-html[data-theme='dark'] .public-ledger-page .form-textarea,
-html[data-theme='dark'] .public-ledger-page .form-select,
-html[data-theme='dark'] .public-ledger-page .signature-fallback-input,
-html[data-theme='dark'] .public-ledger-page .signature-canvas,
-html[data-theme='dark'] .public-ledger-page .radio-label,
-html[data-theme='dark'] .public-ledger-page .form-step-stat,
-html[data-theme='dark'] .public-ledger-page .form-step-summary-copy,
-html[data-theme='dark'] .public-ledger-success-summary-card .success-summary-item {
-  background: var(--public-card);
-  color: var(--public-text);
-  box-shadow: inset 0 0 0 1px var(--public-border);
-}
-
-html[data-theme='dark'] .theme-toggle {
-  background: rgba(11, 23, 34, 0.94);
-  color: #EDF6FC;
-  border-color: rgba(142, 197, 232, 0.22);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.34);
 }
 
 /* ===================== ENTRY SUITE ===================== */
