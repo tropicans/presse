@@ -304,11 +304,19 @@ function PreviewSession({ form }: Props) {
                         className="likert-scale-meta"
                         aria-hidden="true"
                         style={{
-                          '--likert-meta-cols': field.options.length % 2 === 0 ? 2 : 3,
-                        } as React.CSSProperties}
+                          gridTemplateColumns: `repeat(${field.options.length}, minmax(0, 1fr))`,
+                          gap: '10px',
+                        }}
                       >
                         <span style={{ textAlign: 'left' }}>Tidak setuju</span>
-                        {field.options.length % 2 !== 0 && <span style={{ textAlign: 'center' }}>Netral</span>}
+                        {Array.from({ length: field.options.length - 2 }).map((_, i) => {
+                          const isMiddle = field.options.length % 2 !== 0 && i === Math.floor((field.options.length - 2) / 2)
+                          return (
+                            <span key={i} style={{ textAlign: 'center' }}>
+                              {isMiddle ? 'Netral' : ''}
+                            </span>
+                          )
+                        })}
                         <span style={{ textAlign: 'right' }}>Sangat setuju</span>
                       </div>
                     </>
