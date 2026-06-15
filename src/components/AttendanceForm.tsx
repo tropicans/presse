@@ -544,7 +544,12 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
                 style={
                   field.type === 'likert'
                     ? ({ '--likert-cols': field.options.length } as React.CSSProperties)
-                    : undefined
+                    : (!isQuizQuestion && field.options.length <= 4)
+                      ? ({
+                          '--radio-cols': field.options.length,
+                          '--radio-min-width': '0px',
+                        } as React.CSSProperties)
+                      : undefined
                 }
                 aria-describedby={describedBy}
                 aria-invalid={fieldErrors[field.name] ? 'true' : 'false'}

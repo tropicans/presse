@@ -326,7 +326,12 @@ function PreviewSession({ form }: Props) {
                     style={
                       field.type === 'likert'
                         ? ({ '--likert-cols': field.options.length } as React.CSSProperties)
-                        : undefined
+                        : field.options.length <= 4
+                          ? ({
+                              '--radio-cols': field.options.length,
+                              '--radio-min-width': '0px',
+                            } as React.CSSProperties)
+                          : undefined
                     }
                   >
                     {field.options.map((option) => {
