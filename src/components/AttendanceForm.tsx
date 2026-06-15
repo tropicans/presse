@@ -3,6 +3,7 @@
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import SignaturePad from './SignaturePad'
+import SearchableSelect from './SearchableSelect'
 import type { PublicFormDefinition, FormField, FormStepDefinition } from '@/lib/forms'
 
 interface AttendanceFormProps {
@@ -637,21 +638,25 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
               ) : (
                 <p className="field-help">Pilih salah satu opsi yang sesuai.</p>
               )}
-              <select
+              <SearchableSelect
                 id={field.name}
                 name={field.name}
                 value={formData[field.name] ?? ''}
-                onChange={handleChange}
+                onChange={(val) => {
+                  setFormData((prev) => ({ ...prev, [field.name]: val }))
+                  setFieldErrors((prev) => {
+                    if (!prev[field.name]) return prev
+                    const nextErrors = { ...prev }
+                    delete nextErrors[field.name]
+                    return nextErrors
+                  })
+                }}
+                options={field.options}
                 required={field.required}
                 className="form-select"
-                aria-invalid={fieldErrors[field.name] ? 'true' : 'false'}
-                aria-describedby={describedBy}
-              >
-                <option value="">Pilih salah satu</option>
-                {field.options.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+                ariaInvalid={fieldErrors[field.name] ? 'true' : 'false'}
+                ariaDescribedby={describedBy}
+              />
               {fieldErrors[field.name] && (
                 <p id={errorId} className="field-error">
                   {fieldErrors[field.name]}

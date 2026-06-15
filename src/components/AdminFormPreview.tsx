@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import SearchableSelect from './SearchableSelect'
 import type { AdminPreviewField, AdminPreviewForm, AdminPreviewPage } from '@/lib/admin-form-preview'
 
 interface PreviewStep {
@@ -376,18 +377,20 @@ function PreviewSession({ form }: Props) {
                     {label}
                     {field.required ? ' *' : ''}
                   </label>
-                  <select
+                  <SearchableSelect
                     id={field.name}
                     name={field.name}
                     value={formData[field.name] ?? ''}
-                    onChange={handleChange}
+                    onChange={(val) => {
+                      setFormData((current) => ({
+                        ...current,
+                        [field.name]: val,
+                      }))
+                    }}
+                    options={field.options}
+                    required={field.required}
                     className="form-select"
-                  >
-                    <option value="">Pilih salah satu</option>
-                    {field.options.map((option) => (
-                      <option key={option.label} value={option.label}>{option.label}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               )
             }
