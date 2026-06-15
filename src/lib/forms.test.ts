@@ -1,11 +1,76 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   FormSubmissionError,
   normalizeAdminSubmissionPagination,
   shouldUseLegacyAttendanceSubmission,
   type PublicFormDefinition,
   validateFormSubmission,
+  updateAdminForm,
 } from './forms'
+
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+}))
+
+vi.mock('@/lib/prisma', () => {
+  return {
+    prisma: {
+      $queryRaw: vi.fn().mockImplementation(async (strings: TemplateStringsArray) => {
+        const sql = strings.join('?')
+        if (sql.includes('FROM forms')) {
+          return [{
+            id: 'form_123',
+            slug: 'test-form',
+            title: 'Test Form',
+            description: null,
+            successMessage: null,
+            status: 'DRAFT',
+            mode: 'STANDARD',
+            settingsJson: null,
+            updatedAt: new Date(),
+          }]
+        }
+        if (sql.includes('FROM form_fields')) {
+          return [{
+            id: 'field_likert',
+            formId: 'form_123',
+            label: 'Pertanyaan Likert',
+            type: 'likert',
+            order: 1,
+            required: true,
+            placeholder: '',
+          }]
+        }
+        if (sql.includes('FROM field_options')) {
+          return [
+            { id: 'opt1', fieldId: 'field_likert', label: '1 - Sangat tidak setuju', isCorrect: false, points: 0, order: 1 },
+            { id: 'opt2', fieldId: 'field_likert', label: '2 - Tidak setuju', isCorrect: false, points: 0, order: 2 },
+            { id: 'opt3', fieldId: 'field_likert', label: '3 - Setuju', isCorrect: false, points: 0, order: 3 },
+            { id: 'opt4', fieldId: 'field_likert', label: '4 - Sangat setuju', isCorrect: false, points: 0, order: 4 },
+          ]
+        }
+        return []
+      }),
+      $executeRaw: vi.fn().mockResolvedValue(1),
+      $transaction: vi.fn(async (callback) => {
+        const mockTx = {
+          $queryRaw: vi.fn().mockImplementation(async (strings: TemplateStringsArray) => {
+            const sql = strings.join('?')
+            if (sql.includes('COUNT(*)')) {
+              return [{ count: BigInt(1) }]
+            }
+            if (sql.includes('MAX("order")')) {
+              return [{ max_order: 1 }]
+            }
+            return []
+          }),
+          $executeRaw: vi.fn().mockResolvedValue(1),
+        }
+        return callback(mockTx)
+      })
+    }
+  }
+})
 
 function buildForm(): PublicFormDefinition {
   return {
@@ -149,5 +214,37 @@ describe('shouldUseLegacyAttendanceSubmission', () => {
       fields: legacyFields,
       settings: { workflow: 'WEBINAR', legacyTarget: 'attendance' },
     })).toBe(true)
+  })
+})
+
+describe('updateAdminForm', () => {
+  it('allows saving Likert fields with custom option lengths (e.g. 4 options)', async () => {
+    await expect(
+      updateAdminForm('form_123', {
+        title: 'Test Form',
+        description: '',
+        successMessage: '',
+        status: 'DRAFT',
+        mode: 'STANDARD',
+        quizSettings: { passingPercentage: 0 },
+        pages: [{ id: 'page-1' }],
+        fields: [
+          {
+            id: 'field_likert',
+            label: 'Pertanyaan Likert',
+            type: 'likert',
+            required: true,
+            placeholder: '',
+            pageId: 'page-1',
+            options: [
+              { label: '1 - Sangat tidak setuju', isCorrect: false, points: 0, nextPageId: '' },
+              { label: '2 - Tidak setuju', isCorrect: false, points: 0, nextPageId: '' },
+              { label: '3 - Setuju', isCorrect: false, points: 0, nextPageId: '' },
+              { label: '4 - Sangat setuju', isCorrect: false, points: 0, nextPageId: '' },
+            ],
+          },
+        ],
+      })
+    ).resolves.not.toThrow()
   })
 })

@@ -2521,10 +2521,6 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
         throw new FormSubmissionError('Field pilihan harus punya minimal satu opsi', 400)
       }
 
-      if (field.type === 'likert' && options.length !== 5) {
-        throw new FormSubmissionError('Field Likert harus memiliki tepat 5 opsi', 400)
-      }
-
       if (field.type === 'radio' || field.type === 'likert') {
         const correctCount = options.filter((option) => option.isCorrect).length
         if (correctCount > 1) {
