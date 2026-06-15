@@ -5301,19 +5301,19 @@ body {
 .public-ledger-page,
 .public-ledger-success-page {
   /* Civic Ledger Calm Design System Variables */
-  --public-primary: #13A18E;              /* Vibrant Teal Interaction */
-  --public-primary-strong: #00483F;       /* Deep Teal Foundation */
-  --public-primary-soft: rgba(19, 161, 142, 0.08); /* Soft Teal Accent */
+  --public-primary: #70B1E6;              /* Soft Blue Interaction */
+  --public-primary-strong: #266294;       /* Deep Blue Foundation */
+  --public-primary-soft: rgba(112, 177, 230, 0.08); /* Soft Blue Accent */
   --public-bg: #F4F7F6;                   /* Calm Light Gray-Teal Canvas */
   --public-card: #FFFFFF;                 /* Clear White Card Surface */
   --public-panel: #EDF2F0;                /* Soft Panel Surface */
   --public-panel-strong: #DEE6E3;         /* Hover state for choice chips */
   --public-text: #192724;                 /* Soft Charcoal Ink */
   --public-muted: rgba(25, 39, 36, 0.72); /* Supporting Muted Text */
-  --public-border: rgba(19, 161, 142, 0.14); /* Subtle Teal Border */
-  --public-focus: rgba(19, 161, 142, 0.35);  /* Teal Focus Ring */
+  --public-border: rgba(112, 177, 230, 0.14); /* Subtle Blue Border */
+  --public-focus: rgba(112, 177, 230, 0.35);  /* Blue Focus Ring */
   background:
-    radial-gradient(circle at top right, rgba(19, 161, 142, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(112, 177, 230, 0.12), transparent 24%),
     radial-gradient(circle at top left, rgba(52, 98, 137, 0.08), transparent 28%),
     var(--public-bg);
 }
@@ -5321,19 +5321,19 @@ body {
 html[data-theme='dark'] .public-ledger-page,
 html[data-theme='dark'] .public-ledger-success-page {
   /* Civic Ledger Calm Dark Mode Variables */
-  --public-primary: #13A18E;
-  --public-primary-strong: #006256;       /* Deep Teal Interaction */
-  --public-primary-soft: rgba(19, 161, 142, 0.16);
+  --public-primary: #70B1E6;
+  --public-primary-strong: #4B93CE;       /* Deep Blue Interaction */
+  --public-primary-soft: rgba(112, 177, 230, 0.16);
   --public-bg: #071017;                   /* Deep Ink/Navy Base */
   --public-card: #0F1A24;                 /* Rich Navy Card Surface */
   --public-panel: #152633;                /* Panel Surface */
   --public-panel-strong: #1D3244;         /* Hover/Active Choice Chips */
   --public-text: #EDF6FC;                 /* Clear Light Text */
   --public-muted: rgba(237, 246, 252, 0.72);
-  --public-border: rgba(19, 161, 142, 0.22);
-  --public-focus: rgba(19, 161, 142, 0.55);
+  --public-border: rgba(112, 177, 230, 0.22);
+  --public-focus: rgba(112, 177, 230, 0.55);
   background:
-    radial-gradient(circle at top right, rgba(19, 161, 142, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(112, 177, 230, 0.12), transparent 24%),
     radial-gradient(circle at top left, rgba(52, 98, 137, 0.12), transparent 28%),
     var(--public-bg);
 }
