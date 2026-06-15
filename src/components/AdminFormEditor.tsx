@@ -61,7 +61,7 @@ function createOptionsForType(type: EditableField['type'], currentOptions: Edita
   }
 
   if (type === 'likert') {
-    return currentOptions.length === defaultLikertOptions.length
+    return currentOptions.length
       ? currentOptions.map((option) => ({
           ...option,
           isCorrect: false,
@@ -1002,7 +1002,7 @@ export default function AdminFormEditor({ formId }: Props) {
                                 className="admin-builder-input"
                                 placeholder={`Opsi ${optionIndex + 1}`}
                                 />
-                              {(field.type === 'radio' || field.type === 'select') && (
+                              {(field.type === 'radio' || field.type === 'select' || field.type === 'likert') && (
                                 <>
                                   {field.type === 'radio' && (
                                     <label className="admin-builder-inline-checkbox">
@@ -1051,7 +1051,7 @@ export default function AdminFormEditor({ formId }: Props) {
                         )
                       })}
                     </div>
-                    {field.type === 'radio' || field.type === 'select' ? (
+                    {field.type === 'radio' || field.type === 'select' || field.type === 'likert' ? (
                       <>
                         <div className="admin-builder-option-actions">
                           <button
@@ -1062,15 +1062,15 @@ export default function AdminFormEditor({ formId }: Props) {
                             + Tambah opsi
                           </button>
                         </div>
-                              <small>
+                        <small>
                           {field.type === 'radio'
                             ? 'Tandai satu opsi benar untuk soal kuis. Jika tidak ada opsi yang ditandai benar, field radio diperlakukan sebagai evaluasi biasa. Untuk form multi-langkah, tiap opsi juga bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung mengirim form.'
-                            : 'Untuk form multi-langkah, tiap opsi dropdown bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung mengirim form.'}
+                            : field.type === 'select'
+                              ? 'Untuk form multi-langkah, tiap opsi dropdown bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung mengirim form.'
+                              : 'Field Likert dapat diatur tingkatnya (misalnya 4 atau 5 pilihan). Anda bisa menambahkan atau menghapus tingkat/opsi, serta mengubah label tiap tingkat.'}
                         </small>
                       </>
-                    ) : (
-                      <small>Field Likert selalu memakai 5 tingkat. Anda bisa mengubah label tiap tingkat, tetapi jumlah opsinya tetap lima.</small>
-                    )}
+                    ) : null}
                   </div>
                 )}
 

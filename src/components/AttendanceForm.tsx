@@ -507,18 +507,24 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
               </legend>
               {field.type === 'likert' && (
                 <>
-                  <p className="field-help">Pilih satu jawaban pada skala Likert 1-5.</p>
-                  <div className="likert-scale-meta" aria-hidden="true">
-                    <span>Tidak setuju</span>
-                    <span>Netral</span>
-                    <span>Sangat setuju</span>
+                  <p className="field-help">Pilih satu jawaban pada skala Likert 1-{field.options.length}.</p>
+                  <div
+                    className="likert-scale-meta"
+                    aria-hidden="true"
+                    style={{
+                      '--likert-meta-cols': field.options.length % 2 === 0 ? 2 : 3,
+                    } as React.CSSProperties}
+                  >
+                    <span style={{ textAlign: 'left' }}>Tidak setuju</span>
+                    {field.options.length % 2 !== 0 && <span style={{ textAlign: 'center' }}>Netral</span>}
+                    <span style={{ textAlign: 'right' }}>Sangat setuju</span>
                   </div>
                 </>
               )}
               {isQuizQuestion && field.type !== 'likert' && (
                 <p className="field-help">Pilih satu jawaban yang menurut Anda paling tepat.</p>
               )}
-              {!isQuizQuestion && (
+              {!isQuizQuestion && field.type !== 'likert' && (
                 <p className="field-help">Pilih salah satu opsi yang sesuai.</p>
               )}
               <div
@@ -527,6 +533,11 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
                   : isQuizQuestion
                     ? 'radio-group quiz-choice-group'
                     : 'radio-group'}
+                style={
+                  field.type === 'likert'
+                    ? ({ '--likert-cols': field.options.length } as React.CSSProperties)
+                    : undefined
+                }
                 aria-describedby={describedBy}
                 aria-invalid={fieldErrors[field.name] ? 'true' : 'false'}
               >

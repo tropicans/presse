@@ -939,7 +939,7 @@ body {
 
 .likert-scale-meta {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--likert-meta-cols, 3), minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 2px;
   color: var(--gray-500);
@@ -957,7 +957,7 @@ body {
 
 .likert-group {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--likert-cols, 5), minmax(0, 1fr));
   gap: 10px;
 }
 

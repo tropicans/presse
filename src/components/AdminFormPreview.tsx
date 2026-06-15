@@ -299,15 +299,28 @@ function PreviewSession({ form }: Props) {
                   </legend>
                   {field.type === 'likert' && (
                     <>
-                      <p className="field-help">Pilih satu jawaban pada skala Likert 1-5.</p>
-                      <div className="likert-scale-meta" aria-hidden="true">
-                        <span>Tidak setuju</span>
-                        <span>Netral</span>
-                        <span>Sangat setuju</span>
+                      <p className="field-help">Pilih satu jawaban pada skala Likert 1-{field.options.length}.</p>
+                      <div
+                        className="likert-scale-meta"
+                        aria-hidden="true"
+                        style={{
+                          '--likert-meta-cols': field.options.length % 2 === 0 ? 2 : 3,
+                        } as React.CSSProperties}
+                      >
+                        <span style={{ textAlign: 'left' }}>Tidak setuju</span>
+                        {field.options.length % 2 !== 0 && <span style={{ textAlign: 'center' }}>Netral</span>}
+                        <span style={{ textAlign: 'right' }}>Sangat setuju</span>
                       </div>
                     </>
                   )}
-                  <div className={field.type === 'likert' ? 'radio-group likert-group' : 'radio-group'}>
+                  <div
+                    className={field.type === 'likert' ? 'radio-group likert-group' : 'radio-group'}
+                    style={
+                      field.type === 'likert'
+                        ? ({ '--likert-cols': field.options.length } as React.CSSProperties)
+                        : undefined
+                    }
+                  >
                     {field.options.map((option) => {
                       const parsedOption = field.type === 'likert' ? parseLikertOption(option.label) : null
 
