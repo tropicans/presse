@@ -137,6 +137,8 @@ export default function AdminFormEditor({ formId }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null)
+  const [bulkText, setBulkText] = useState('')
+  const [bulkFieldId, setBulkFieldId] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -413,6 +415,47 @@ export default function AdminFormEditor({ formId }: Props) {
         )),
       }
     })
+  }
+
+  const handleSaveBulk = (fieldId: string, replaceAll: boolean) => {
+    const lines = bulkText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+
+    if (lines.length === 0) {
+      setBulkFieldId(null)
+      setBulkText('')
+      return
+    }
+
+    const newOptions = lines.map((line) => ({
+      label: line,
+      isCorrect: false,
+      points: 0,
+      nextPageId: '',
+    }))
+
+    setForm((current) => {
+      if (!current) return current
+
+      return {
+        ...current,
+        fields: current.fields.map((field) => {
+          if (field.id !== fieldId) return field
+
+          return {
+            ...field,
+            options: replaceAll
+              ? newOptions
+              : [...field.options, ...newOptions],
+          }
+        }),
+      }
+    })
+
+    setBulkFieldId(null)
+    setBulkText('')
   }
 
   const handleCopyPublicUrl = async () => {
@@ -1051,26 +1094,75 @@ export default function AdminFormEditor({ formId }: Props) {
                         )
                       })}
                     </div>
-                    {field.type === 'radio' || field.type === 'select' || field.type === 'likert' ? (
-                      <>
-                        <div className="admin-builder-option-actions">
-                          <button
-                            type="button"
-                            onClick={() => addOption(field.id)}
-                            className="admin-link-btn"
-                          >
-                            + Tambah opsi
-                          </button>
-                        </div>
-                        <small>
+                        {bulkFieldId === field.id ? (
+                          <div className="admin-builder-bulk-input" style={{ marginTop: '12px', display: 'grid', gap: '8px' }}>
+                            <textarea
+                              rows={5}
+                              value={bulkText}
+                              onChange={(e) => setBulkText(e.target.value)}
+                              className="admin-builder-input"
+                              placeholder="Masukkan opsi baru, satu per baris (misal: Jawa Barat, Jawa Tengah, Jawa Timur)..."
+                              style={{ width: '100%', minHeight: '120px', padding: '10px', fontSize: '0.875rem', fontFamily: 'inherit' }}
+                            />
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveBulk(field.id, false)}
+                                className="admin-btn secondary"
+                                style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+                              >
+                                + Tambah Opsi
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveBulk(field.id, true)}
+                                className="admin-btn danger"
+                                style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+                              >
+                                Ganti Semua Opsi
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setBulkFieldId(null)
+                                  setBulkText('')
+                                }}
+                                className="admin-link-btn"
+                                style={{ marginLeft: 'auto', fontSize: '0.8rem' }}
+                              >
+                                Batal
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="admin-builder-option-actions" style={{ display: 'flex', gap: '16px' }}>
+                            <button
+                              type="button"
+                              onClick={() => addOption(field.id)}
+                              className="admin-link-btn"
+                            >
+                              + Tambah opsi
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBulkFieldId(field.id)
+                                setBulkText('')
+                              }}
+                              className="admin-link-btn"
+                              style={{ color: 'var(--ledger-secondary)' }}
+                            >
+                              + Bulk Input Opsi
+                            </button>
+                          </div>
+                        )}
+                        <small style={{ marginTop: '8px', display: 'block' }}>
                           {field.type === 'radio'
                             ? 'Tandai satu opsi benar untuk soal kuis. Jika tidak ada opsi yang ditandai benar, field radio diperlakukan sebagai evaluasi biasa. Untuk form multi-langkah, tiap opsi juga bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung mengirim form.'
                             : field.type === 'select'
                               ? 'Untuk form multi-langkah, tiap opsi dropdown bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung mengirim form.'
                               : 'Field Likert dapat diatur tingkatnya (misalnya 4 atau 5 pilihan). Anda bisa menambahkan atau menghapus tingkat/opsi, serta mengubah label tiap tingkat.'}
                         </small>
-                      </>
-                    ) : null}
                   </div>
                 )}
 
