@@ -6938,6 +6938,88 @@ html[data-theme='dark'] .searchable-select-option.selected {
   color: var(--primary-300);
 }
 
+/* Sidebar Sub-Navigation */
+.forms-dashboard-sidebar-nav a.sidebar-sub-nav {
+  padding-left: 48px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.forms-dashboard-sidebar-nav a.sidebar-sub-nav:hover,
+.forms-dashboard-sidebar-nav a.sidebar-sub-nav.active {
+  color: var(--ledger-secondary);
+  background: transparent;
+  box-shadow: none;
+  transform: translateX(2px);
+}
+
+/* Unified Admin Primary Button */
+.admin-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, var(--ledger-primary-900), var(--ledger-primary-700));
+  color: var(--white);
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 72, 63, 0.16);
+}
+
+.admin-primary-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--ledger-primary-700), var(--ledger-primary-fixed));
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 72, 63, 0.24);
+}
+
+.admin-primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Skeleton Loading Shimmer */
+.admin-skeleton-line {
+  height: 16px;
+  background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+  background-size: 200% 100%;
+  animation: admin-shimmer-loading 1.5s infinite;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.admin-skeleton-line.short {
+  width: 40%;
+}
+
+.admin-skeleton-line.medium {
+  width: 70%;
+}
+
+html[data-theme='dark'] .admin-skeleton-line {
+  background: linear-gradient(90deg, var(--gray-800) 25%, var(--gray-700) 50%, var(--gray-800) 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes admin-shimmer-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+
 /* Mobile Navigation Bar */
 .forms-mobile-nav {
   display: none;

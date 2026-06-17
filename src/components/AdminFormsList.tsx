@@ -303,11 +303,6 @@ export default function AdminFormsList() {
           </div>
         </div>
 
-        <nav className="forms-dashboard-topnav" aria-label="Navigasi admin">
-          <Link href="/admin/forms" className="active">Formulir</Link>
-          <Link href="/admin">Kehadiran</Link>
-        </nav>
-
         <div className="forms-dashboard-topbar-actions">
           <button
             type="button"
@@ -341,22 +336,10 @@ export default function AdminFormsList() {
               </svg>
               <span>Formulir</span>
             </Link>
-            <Link href="/admin/forms#forms-dashboard-table">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
-                <path d="M14 3v6h6" />
-                <path d="M9 13h6" />
-                <path d="M9 17h6" />
-              </svg>
+            <Link href="/admin/forms#forms-dashboard-table" className="sidebar-sub-nav">
               <span>Daftar Form</span>
             </Link>
-            <Link href="/admin/forms#forms-dashboard-insights">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 19V5" />
-                <path d="M10 19v-8" />
-                <path d="M16 19v-4" />
-                <path d="M22 19V9" />
-              </svg>
+            <Link href="/admin/forms#forms-dashboard-insights" className="sidebar-sub-nav">
               <span>Insight</span>
             </Link>
             <Link href="/admin">
@@ -814,7 +797,7 @@ export default function AdminFormsList() {
               >
                 Batal
               </button>
-              <button type="button" className="admin-export-btn" onClick={handleCreateForm} disabled={creating}>
+              <button type="button" className="admin-primary-btn" onClick={handleCreateForm} disabled={creating}>
                 {creating ? 'Membuat...' : 'Buat Sekarang'}
               </button>
             </div>

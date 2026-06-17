@@ -36,6 +36,44 @@ export default function AdminTable() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [pendingDeleteAttendance, setPendingDeleteAttendance] = useState<{ id: number; namaLengkap: string } | null>(null)
+  const [exporting, setExporting] = useState(false)
+
+  const handleExport = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    if (exporting) return
+    setExporting(true)
+    try {
+      const res = await fetch('/api/attendance/export')
+      if (!res.ok) {
+        setFeedback({ type: 'error', message: 'Gagal mengekspor data Excel' })
+        return
+      }
+
+      const contentDisposition = res.headers.get('Content-Disposition')
+      let filename = `presensi-${new Date().toISOString().split('T')[0]}.xlsx`
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+?)"/)
+        if (match && match[1]) {
+          filename = match[1]
+        }
+      }
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+      setFeedback({ type: 'success', message: `Berhasil mengunduh Excel ${filename}` })
+    } catch {
+      setFeedback({ type: 'error', message: 'Gagal mengunduh file Excel' })
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -127,11 +165,6 @@ export default function AdminTable() {
           </div>
         </div>
 
-        <nav className="forms-dashboard-topnav" aria-label="Navigasi admin">
-          <Link href="/admin" className="active">Kehadiran</Link>
-          <Link href="/admin/forms">Formulir</Link>
-        </nav>
-
         <div className="forms-dashboard-topbar-actions">
           <button
             type="button"
@@ -164,11 +197,7 @@ export default function AdminTable() {
               </svg>
               <span>Kehadiran</span>
             </Link>
-            <Link href="/admin#attendance-dashboard-table">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
-                <path d="M14 3v6h6" />
-              </svg>
+            <Link href="/admin#attendance-dashboard-table" className="sidebar-sub-nav">
               <span>Tabel Peserta</span>
             </Link>
             <Link href="/admin/forms">
@@ -182,10 +211,24 @@ export default function AdminTable() {
             </Link>
           </nav>
 
-          <a href="/api/attendance/export" className="forms-dashboard-sidebar-cta">
-            <span>↓</span>
-            <span>Unduh Excel</span>
-          </a>
+          <button
+            type="button"
+            disabled={exporting}
+            onClick={handleExport}
+            className="forms-dashboard-sidebar-cta"
+          >
+            {exporting ? (
+              <>
+                <span className="spinner" />
+                <span>Mengunduh...</span>
+              </>
+            ) : (
+              <>
+                <span>↓</span>
+                <span>Unduh Excel</span>
+              </>
+            )}
+          </button>
 
           <div className="forms-dashboard-sidebar-foot">
             <Link href="/admin/login">Kembali ke akses admin</Link>
@@ -310,11 +353,38 @@ export default function AdminTable() {
             </div>
 
             <div className="forms-dashboard-table-wrap forms-dashboard-table-wrap-compact">
-              {loading && data.length === 0 ? (
-                <div className="forms-dashboard-empty-state">
-                  <h3>Memuat data</h3>
-                  <p>Dashboard sedang mengambil daftar peserta terbaru.</p>
-                </div>
+              {loading ? (
+                <table className="forms-dashboard-table forms-dashboard-table-compact attendance-dashboard-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">No</th>
+                      <th scope="col">Identitas Peserta</th>
+                      <th scope="col">Unit Kerja</th>
+                      <th scope="col">Peran</th>
+                      <th scope="col">Tanda Tangan</th>
+                      <th scope="col">Waktu</th>
+                      <th scope="col">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <tr key={index}>
+                        <td data-label="No"><div className="admin-skeleton-line short" /></td>
+                        <td data-label="Identitas Peserta">
+                          <div className="attendance-dashboard-identity">
+                            <div className="admin-skeleton-line" style={{ marginBottom: '6px' }} />
+                            <div className="admin-skeleton-line short" />
+                          </div>
+                        </td>
+                        <td data-label="Unit Kerja"><div className="admin-skeleton-line medium" /></td>
+                        <td data-label="Peran"><div className="admin-skeleton-line" style={{ width: '60px', height: '20px', borderRadius: '12px' }} /></td>
+                        <td data-label="Tanda Tangan"><div className="admin-skeleton-line" style={{ width: '100px', height: '40px' }} /></td>
+                        <td data-label="Waktu"><div className="admin-skeleton-line medium" /></td>
+                        <td data-label="Aksi"><div className="admin-skeleton-line short" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               ) : data.length === 0 ? (
                 <div className="forms-dashboard-empty-state">
                   <h3>Belum ada data</h3>

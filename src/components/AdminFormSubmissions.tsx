@@ -115,6 +115,55 @@ export default function AdminFormSubmissions({ formId }: Props) {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'score-desc' | 'score-asc'>('newest')
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [exporting, setExporting] = useState(false)
+  const [exportingPage, setExportingPage] = useState<number | null>(null)
+
+  const handleExport = async (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, pageNum: number) => {
+    e.preventDefault()
+    if (exporting || !data) return
+    setExporting(true)
+    setExportingPage(pageNum)
+    try {
+      const exportParams = new URLSearchParams({
+        participantType: participantFilter,
+        quizStatus: quizFilter,
+        sortBy: sortBy,
+        page: pageNum.toString(),
+        pageSize: '500',
+      })
+      const href = `/api/admin/forms/${data.form.id}/export?${exportParams.toString()}`
+      const res = await fetch(href)
+      if (!res.ok) {
+        setFeedback({ type: 'error', message: 'Gagal mengekspor data Excel' })
+        return
+      }
+
+      const contentDisposition = res.headers.get('Content-Disposition')
+      let filename = `kiriman-${data.form.slug}-part-${pageNum}.xlsx`
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+?)"/)
+        if (match && match[1]) {
+          filename = match[1]
+        }
+      }
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+      setFeedback({ type: 'success', message: `Berhasil mengunduh Excel ${filename}` })
+    } catch {
+      setFeedback({ type: 'error', message: 'Terjadi kesalahan saat mengekspor data' })
+    } finally {
+      setExporting(false)
+      setExportingPage(null)
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -266,19 +315,8 @@ export default function AdminFormSubmissions({ formId }: Props) {
     )
   }
 
-  const exportParams = new URLSearchParams({
-    participantType: participantFilter,
-    quizStatus: quizFilter,
-    sortBy,
-  })
   const exportPageSize = 500
   const exportPages = Math.max(1, Math.ceil(data.filteredItems / exportPageSize))
-  const getExportHref = (exportPage: number) => {
-    const params = new URLSearchParams(exportParams)
-    params.set('page', exportPage.toString())
-    params.set('pageSize', exportPageSize.toString())
-    return `/api/admin/forms/${data.form.id}/export?${params.toString()}`
-  }
   const answerColumns = data.columns.filter((column) => column.name !== 'participantType')
   const firstAnswerColumns = answerColumns.slice(0, 3)
   const remainingAnswerColumns = answerColumns.slice(3)
@@ -364,25 +402,54 @@ export default function AdminFormSubmissions({ formId }: Props) {
             Edit Formulir
           </Link>
           {exportPages === 1 ? (
-            <a
-              href={getExportHref(1)}
+            <button
+              type="button"
+              disabled={exporting}
+              onClick={(e) => handleExport(e, 1)}
               className="editorial-form-editor-primary-btn"
             >
-              Download All Excel
-            </a>
+              {exporting ? (
+                <>
+                  <span className="spinner" />
+                  <span>Mengunduh...</span>
+                </>
+              ) : (
+                'Download All Excel'
+              )}
+            </button>
           ) : (
             <details className="forms-dashboard-share-menu">
-              <summary className="editorial-form-editor-primary-btn">Download Excel</summary>
-              <div className="forms-dashboard-share-menu-panel">
+              <summary className="editorial-form-editor-primary-btn">
+                {exporting ? (
+                  <>
+                    <span className="spinner" />
+                    <span>Mengunduh Part {exportingPage}...</span>
+                  </>
+                ) : (
+                  'Download Excel'
+                )}
+              </summary>
+              <div className="forms-dashboard-share-panel">
                 {Array.from({ length: exportPages }, (_, index) => {
                   const exportPage = index + 1
                   const start = (index * exportPageSize) + 1
                   const end = Math.min(exportPage * exportPageSize, data.filteredItems)
 
                   return (
-                    <a key={exportPage} href={getExportHref(exportPage)}>
+                    <button
+                      key={exportPage}
+                      type="button"
+                      disabled={exporting}
+                      onClick={(e) => {
+                        void handleExport(e, exportPage)
+                        const details = e.currentTarget.closest('details')
+                        if (details) details.open = false
+                      }}
+                      className="forms-dashboard-share-link"
+                      style={{ border: 'none', background: 'none', width: '100%', textAlign: 'left', padding: '10px 14px', borderRadius: '12px' }}
+                    >
                       Part {numberFormatter.format(exportPage)} ({numberFormatter.format(start)}-{numberFormatter.format(end)})
-                    </a>
+                    </button>
                   )
                 })}
               </div>
@@ -576,7 +643,31 @@ export default function AdminFormSubmissions({ formId }: Props) {
           </div>
 
           <div className="forms-dashboard-table-wrap">
-            {data.totalItems === 0 ? (
+            {loading ? (
+              <div className="submissions-dashboard-card-list">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <article key={index} className="submissions-dashboard-card">
+                    <div className="submissions-dashboard-card-head">
+                      <div className="submissions-dashboard-primary-cell">
+                        <div className="admin-skeleton-line short" style={{ marginBottom: '6px' }} />
+                        <div className="admin-skeleton-line" style={{ width: '150px' }} />
+                      </div>
+                      <div className="submissions-dashboard-card-badges">
+                        <div className="admin-skeleton-line" style={{ width: '80px', height: '24px', borderRadius: '12px' }} />
+                      </div>
+                    </div>
+                    <div className="submissions-dashboard-answer-grid" style={{ marginTop: '16px' }}>
+                      {Array.from({ length: 3 }).map((_, fieldIdx) => (
+                        <div key={fieldIdx}>
+                          <div className="admin-skeleton-line short" style={{ marginBottom: '8px' }} />
+                          <div className="admin-skeleton-line" />
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : data.totalItems === 0 ? (
               <div className="forms-dashboard-empty-state">
                   <h3>Belum ada kiriman</h3>
                 <p>Form ini belum menerima kiriman data.</p>
