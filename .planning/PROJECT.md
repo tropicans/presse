@@ -6,18 +6,15 @@ Platform pengelolaan formulir publik, kiriman (submissions), dan dashboard admin
 ## Core Value
 Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
 
-## Current Milestone: v1.2 admin-ux-audit
+## Current Milestone: v1.3 llm-submission-analysis
 
-**Goal:** Melakukan UX Audit mendalam terhadap Admin Panel yang sudah ada untuk mengidentifikasi isu usability, workflow friction, dan IA inefficiencies, serta merumuskan rekomendasi dan peta jalan perbaikan.
+**Goal:** Mengintegrasikan LLM (OpenAI-compatible) untuk melakukan analisis mendalam secara kualitatif dan kuantitatif terhadap data kiriman (*submissions*) pengguna dari Admin Panel.
 
 **Target features:**
-- Audit Information Architecture & Navigasi (IA)
-- Evaluasi User Workflow & Friction Points
-- Analisis Usability Heuristics (Nielsen)
-- Audit Data Management & Form Experience
-- Evaluasi Dashboard & KPI Experience
-- Evaluasi Mobile Layout, Accessibility, & Performance Perception
-- Penyusunan Laporan Audit Komprehensif (UX Score, Temuan Kritis, Peta Jalan Prioritas)
+- Integrasi koneksi API OpenAI-compatible (`https://sembilan.kelazz.my.id/v1`) via env variables.
+- Skema penyimpanan model `FormAiAnalysis` di basis data untuk menyimpan histori analisis.
+- API Route endpoint untuk memicu proses analisis secara manual dan mengambil hasilnya.
+- UI tab/panel baru "Analisis AI" pada halaman kiriman formulir dengan dukungan render Markdown hasil analisis.
 
 ## Requirements
 
@@ -30,26 +27,23 @@ Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepa
 - ✓ **LIKERT-02**: Penyesuaian tata letak grid dan teks bantuan skala Likert di form publik secara dinamis
 - ✓ **LIKERT-03**: Penyelarasan meta label ekstrem/tengah skala Likert untuk jumlah opsi ganjil (neutral) dan genap (non-neutral)
 - ✓ **AUDIT-01** - **AUDIT-06**: Audit Frontend Admin (v1.1)
+- ✓ **UX-AUDIT-01** - **UX-AUDIT-09**: UX Audit & Perbaikan Phase 1-3 (v1.2 - Auto-save, Bulk actions Kehadiran & Submissions, Toggle Preview responsif mobile, Visual disabled button safety)
 
 ### Active
-- **UX-AUDIT-01**: Analisis Information Architecture & Navigasi
-- **UX-AUDIT-02**: Evaluasi Alur Kerja Pengguna (User Workflow) & Friction Points
-- **UX-AUDIT-03**: Evaluasi Heuristik Nielsen (Usability Heuristics)
-- **UX-AUDIT-04**: Analisis Data Management Experience (Tabel, Filter, Search, Pagination, Bulk Actions)
-- **UX-AUDIT-05**: Analisis Form Experience (Input, Validation, Error Handling, Save/Draft Flow)
-- **UX-AUDIT-06**: Analisis Dashboard Experience (KPI Visibility, Hierarchy, Action Prioritization)
-- **UX-AUDIT-07**: Evaluasi Mobile & Responsive Layout
-- **UX-AUDIT-08**: Evaluasi Aksesibilitas (A11y) & Persepsi Performa (Performance Perception)
-- **UX-AUDIT-09**: Penyusunan Laporan Hasil Audit komprehensif dengan UX Score, Temuan Kritis, dan Prioritized Roadmap (Phase 1, 2, 3)
+- **LLM-ANALYSIS-01**: Konfigurasi koneksi LLM OpenAI-compatible di `https://sembilan.kelazz.my.id/v1` menggunakan kunci API (`LLM_API_KEY`) dan opsi model (`LLM_MODEL`).
+- **LLM-ANALYSIS-02**: Skema penyimpanan model data `FormAiAnalysis` untuk menyimpan draf teks hasil analisis, jumlah submission yang dianalisis, nama model, dan waktu terakhir di-generate.
+- **LLM-ANALYSIS-03**: API Route handler `POST /api/admin/forms/[id]/ai-analysis` yang memformat seluruh isian pengguna (teks bebas, kuis, sentimen, Likert) ke prompt dan memanggil API LLM untuk analisis mendalam.
+- **LLM-ANALYSIS-04**: API Route handler `GET /api/admin/forms/[id]/ai-analysis` untuk memuat draf analisis tersimpan.
+- **LLM-ANALYSIS-05**: UI Tab/Card "Analisis AI" di halaman kiriman form (`/admin/forms/[id]/submissions`) yang menampilkan Markdown hasil analisis, metadata (model, waktu, jumlah sampel), dan tombol pemicu manual "Buat Analisis AI" dengan loading state.
 
 ### Out of Scope
-- Implementasi perbaikan kode visual/logic pada modul admin (fokus penuh pada audit mendalam dan roadmap).
-- Modifikasi/perbaikan basis data SQL.
+- Analisis otomatis setiap kali submission baru masuk (pemicuan dibatasi secara manual demi efisiensi biaya API).
+- Visualisasi grafik canggih di luar rendering teks Markdown yang rapi dan terformat di UI.
 
 ## Context
 - Tech Stack: Next.js (App Router), Prisma, PostgreSQL.
-- Milestone v1.1 telah berhasil memperbaiki masalah visual frontend paling krusial seperti rasio kontras, navigasi keyboard di select, kegagalan tata letak responsif tabel, dan loading state flashing.
-- Modul admin memiliki 4 tampilan utama: Daftar Formulir (Dashboard), Form Editor, Hasil/Kiriman Formulir, dan Kehadiran Peserta (Presensi).
+- Koneksi OpenAI-compatible menggunakan base URL kustom: `https://sembilan.kelazz.my.id/v1` dengan autentikasi API Key.
+- Data input LLM mencakup seluruh data isian dari `SubmissionAnswer` yang terhubung to `Submission` pada formulir terkait.
 
 ## Key Decisions
 | Decision | Rationale | Outcome |
@@ -57,7 +51,9 @@ Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepa
 | Dukungan opsi dinamis | Memungkinkan skala Likert 4 opsi (force-choice tanpa netral) dan ukuran lainnya | ✓ Selesai |
 | Audit Saja | Memetakan semua masalah frontend admin sebelum merusak alur kode yang sudah stabil | ✓ Selesai |
 | Eksekusi Perbaikan Langsung (v1.1) | Menyelesaikan temuan audit (quick wins & high impact) demi memulihkan aksesibilitas dan responsivitas admin | ✓ Selesai |
-| UX Audit Mendalam (v1.2) | Melakukan evaluasi pengalaman pengguna komprehensif tingkat enterprise untuk menentukan roadmap produk jangka panjang | Aktif |
+| UX Audit Mendalam (v1.2) | Melakukan evaluasi pengalaman pengguna komprehensif tingkat enterprise untuk menentukan roadmap produk jangka panjang | ✓ Selesai |
+| Tombol Hapus Nonaktif untuk Template | Mencegah admin berasumsi tombol aktif bisa digunakan untuk menghapus template default | ✓ Selesai |
+| Analisis Manual Ter-cache | Menggunakan pemicu tombol manual dan menyimpan hasil analisis di DB untuk mengoptimalkan kuota dan biaya API | Aktif |
 
 ## Evolution
 
@@ -77,4 +73,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-17 after initializing Admin UX Audit milestone*
+*Last updated: 2026-06-17 after initializing LLM Submission Analysis milestone*
