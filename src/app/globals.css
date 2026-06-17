@@ -7079,3 +7079,109 @@ html[data-theme='dark'] .admin-skeleton-line {
     padding: 20px 20px 88px !important;
   }
 }
+
+/* ===================== ADMIN BULK ACTIONS & MOBILE EDITOR OPTIMIZATION ===================== */
+.admin-bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--ledger-primary-50);
+  border: 1px solid var(--ledger-primary-200);
+  padding: 12px 20px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  animation: admin-fade-in 0.2s ease-out;
+}
+
+html[data-theme='dark'] .admin-bulk-actions-bar {
+  background: rgba(26, 54, 93, 0.4);
+  border-color: var(--ledger-primary-800);
+}
+
+.admin-bulk-actions-bar span {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ledger-primary-900);
+}
+
+html[data-theme='dark'] .admin-bulk-actions-bar span {
+  color: var(--ledger-primary-200);
+}
+
+.admin-bulk-actions-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-bulk-action-btn {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-bulk-action-btn.primary {
+  background: var(--ledger-primary-900);
+  color: white;
+}
+
+.admin-bulk-action-btn.primary:hover {
+  background: var(--ledger-primary-800);
+}
+
+.admin-bulk-action-btn.danger {
+  background: #dc2626;
+  color: white;
+}
+
+.admin-bulk-action-btn.danger:hover {
+  background: #b91c1c;
+}
+
+.admin-bulk-action-btn.secondary {
+  background: transparent;
+  color: var(--gray-600);
+  border: 1px solid var(--gray-300);
+}
+
+.admin-bulk-action-btn.secondary:hover {
+  background: var(--gray-100);
+}
+
+html[data-theme='dark'] .admin-bulk-action-btn.secondary {
+  color: var(--gray-300);
+  border-color: var(--gray-700);
+}
+
+html[data-theme='dark'] .admin-bulk-action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+@keyframes admin-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-preview-toggle-btn {
+  display: none !important;
+}
+
+@media (max-width: 960px) {
+  .mobile-preview-toggle-btn {
+    display: inline-flex !important;
+  }
+  .editorial-form-editor-preview-panel.mobile-preview-hidden {
+    display: none !important;
+  }
+}
+

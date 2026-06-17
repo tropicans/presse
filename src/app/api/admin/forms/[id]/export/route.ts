@@ -40,12 +40,16 @@ export async function GET(request: Request, context: RouteContext) {
       sortBy === 'newest' || sortBy === 'oldest' || sortBy === 'score-desc' || sortBy === 'score-asc'
         ? sortBy
         : undefined
+    const submissionIdsParam = url.searchParams.get('submissionIds')
+    const submissionIds = submissionIdsParam ? submissionIdsParam.split(',').map((s) => s.trim()).filter(Boolean) : undefined
+
     const result = await exportAdminFormSubmissionsWorkbook(
       id,
       normalizeAdminSubmissionFilters({
         participantType: normalizedParticipantType,
         quizStatus: normalizedQuizStatus,
         sortBy: normalizedSortBy,
+        submissionIds: submissionIds,
       }),
       { page, pageSize }
     )

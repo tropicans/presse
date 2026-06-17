@@ -117,6 +117,90 @@ export default function AdminFormSubmissions({ formId }: Props) {
   const [search, setSearch] = useState('')
   const [exporting, setExporting] = useState(false)
   const [exportingPage, setExportingPage] = useState<number | null>(null)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [pendingBulkDelete, setPendingBulkDelete] = useState(false)
+
+  useEffect(() => {
+    setSelectedIds([])
+  }, [search, participantFilter, quizFilter, sortBy, page])
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked && data) {
+      setSelectedIds(filteredItems.map((item) => item.id))
+    } else {
+      setSelectedIds([])
+    }
+  }
+
+  const handleSelectItem = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
+
+  const handleBulkExport = async () => {
+    if (exporting || selectedIds.length === 0) return
+    setExporting(true)
+    try {
+      const exportParams = new URLSearchParams({
+        submissionIds: selectedIds.join(','),
+      })
+      const res = await fetch(`/api/admin/forms/${formId}/export?${exportParams.toString()}`)
+      if (!res.ok) {
+        setFeedback({ type: 'error', message: 'Gagal mengekspor data Excel' })
+        return
+      }
+
+      const contentDisposition = res.headers.get('Content-Disposition')
+      let filename = `kiriman-terpilih-${new Date().toISOString().split('T')[0]}.xlsx`
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+?)"/)
+        if (match && match[1]) {
+          filename = match[1]
+        }
+      }
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+      setFeedback({ type: 'success', message: `Berhasil mengunduh Excel ${filename}` })
+    } catch {
+      setFeedback({ type: 'error', message: 'Gagal mengunduh file Excel' })
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const executeBulkDelete = async () => {
+    setDeleting(true)
+    try {
+      const res = await fetch(
+        `/api/admin/forms/${formId}/submissions?submissionId=${selectedIds.join(',')}`,
+        { method: 'DELETE' }
+      )
+      const json = await res.json()
+
+      if (!res.ok) {
+        setFeedback({ type: 'error', message: json.error || 'Gagal menghapus kiriman' })
+        return
+      }
+
+      setFeedback({ type: 'success', message: `${selectedIds.length} kiriman berhasil dihapus` })
+      setSelectedIds([])
+      setPendingBulkDelete(false)
+      await load()
+    } catch {
+      setFeedback({ type: 'error', message: 'Gagal menghapus kiriman' })
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const handleExport = async (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, pageNum: number) => {
     e.preventDefault()
@@ -642,6 +726,36 @@ export default function AdminFormSubmissions({ formId }: Props) {
             </div>
           </div>
 
+          {selectedIds.length > 0 && (
+            <div className="admin-bulk-actions-bar" style={{ margin: '0 24px 20px' }}>
+              <span>{selectedIds.length} kiriman terpilih</span>
+              <div className="admin-bulk-actions-buttons">
+                <button
+                  type="button"
+                  onClick={handleBulkExport}
+                  className="admin-bulk-action-btn primary"
+                  disabled={exporting}
+                >
+                  {exporting ? 'Mengunduh...' : 'Ekspor Terpilih'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingBulkDelete(true)}
+                  className="admin-bulk-action-btn danger"
+                >
+                  Hapus Terpilih
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds([])}
+                  className="admin-bulk-action-btn secondary"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="forms-dashboard-table-wrap">
             {loading ? (
               <div className="submissions-dashboard-card-list">
@@ -678,19 +792,43 @@ export default function AdminFormSubmissions({ formId }: Props) {
                   <p>Ubah kata kunci pencarian, filter peserta, filter kuis, atau urutan untuk melihat kiriman lain.</p>
               </div>
             ) : (
-              <div className="submissions-dashboard-card-list">
-                {filteredItems.map((item) => {
-                  const quizPercentage = getQuizPercentage(item)
-                  const submittedAt = new Date(item.createdAt).toLocaleString('id-ID')
+              <>
+                {filteredItems.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', background: 'rgba(0,0,0,0.02)', borderRadius: '12px', marginBottom: '15px' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === filteredItems.length}
+                      onChange={handleSelectAll}
+                      id="select-all-submissions"
+                      style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                    />
+                    <label htmlFor="select-all-submissions" style={{ fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', color: 'var(--ledger-secondary)' }}>
+                      Pilih Semua Kiriman di Halaman Ini
+                    </label>
+                  </div>
+                )}
+                <div className="submissions-dashboard-card-list">
+                  {filteredItems.map((item) => {
+                    const quizPercentage = getQuizPercentage(item)
+                    const submittedAt = new Date(item.createdAt).toLocaleString('id-ID')
 
-                  return (
-                    <article key={item.id} className="submissions-dashboard-card">
-                      <div className="submissions-dashboard-card-head">
-                        <div className="submissions-dashboard-primary-cell">
-                          <span>Waktu Submit</span>
-                          <strong>{submittedAt}</strong>
-                          <code>{item.id}</code>
-                        </div>
+                    return (
+                      <article key={item.id} className="submissions-dashboard-card">
+                        <div className="submissions-dashboard-card-head">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(item.id)}
+                              onChange={() => handleSelectItem(item.id)}
+                              aria-label={`Pilih kiriman ${item.id}`}
+                              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                            />
+                            <div className="submissions-dashboard-primary-cell">
+                              <span>Waktu Submit</span>
+                              <strong>{submittedAt}</strong>
+                              <code>{item.id}</code>
+                            </div>
+                          </div>
                         <div className="submissions-dashboard-card-badges">
                           {hasParticipantType && (
                             <span className={`submissions-dashboard-participant-chip ${getParticipantClass(item.meta.participantType)}`}>
@@ -775,6 +913,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
                   )
                 })}
               </div>
+              </>
             )}
           </div>
 
@@ -914,6 +1053,36 @@ export default function AdminFormSubmissions({ formId }: Props) {
                 disabled={deleting}
               >
                 {deleting ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingBulkDelete && (
+        <div className="admin-modal-backdrop" role="presentation">
+          <div className="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-bulk-submission-title">
+            <div className="admin-modal-head">
+              <h3 id="delete-bulk-submission-title">Hapus Massal Kiriman</h3>
+              <p>Apakah Anda yakin ingin menghapus {selectedIds.length} kiriman terpilih? Tindakan ini tidak bisa dibatalkan.</p>
+            </div>
+
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-link-btn"
+                onClick={() => setPendingBulkDelete(false)}
+                disabled={deleting}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="admin-delete-confirm-btn"
+                onClick={executeBulkDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Menghapus...' : 'Ya, Hapus Massal'}
               </button>
             </div>
           </div>

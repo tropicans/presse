@@ -234,6 +234,7 @@ export interface AdminSubmissionFilters {
   participantType: 'all' | 'internal' | 'external'
   quizStatus: 'all' | 'passed' | 'failed' | 'ungraded'
   sortBy: 'newest' | 'oldest' | 'score-desc' | 'score-asc'
+  submissionIds?: string[]
 }
 
 export interface AdminSubmissionPagination {
@@ -972,6 +973,7 @@ export function normalizeAdminSubmissionFilters(
       || filters?.sortBy === 'score-asc'
         ? filters.sortBy
         : defaults.sortBy,
+    submissionIds: filters?.submissionIds,
   }
 }
 
@@ -1039,6 +1041,12 @@ function applyAdminSubmissionFilters(
 
       if (normalizedFilters.quizStatus === 'ungraded' && item.meta.quiz) {
         return false
+      }
+
+      if (normalizedFilters.submissionIds && normalizedFilters.submissionIds.length > 0) {
+        if (!normalizedFilters.submissionIds.includes(item.id)) {
+          return false
+        }
       }
 
       return true

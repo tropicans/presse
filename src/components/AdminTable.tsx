@@ -37,6 +37,87 @@ export default function AdminTable() {
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [pendingDeleteAttendance, setPendingDeleteAttendance] = useState<{ id: number; namaLengkap: string } | null>(null)
   const [exporting, setExporting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [pendingBulkDelete, setPendingBulkDelete] = useState(false)
+
+  useEffect(() => {
+    setSelectedIds([])
+  }, [search, page])
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(data.map((item) => item.id))
+    } else {
+      setSelectedIds([])
+    }
+  }
+
+  const handleSelectItem = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
+
+  const handleBulkExport = async () => {
+    if (exporting || selectedIds.length === 0) return
+    setExporting(true)
+    try {
+      const exportParams = new URLSearchParams({
+        ids: selectedIds.join(','),
+      })
+      const res = await fetch(`/api/attendance/export?${exportParams.toString()}`)
+      if (!res.ok) {
+        setFeedback({ type: 'error', message: 'Gagal mengekspor data Excel' })
+        return
+      }
+
+      const contentDisposition = res.headers.get('Content-Disposition')
+      let filename = `presensi-terpilih-${new Date().toISOString().split('T')[0]}.xlsx`
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+?)"/)
+        if (match && match[1]) {
+          filename = match[1]
+        }
+      }
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+      setFeedback({ type: 'success', message: `Berhasil mengunduh Excel ${filename}` })
+    } catch {
+      setFeedback({ type: 'error', message: 'Gagal mengunduh file Excel' })
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const executeBulkDelete = async () => {
+    setDeletingId(-1)
+    try {
+      const res = await fetch(`/api/attendance?id=${selectedIds.join(',')}`, { method: 'DELETE' })
+
+      if (!res.ok) {
+        const json = await res.json()
+        setFeedback({ type: 'error', message: json.error || 'Gagal menghapus data' })
+        return
+      }
+
+      setFeedback({ type: 'success', message: `${selectedIds.length} data berhasil dihapus` })
+      setSelectedIds([])
+      setPendingBulkDelete(false)
+      await fetchData()
+    } catch {
+      setFeedback({ type: 'error', message: 'Gagal menghapus data' })
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const handleExport = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
@@ -352,11 +433,42 @@ export default function AdminTable() {
               </div>
             </div>
 
+            {selectedIds.length > 0 && (
+              <div className="admin-bulk-actions-bar">
+                <span>{selectedIds.length} data terpilih</span>
+                <div className="admin-bulk-actions-buttons">
+                  <button
+                    type="button"
+                    onClick={handleBulkExport}
+                    className="admin-bulk-action-btn primary"
+                    disabled={exporting}
+                  >
+                    {exporting ? 'Mengunduh...' : 'Ekspor Terpilih'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingBulkDelete(true)}
+                    className="admin-bulk-action-btn danger"
+                  >
+                    Hapus Terpilih
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedIds([])}
+                    className="admin-bulk-action-btn secondary"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="forms-dashboard-table-wrap forms-dashboard-table-wrap-compact">
               {loading ? (
                 <table className="forms-dashboard-table forms-dashboard-table-compact attendance-dashboard-table">
                   <thead>
                     <tr>
+                      <th scope="col" style={{ width: '40px', textAlign: 'center' }}></th>
                       <th scope="col">No</th>
                       <th scope="col">Identitas Peserta</th>
                       <th scope="col">Unit Kerja</th>
@@ -369,6 +481,7 @@ export default function AdminTable() {
                   <tbody>
                     {Array.from({ length: 5 }).map((_, index) => (
                       <tr key={index}>
+                        <td style={{ textAlign: 'center' }}><div className="admin-skeleton-line" style={{ width: '16px', height: '16px', margin: '0 auto' }} /></td>
                         <td data-label="No"><div className="admin-skeleton-line short" /></td>
                         <td data-label="Identitas Peserta">
                           <div className="attendance-dashboard-identity">
@@ -394,6 +507,15 @@ export default function AdminTable() {
                 <table className="forms-dashboard-table forms-dashboard-table-compact attendance-dashboard-table">
                   <thead>
                     <tr>
+                      <th scope="col" style={{ width: '40px', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={data.length > 0 && selectedIds.length === data.map((item) => item.id).length}
+                          onChange={handleSelectAll}
+                          aria-label="Pilih semua"
+                          style={{ cursor: 'pointer' }}
+                        />
+                      </th>
                       <th scope="col">No</th>
                       <th scope="col">Identitas Peserta</th>
                       <th scope="col">Unit Kerja</th>
@@ -406,6 +528,15 @@ export default function AdminTable() {
                   <tbody>
                     {data.map((item, index) => (
                       <tr key={item.id}>
+                        <td style={{ textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(item.id)}
+                            onChange={() => handleSelectItem(item.id)}
+                            aria-label={`Pilih ${item.namaLengkap}`}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
                         <td data-label="No" className="attendance-dashboard-order">
                           {numberFormatter.format((page - 1) * 20 + index + 1)}
                         </td>
@@ -595,6 +726,36 @@ export default function AdminTable() {
                 disabled={deletingId !== null}
               >
                 {deletingId !== null ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingBulkDelete && (
+        <div className="admin-modal-backdrop" role="presentation">
+          <div className="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-bulk-attendance-modal-title">
+            <div className="admin-modal-head">
+              <h3 id="delete-bulk-attendance-modal-title">Hapus Massal Kehadiran</h3>
+              <p>Apakah Anda yakin ingin menghapus {selectedIds.length} data kehadiran terpilih? Tindakan ini tidak bisa dibatalkan.</p>
+            </div>
+
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-link-btn"
+                onClick={() => setPendingBulkDelete(false)}
+                disabled={deletingId !== null}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="admin-delete-confirm-btn"
+                onClick={executeBulkDelete}
+                disabled={deletingId !== null}
+              >
+                {deletingId === -1 ? 'Menghapus...' : 'Ya, Hapus Massal'}
               </button>
             </div>
           </div>

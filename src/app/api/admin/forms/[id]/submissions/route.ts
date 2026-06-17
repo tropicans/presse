@@ -67,13 +67,21 @@ export async function DELETE(request: Request, context: RouteContext) {
   try {
     const { id } = await context.params
     const url = new URL(request.url)
-    const submissionId = url.searchParams.get('submissionId')?.trim()
+    const submissionIdParam = url.searchParams.get('submissionId')?.trim()
 
-    if (!submissionId) {
+    if (!submissionIdParam) {
       return NextResponse.json({ error: 'submissionId wajib diisi' }, { status: 400 })
     }
 
-    await deleteAdminFormSubmission(id, submissionId)
+    const submissionIds = submissionIdParam.split(',').map((s) => s.trim()).filter(Boolean)
+    if (submissionIds.length === 0) {
+      return NextResponse.json({ error: 'submissionId tidak valid' }, { status: 400 })
+    }
+
+    for (const subId of submissionIds) {
+      await deleteAdminFormSubmission(id, subId)
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     if (error instanceof FormSubmissionError) {

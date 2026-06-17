@@ -136,17 +136,27 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
+    const idParam = searchParams.get('id')
 
-    if (!id || isNaN(Number(id))) {
+    if (!idParam) {
       return NextResponse.json(
         { error: 'ID tidak valid' },
         { status: 400 }
       )
     }
 
-    await prisma.attendance.delete({
-      where: { id: Number(id) },
+    const ids = idParam.split(',').map((v) => Number(v.trim())).filter((v) => !isNaN(v))
+    if (ids.length === 0) {
+      return NextResponse.json(
+        { error: 'ID tidak valid' },
+        { status: 400 }
+      )
+    }
+
+    await prisma.attendance.deleteMany({
+      where: {
+        id: { in: ids },
+      },
     })
 
     return NextResponse.json({ message: 'Data berhasil dihapus' })

@@ -6,7 +6,7 @@ import ExcelJS from 'exceljs'
 const ATTENDANCE_EXPORT_ROW_LIMIT = 1000
 const MAX_EXPORT_SIGNATURE_LENGTH = 500000
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Auth guard — admin only
     const session = await getAdminSession()
@@ -17,7 +17,18 @@ export async function GET() {
       )
     }
 
+    const url = new URL(request.url)
+    const idsParam = url.searchParams.get('ids')
+    let whereClause = {}
+    if (idsParam) {
+      const ids = idsParam.split(',').map((v) => Number(v.trim())).filter((v) => !isNaN(v))
+      if (ids.length > 0) {
+        whereClause = { id: { in: ids } }
+      }
+    }
+
     const attendances = await prisma.attendance.findMany({
+      where: whereClause,
       orderBy: { createdAt: 'asc' },
       take: ATTENDANCE_EXPORT_ROW_LIMIT + 1,
       select: {

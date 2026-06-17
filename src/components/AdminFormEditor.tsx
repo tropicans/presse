@@ -141,6 +141,7 @@ export default function AdminFormEditor({ formId }: Props) {
   const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null)
   const [bulkText, setBulkText] = useState('')
   const [bulkFieldId, setBulkFieldId] = useState<string | null>(null)
+  const [showMobilePreview, setShowMobilePreview] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -644,6 +645,21 @@ export default function AdminFormEditor({ formId }: Props) {
     setError(null)
   }
 
+  useEffect(() => {
+    if (!isDirty || saving || !form) return
+
+    // Don't auto-save if there's an empty step (to avoid showing annoying validation errors during active editing)
+    const hasEmptyStep = form.pages.some((page) => getStepFieldCount(page.id) === 0)
+    if (hasEmptyStep) return
+
+    const timer = setTimeout(() => {
+      void handleSave()
+    }, 3000)
+
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, isDirty, saving])
+
   if (loading) {
     return <div className="admin-wrapper"><div className="admin-empty"><p>Memuat editor...</p></div></div>
   }
@@ -679,6 +695,13 @@ export default function AdminFormEditor({ formId }: Props) {
         </div>
 
         <div className="editorial-form-editor-topbar-actions">
+          <button
+            type="button"
+            className="editorial-form-editor-ghost-btn mobile-preview-toggle-btn"
+            onClick={() => setShowMobilePreview((prev) => !prev)}
+          >
+            {showMobilePreview ? 'Sembunyikan Pratinjau' : 'Tampilkan Pratinjau'}
+          </button>
           <Link href={`/admin/forms/${form.id}/submissions`} className="editorial-form-editor-ghost-btn" onClick={(e) => handleLinkClick(e, `/admin/forms/${form.id}/submissions`)}>
             Lihat Kiriman
           </Link>
@@ -1203,7 +1226,7 @@ export default function AdminFormEditor({ formId }: Props) {
           </div>
           </section>
 
-          <section className="admin-builder-panel editorial-form-editor-panel editorial-form-editor-preview-panel">
+          <section className={`admin-builder-panel editorial-form-editor-panel editorial-form-editor-preview-panel ${showMobilePreview ? '' : 'mobile-preview-hidden'}`}>
           <h2>Pratinjau form</h2>
           <p className="editorial-form-editor-section-note">
             Gunakan pratinjau ini untuk mengecek urutan langkah dan pengalaman pengisi sebelum form dipublikasikan.
