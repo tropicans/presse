@@ -307,7 +307,7 @@ export default function AdminTable() {
               </div>
             </div>
 
-            <div className="forms-dashboard-table-wrap">
+            <div className="forms-dashboard-table-wrap forms-dashboard-table-wrap-compact">
               {loading && data.length === 0 ? (
                 <div className="forms-dashboard-empty-state">
                   <h3>Memuat data</h3>
@@ -319,7 +319,7 @@ export default function AdminTable() {
                   <p>Belum ada peserta yang mengisi daftar hadir untuk filter saat ini.</p>
                 </div>
               ) : (
-                <table className="forms-dashboard-table attendance-dashboard-table">
+                <table className="forms-dashboard-table forms-dashboard-table-compact attendance-dashboard-table">
                   <thead>
                     <tr>
                       <th scope="col">No</th>
@@ -498,6 +498,26 @@ export default function AdminTable() {
           </section>
         </main>
       </div>
+
+      <nav className="forms-mobile-nav" aria-label="Navigasi bawah mobile">
+        <Link href="/admin" className="forms-mobile-nav-link active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 5h16" />
+            <path d="M4 12h16" />
+            <path d="M4 19h16" />
+          </svg>
+          <span>Kehadiran</span>
+        </Link>
+        <Link href="/admin/forms" className="forms-mobile-nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            <rect x="14" y="14" width="7" height="7" rx="1.5" />
+          </svg>
+          <span>Formulir</span>
+        </Link>
+      </nav>
     </div>
   )
 }

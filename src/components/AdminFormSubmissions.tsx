@@ -175,12 +175,94 @@ export default function AdminFormSubmissions({ formId }: Props) {
     }
   }
 
-  if (loading) {
-    return <div className="admin-wrapper"><div className="admin-empty"><p>Memuat kiriman...</p></div></div>
+  if (loading && !data) {
+    return (
+      <div className="editorial-form-editor-shell">
+        <header className="editorial-form-editor-topbar">
+          <div className="editorial-form-editor-topbar-left">
+            <div className="forms-dashboard-brand">
+              <div className="forms-dashboard-brand-mark" aria-hidden="true" />
+              <div>
+                <strong>isian</strong>
+                <span>Hasil Form</span>
+              </div>
+            </div>
+            <div className="editorial-form-editor-divider" aria-hidden="true" />
+            <Link href="/admin/forms" className="editorial-form-editor-backlink">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+              <span>Kembali ke Formulir</span>
+            </Link>
+          </div>
+          <div className="editorial-form-editor-topbar-actions">
+            <Link href={`/admin/forms/${formId}`} className="editorial-form-editor-ghost-btn">
+              Edit Formulir
+            </Link>
+          </div>
+        </header>
+
+        <div className="editorial-form-editor-content submissions-dashboard-content">
+          <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
+            <Link href="/admin" className="admin-breadcrumb-link">Admin</Link>
+            <span className="admin-breadcrumb-separator">/</span>
+            <Link href="/admin/forms" className="admin-breadcrumb-link">Formulir</Link>
+            <span className="admin-breadcrumb-separator">/</span>
+            <span className="admin-breadcrumb-current muted">Memuat...</span>
+          </nav>
+
+          <div className="forms-dashboard-empty-state">
+            <h3>Memuat kiriman</h3>
+            <p>Dashboard sedang mengambil data kiriman formulir.</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (!data) {
-    return <div className="admin-wrapper"><div className="admin-empty"><p>{error || 'Data tidak ditemukan'}</p></div></div>
+    return (
+      <div className="editorial-form-editor-shell">
+        <header className="editorial-form-editor-topbar">
+          <div className="editorial-form-editor-topbar-left">
+            <div className="forms-dashboard-brand">
+              <div className="forms-dashboard-brand-mark" aria-hidden="true" />
+              <div>
+                <strong>isian</strong>
+                <span>Hasil Form</span>
+              </div>
+            </div>
+            <div className="editorial-form-editor-divider" aria-hidden="true" />
+            <Link href="/admin/forms" className="editorial-form-editor-backlink">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+              <span>Kembali ke Formulir</span>
+            </Link>
+          </div>
+          <div className="editorial-form-editor-topbar-actions">
+            <Link href={`/admin/forms/${formId}`} className="editorial-form-editor-ghost-btn">
+              Edit Formulir
+            </Link>
+          </div>
+        </header>
+
+        <div className="editorial-form-editor-content submissions-dashboard-content">
+          <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
+            <Link href="/admin" className="admin-breadcrumb-link">Admin</Link>
+            <span className="admin-breadcrumb-separator">/</span>
+            <Link href="/admin/forms" className="admin-breadcrumb-link">Formulir</Link>
+            <span className="admin-breadcrumb-separator">/</span>
+            <span className="admin-breadcrumb-current muted">Error</span>
+          </nav>
+
+          <div className="forms-dashboard-empty-state">
+            <h3>Terjadi Kesalahan</h3>
+            <p>{error || 'Data tidak ditemukan'}</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const exportParams = new URLSearchParams({

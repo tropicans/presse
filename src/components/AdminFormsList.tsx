@@ -823,6 +823,26 @@ export default function AdminFormsList() {
           </div>
         </div>
       )}
+
+      <nav className="forms-mobile-nav" aria-label="Navigasi bawah mobile">
+        <Link href="/admin" className="forms-mobile-nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 5h16" />
+            <path d="M4 12h16" />
+            <path d="M4 19h16" />
+          </svg>
+          <span>Kehadiran</span>
+        </Link>
+        <Link href="/admin/forms" className="forms-mobile-nav-link active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            <rect x="14" y="14" width="7" height="7" rx="1.5" />
+          </svg>
+          <span>Formulir</span>
+        </Link>
+      </nav>
     </div>
   )
 }

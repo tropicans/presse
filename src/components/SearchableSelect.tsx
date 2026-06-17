@@ -35,6 +35,7 @@ export default function SearchableSelect({
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -59,6 +60,7 @@ export default function SearchableSelect({
   const toggleDropdown = () => {
     setIsOpen((prev) => !prev)
     setSearch('')
+    setHighlightedIndex(-1)
   }
 
   // Handle option click
@@ -66,6 +68,7 @@ export default function SearchableSelect({
     onChange(val)
     setIsOpen(false)
     setSearch('')
+    setHighlightedIndex(-1)
   }
 
   // Close dropdown on click outside
@@ -74,6 +77,7 @@ export default function SearchableSelect({
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false)
         setSearch('')
+        setHighlightedIndex(-1)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -89,11 +93,35 @@ export default function SearchableSelect({
     }
   }, [isOpen])
 
-  // Handle escape key to close dropdown
+  // Handle keyboard events
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setIsOpen(false)
       setSearch('')
+      setHighlightedIndex(-1)
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      if (!isOpen) {
+        setIsOpen(true)
+      } else {
+        setHighlightedIndex((prev) =>
+          prev < filteredOptions.length - 1 ? prev + 1 : 0
+        )
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      if (isOpen) {
+        setHighlightedIndex((prev) =>
+          prev > 0 ? prev - 1 : filteredOptions.length - 1
+        )
+      }
+    } else if (e.key === 'Enter') {
+      if (isOpen) {
+        e.preventDefault()
+        if (highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
+          handleOptionClick(filteredOptions[highlightedIndex].value)
+        }
+      }
     }
   }
 
@@ -108,7 +136,6 @@ export default function SearchableSelect({
         id={id}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedby}
         onClick={toggleDropdown}
         className={`${className} searchable-select-trigger`}
@@ -129,7 +156,11 @@ export default function SearchableSelect({
         name={name}
         value={value}
         required={required}
-        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={ariaInvalid}
+        onChange={(e) => {
+          onChange(e.target.value)
+          setHighlightedIndex(-1)
+        }}
         tabIndex={-1}
         aria-hidden="true"
         style={{
@@ -162,20 +193,24 @@ export default function SearchableSelect({
               className="searchable-select-search-input"
               placeholder="Cari..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setHighlightedIndex(-1)
+              }}
             />
           </div>
           <div className="searchable-select-options-list" role="listbox">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((opt, index) => {
                 const isSelected = opt.value === value
+                const isHighlighted = index === highlightedIndex
                 return (
                   <div
                     key={`${opt.value}-${index}`}
                     role="option"
                     aria-selected={isSelected}
                     onClick={() => handleOptionClick(opt.value)}
-                    className={`searchable-select-option ${isSelected ? 'selected' : ''}`}
+                    className={`searchable-select-option ${isSelected ? 'selected' : ''} ${isHighlighted ? 'highlighted' : ''}`}
                   >
                     {opt.label}
                   </div>
