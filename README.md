@@ -165,3 +165,44 @@ CI menjalankan gate yang sama di `.github/workflows/ci.yml`.
 - [ ] `npm audit --audit-level=moderate` sukses.
 - [ ] `/api/health` sukses dari runtime production.
 - [ ] Worker berjalan dan route internal menolak token salah.
+
+## Installation
+
+To install the project dependencies, run:
+```bash
+npm ci
+```
+
+## Quick start
+
+1. Copy the example environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+2. Generate the Prisma client:
+   ```bash
+   npx prisma generate
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+4. Access the application in your browser at `http://localhost:3456`.
+
+## Usage examples
+
+### Running the Background Submission Worker
+To start processing submission queue jobs:
+```bash
+npm run worker:submission
+```
+
+### Running Public Load Tests
+To execute performance testing on public form journeys using k6:
+```bash
+npm run load:test:public
+```
+
+## License
+
+This project is private and proprietary. All rights reserved.
