@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { signOut } from 'next-auth/react'
 import { getAdminFormModeLabel, getAdminFormStatusLabel } from '@/lib/admin-display'
+import { getDeleteDisabledReason } from '@/lib/form-delete-utils'
 
 interface AdminFormListItem {
   id: string
@@ -187,21 +188,7 @@ export default function AdminFormsList() {
     }
   }
 
-  const getDeleteDisabledReason = (form: AdminFormListItem) => {
-    if (form.slug === 'attendance-template') {
-      return 'Form template attendance tidak bisa dihapus'
-    }
 
-    if (form.status !== 'ARCHIVED') {
-      return 'Arsipkan form terlebih dahulu sebelum menghapus'
-    }
-
-    if (form.submissionCount > 0) {
-      return 'Form yang sudah punya kiriman tidak bisa dihapus'
-    }
-
-    return null
-  }
 
   const handleDeleteForm = (form: AdminFormListItem) => {
     const reason = getDeleteDisabledReason(form)
@@ -670,7 +657,7 @@ export default function AdminFormsList() {
                                     type="button"
                                     className="forms-dashboard-share-link danger"
                                     onClick={() => handleDeleteForm(form)}
-                                    disabled={deletingId !== null}
+                                    disabled={deletingId !== null || !!deleteDisabledReason}
                                     title={deleteDisabledReason ?? 'Hapus form ini secara permanen'}
                                   >
                                     {isDeleting ? 'Menghapus...' : 'Hapus'}
