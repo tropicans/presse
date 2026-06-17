@@ -1,45 +1,41 @@
-# Requirements: Admin Frontend Audit
+# Requirements: Admin UX Audit
 
 **Defined:** 2026-06-17
-**Core Value:** Mengidentifikasi isu UI/UX, design system, responsivitas, dan aksesibilitas pada modul admin serta merumuskan rekomendasi perbaikan untuk peningkatan kualitas antarmuka admin yang premium dan konsisten.
+**Core Value:** Menganalisis secara mendalam antarmuka admin menggunakan prinsip-prinsip UX kelas enterprise (Nielsen Heuristics, IA, Form/Dashboard experience, Mobile, A11y, Performance Perception) guna melahirkan peta jalan (roadmap) optimasi SaaS yang berorientasi bisnis dan pengguna.
 
-## v1 Requirements
+## v1.2 Requirements (UX Audit)
 
-### Design System & Component Audit
-- [x] **AUDIT-01**: Audit Design System (analisis pemakaian warna, tipografi, spacing, border radius, shadow, dan ikonografi) di seluruh modul admin.
-- [x] **AUDIT-02**: Audit Konsistensi Komponen (evaluasi variasi dan konsistensi tombol, form input, modal dialog, tabel data, kartu konten, dan menu navigasi) di halaman admin.
+### Information Architecture & Usability Heuristics
+- [ ] **UX-AUDIT-01**: Analisis struktur menu, navigasi, pengelompokan fitur, dan kedalaman klik di seluruh panel admin.
+- [ ] **UX-AUDIT-02**: Evaluasi alur kerja harian admin, jumlah langkah menyelesaikan tugas utama, bottleneck, dan friction point.
+- [ ] **UX-AUDIT-03**: Evaluasi Heuristik Usabilitas Nielsen (10 Usability Heuristics) pada seluruh halaman admin.
 
-### UX & Responsive Audit
-- [x] **AUDIT-03**: Audit User Experience States (verifikasi keberadaan dan estetika loading state, empty state, error state, dan feedback state/toast) pada halaman admin.
-- [x] **AUDIT-04**: Audit Responsive Design (uji coba dan identifikasi tata letak yang rusak/terpotong pada resolusi mobile, tablet, dan desktop) untuk semua halaman admin.
+### Experience Audit (Data, Form & Dashboard)
+- [ ] **UX-AUDIT-04**: Pengalaman manajemen data (tabel, filter, sorting, search, pagination, bulk actions).
+- [ ] **UX-AUDIT-05**: Pengalaman formulir (input fields, validasi, error handling, save/draft flow).
+- [ ] **UX-AUDIT-06**: Pengalaman dashboard (visibilitas KPI, hierarki informasi, prioritas aksi, dukungan pengambilan keputusan).
 
-### Accessibility & Synthesis
-- [x] **AUDIT-05**: Audit Aksesibilitas (evaluasi rasio kontras teks, struktur semantik tag HTML, dan fungsionalitas navigasi menggunakan keyboard) pada admin.
-- [x] **AUDIT-06**: Penyusunan Laporan Audit Komprehensif yang berisi daftar masalah terprioritas, Quick wins, High impact improvements, rekomendasi design system yang cocok, serta rancangan UI-SPEC untuk fase perbaikan berikutnya.
-
-## Future Requirements
-- [ ] **DS-FIX**: Implementasi perbaikan/refactoring CSS dan token design system berdasarkan hasil audit.
-- [ ] **COMP-FIX**: Standarisasi komponen UI admin (Button, Input, Table, dll.) agar 100% konsisten.
+### Accessibility, Mobile, & Performance
+- [ ] **UX-AUDIT-07**: Evaluasi responsivitas mobile & kesiapan layout mobile pada admin panel.
+- [ ] **UX-AUDIT-08**: Evaluasi aksesibilitas (kontras, navigasi keyboard) dan persepsi performa (loading visual speed, transitions).
+- [ ] **UX-AUDIT-09**: Penyusunan Laporan Hasil Audit komprehensif dengan skor UX (0-100), temuan kritis, dan peta jalan prioritas (Phase 1, 2, 3).
 
 ## Out of Scope
-- Melakukan modifikasi kode program (CSS, TypeScript, TSX, atau HTML) di dalam repositori selama fase audit ini (Telah dilalui dan diselesaikan pada fase perbaikan).
-- Melakukan audit pada halaman publik `/f/[slug]` (kecuali jika ada dependensi CSS global yang terpengaruh).
+- Modifikasi/refactoring kode visual atau logic backend/database (milestone ini dibatasi hanya untuk audit mendalam dan penyusunan roadmap).
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUDIT-01    | Phase 4 | Validated |
-| AUDIT-02    | Phase 4 | Validated |
-| AUDIT-03    | Phase 5 | Validated |
-| AUDIT-04    | Phase 5 | Validated |
-| AUDIT-05    | Phase 6 | Validated |
-| AUDIT-06    | Phase 6 | Validated |
-
-**Coverage:**
-- v1 requirements: 6 total
-- Mapped to phases: 6
-- Unmapped: 0 ✓
+| UX-AUDIT-01 | Phase 7 | Active |
+| UX-AUDIT-02 | Phase 7 | Active |
+| UX-AUDIT-03 | Phase 7 | Active |
+| UX-AUDIT-04 | Phase 8 | Active |
+| UX-AUDIT-05 | Phase 8 | Active |
+| UX-AUDIT-06 | Phase 8 | Active |
+| UX-AUDIT-07 | Phase 9 | Active |
+| UX-AUDIT-08 | Phase 9 | Active |
+| UX-AUDIT-09 | Phase 9 | Active |
 
 ---
 *Requirements defined: 2026-06-17*
