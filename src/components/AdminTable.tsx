@@ -35,6 +35,7 @@ export default function AdminTable() {
   const [error, setError] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [pendingDeleteAttendance, setPendingDeleteAttendance] = useState<{ id: number; namaLengkap: string } | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -83,11 +84,11 @@ export default function AdminTable() {
     setPage(1)
   }
 
-  const handleDelete = async (id: number, nama: string) => {
-    if (!confirm(`Hapus data "${nama}"? Tindakan ini tidak bisa dibatalkan.`)) {
-      return
-    }
+  const handleDelete = (id: number, nama: string) => {
+    setPendingDeleteAttendance({ id, namaLengkap: nama })
+  }
 
+  const executeDelete = async (id: number, nama: string) => {
     setDeletingId(id)
 
     try {
@@ -100,6 +101,7 @@ export default function AdminTable() {
       }
 
       setFeedback({ type: 'success', message: `Data ${nama} berhasil dihapus` })
+      setPendingDeleteAttendance(null)
       await fetchData()
     } catch {
       setFeedback({ type: 'error', message: 'Gagal menghapus data' })
@@ -162,13 +164,13 @@ export default function AdminTable() {
               </svg>
               <span>Kehadiran</span>
             </Link>
-            <a href="#attendance-dashboard-table">
+            <Link href="/admin#attendance-dashboard-table">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
                 <path d="M14 3v6h6" />
               </svg>
               <span>Tabel Peserta</span>
-            </a>
+            </Link>
             <Link href="/admin/forms">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="7" height="7" rx="1.5" />
@@ -498,6 +500,36 @@ export default function AdminTable() {
           </section>
         </main>
       </div>
+
+      {pendingDeleteAttendance && (
+        <div className="admin-modal-backdrop" role="presentation">
+          <div className="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-attendance-modal-title">
+            <div className="admin-modal-head">
+              <h3 id="delete-attendance-modal-title">Hapus Kehadiran</h3>
+              <p>Hapus data kehadiran &quot;{pendingDeleteAttendance.namaLengkap}&quot;? Tindakan ini tidak bisa dibatalkan.</p>
+            </div>
+
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-link-btn"
+                onClick={() => setPendingDeleteAttendance(null)}
+                disabled={deletingId !== null}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="admin-delete-confirm-btn"
+                onClick={() => executeDelete(pendingDeleteAttendance.id, pendingDeleteAttendance.namaLengkap)}
+                disabled={deletingId !== null}
+              >
+                {deletingId !== null ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <nav className="forms-mobile-nav" aria-label="Navigasi bawah mobile">
         <Link href="/admin" className="forms-mobile-nav-link active">

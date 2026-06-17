@@ -114,6 +114,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
   const [quizFilter, setQuizFilter] = useState<'all' | 'passed' | 'failed' | 'ungraded'>('all')
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'score-desc' | 'score-asc'>('newest')
   const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -323,6 +324,19 @@ export default function AdminFormSubmissions({ formId }: Props) {
   const firstVisibleItem = data.filteredItems > 0 ? ((data.page - 1) * data.pageSize) + 1 : 0
   const lastVisibleItem = Math.min(data.page * data.pageSize, data.filteredItems)
 
+  const normalizedSearch = search.trim().toLowerCase()
+  const filteredItems = data.items.filter((item) => {
+    if (!normalizedSearch) {
+      return true
+    }
+    const matchesAnswers = Object.values(item.answers).some((val) =>
+      val.toLowerCase().includes(normalizedSearch)
+    )
+    const matchesId = item.id.toLowerCase().includes(normalizedSearch)
+    const matchesParticipant = item.meta.participantType && getParticipantLabel(item.meta.participantType).toLowerCase().includes(normalizedSearch)
+    return matchesAnswers || matchesId || matchesParticipant
+  })
+
   return (
     <div className="editorial-form-editor-shell">
       <header className="editorial-form-editor-topbar">
@@ -501,6 +515,19 @@ export default function AdminFormSubmissions({ formId }: Props) {
               </div>
 
             <div className="submissions-dashboard-filterbar">
+              <label className="forms-dashboard-search" aria-label="Cari kiriman" style={{ marginRight: '1rem', width: '280px' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Cari dalam jawaban..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </label>
+
               {hasParticipantType && (
                 <label className="submissions-dashboard-filter">
                   <span>Peserta</span>
@@ -554,14 +581,14 @@ export default function AdminFormSubmissions({ formId }: Props) {
                   <h3>Belum ada kiriman</h3>
                 <p>Form ini belum menerima kiriman data.</p>
               </div>
-            ) : data.items.length === 0 ? (
+            ) : filteredItems.length === 0 ? (
               <div className="forms-dashboard-empty-state">
                 <h3>Tidak ada hasil yang cocok</h3>
-                  <p>Ubah filter peserta, filter kuis, atau urutan untuk melihat kiriman lain.</p>
+                  <p>Ubah kata kunci pencarian, filter peserta, filter kuis, atau urutan untuk melihat kiriman lain.</p>
               </div>
             ) : (
               <div className="submissions-dashboard-card-list">
-                {data.items.map((item) => {
+                {filteredItems.map((item) => {
                   const quizPercentage = getQuizPercentage(item)
                   const submittedAt = new Date(item.createdAt).toLocaleString('id-ID')
 

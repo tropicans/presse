@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import AdminFormPreview from './AdminFormPreview'
 import { getAdminFormStatusLabel } from '@/lib/admin-display'
@@ -130,6 +131,7 @@ function clearPreviewSnapshot(formId: string) {
 }
 
 export default function AdminFormEditor({ formId }: Props) {
+  const router = useRouter()
   const [form, setForm] = useState<AdminFormDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -198,6 +200,28 @@ export default function AdminFormEditor({ formId }: Props) {
 
     return createFormSnapshot(form) !== lastSavedSnapshot
   }, [form, lastSavedSnapshot])
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [isDirty])
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (isDirty) {
+      e.preventDefault()
+      if (window.confirm('Perubahan belum disimpan. Apakah Anda yakin ingin meninggalkan halaman ini?')) {
+        router.push(href)
+      }
+    }
+  }
 
   const getPublicFormPath = (currentForm: Pick<AdminFormDetail, 'slug' | 'status'>, hasUnsavedChanges = false) => {
     if (currentForm.status !== 'PUBLISHED' || hasUnsavedChanges) {
@@ -646,7 +670,7 @@ export default function AdminFormEditor({ formId }: Props) {
 
           <div className="editorial-form-editor-divider" aria-hidden="true" />
 
-          <Link href="/admin/forms" className="editorial-form-editor-backlink">
+          <Link href="/admin/forms" className="editorial-form-editor-backlink" onClick={(e) => handleLinkClick(e, '/admin/forms')}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6" />
             </svg>
@@ -655,7 +679,7 @@ export default function AdminFormEditor({ formId }: Props) {
         </div>
 
         <div className="editorial-form-editor-topbar-actions">
-          <Link href={`/admin/forms/${form.id}/submissions`} className="editorial-form-editor-ghost-btn">
+          <Link href={`/admin/forms/${form.id}/submissions`} className="editorial-form-editor-ghost-btn" onClick={(e) => handleLinkClick(e, `/admin/forms/${form.id}/submissions`)}>
             Lihat Kiriman
           </Link>
           <button
@@ -701,9 +725,9 @@ export default function AdminFormEditor({ formId }: Props) {
         </div>
 
         <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
-          <Link href="/admin" className="admin-breadcrumb-link">Admin</Link>
+          <Link href="/admin" className="admin-breadcrumb-link" onClick={(e) => handleLinkClick(e, '/admin')}>Admin</Link>
           <span className="admin-breadcrumb-separator">/</span>
-          <Link href="/admin/forms" className="admin-breadcrumb-link">Formulir</Link>
+          <Link href="/admin/forms" className="admin-breadcrumb-link" onClick={(e) => handleLinkClick(e, '/admin/forms')}>Formulir</Link>
           <span className="admin-breadcrumb-separator">/</span>
           <span className="admin-breadcrumb-current">{form.title || 'Form tanpa judul'}</span>
           <span className="admin-breadcrumb-separator">/</span>

@@ -37,6 +37,7 @@ export default function AdminFormsList() {
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [pendingDeleteForm, setPendingDeleteForm] = useState<AdminFormListItem | null>(null)
   const [newFormTitle, setNewFormTitle] = useState('Form baru')
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null)
@@ -202,7 +203,7 @@ export default function AdminFormsList() {
     return null
   }
 
-  const handleDeleteForm = async (form: AdminFormListItem) => {
+  const handleDeleteForm = (form: AdminFormListItem) => {
     const reason = getDeleteDisabledReason(form)
 
     if (reason) {
@@ -210,14 +211,10 @@ export default function AdminFormsList() {
       return
     }
 
-    const confirmed = window.confirm(
-      `Hapus form "${form.title}"? Tindakan ini permanen dan tidak bisa dibatalkan.`
-    )
+    setPendingDeleteForm(form)
+  }
 
-    if (!confirmed) {
-      return
-    }
-
+  const executeDeleteForm = async (form: AdminFormListItem) => {
     setDeletingId(form.id)
 
     try {
@@ -233,6 +230,7 @@ export default function AdminFormsList() {
 
       setForms((current) => current.filter((item) => item.id !== form.id))
       setFeedback({ type: 'success', message: `Form ${form.title} berhasil dihapus` })
+      setPendingDeleteForm(null)
     } catch {
       setFeedback({ type: 'error', message: 'Gagal menghapus form' })
     } finally {
@@ -343,7 +341,7 @@ export default function AdminFormsList() {
               </svg>
               <span>Formulir</span>
             </Link>
-            <a href="#forms-dashboard-table">
+            <Link href="/admin/forms#forms-dashboard-table">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
                 <path d="M14 3v6h6" />
@@ -351,8 +349,8 @@ export default function AdminFormsList() {
                 <path d="M9 17h6" />
               </svg>
               <span>Daftar Form</span>
-            </a>
-            <a href="#forms-dashboard-insights">
+            </Link>
+            <Link href="/admin/forms#forms-dashboard-insights">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 19V5" />
                 <path d="M10 19v-8" />
@@ -360,7 +358,7 @@ export default function AdminFormsList() {
                 <path d="M22 19V9" />
               </svg>
               <span>Insight</span>
-            </a>
+            </Link>
             <Link href="/admin">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 5h16" />
@@ -689,7 +687,7 @@ export default function AdminFormsList() {
                                     type="button"
                                     className="forms-dashboard-share-link danger"
                                     onClick={() => handleDeleteForm(form)}
-                                    disabled={Boolean(deleteDisabledReason) || isDeleting}
+                                    disabled={deletingId !== null}
                                     title={deleteDisabledReason ?? 'Hapus form ini secara permanen'}
                                   >
                                     {isDeleting ? 'Menghapus...' : 'Hapus'}
@@ -818,6 +816,36 @@ export default function AdminFormsList() {
               </button>
               <button type="button" className="admin-export-btn" onClick={handleCreateForm} disabled={creating}>
                 {creating ? 'Membuat...' : 'Buat Sekarang'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingDeleteForm && (
+        <div className="admin-modal-backdrop" role="presentation">
+          <div className="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-form-modal-title">
+            <div className="admin-modal-head">
+              <h3 id="delete-form-modal-title">Hapus Formulir</h3>
+              <p>Hapus form &quot;{pendingDeleteForm.title}&quot;? Tindakan ini permanen dan tidak bisa dibatalkan.</p>
+            </div>
+
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-link-btn"
+                onClick={() => setPendingDeleteForm(null)}
+                disabled={deletingId !== null}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="admin-delete-confirm-btn"
+                onClick={() => executeDeleteForm(pendingDeleteForm)}
+                disabled={deletingId !== null}
+              >
+                {deletingId !== null ? 'Menghapus...' : 'Ya, Hapus'}
               </button>
             </div>
           </div>
