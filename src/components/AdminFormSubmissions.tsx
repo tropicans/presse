@@ -5,6 +5,201 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { getAdminFormStatusLabel } from '@/lib/admin-display'
 
+function MarkdownRenderer({ content }: { content: string }) {
+  const lines = content.split('\n')
+  const elements: React.ReactNode[] = []
+  let listItems: string[] = []
+  let inTable = false
+  let tableRows: string[][] = []
+
+  const parseInline = (text: string): React.ReactNode[] => {
+    const parts = text.split(/\*\*([^*]+)\*\*/g)
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return <strong key={index} style={{ fontWeight: 700, color: 'var(--ledger-primary-text, #1f2937)' }}>{part}</strong>
+      }
+      const subparts = part.split(/`([^`]+)`/g)
+      return subparts.map((subpart, subindex) => {
+        if (subindex % 2 === 1) {
+          return (
+            <code key={subindex} style={{
+              padding: '2px 6px',
+              backgroundColor: 'rgba(0,0,0,0.05)',
+              borderRadius: '6px',
+              fontFamily: 'monospace',
+              fontSize: '0.85em'
+            }}>
+              {subpart}
+            </code>
+          )
+        }
+        return subpart
+      })
+    })
+  }
+
+  const flushList = (key: number) => {
+    if (listItems.length > 0) {
+      elements.push(
+        <ul key={`ul-${key}`} style={{
+          listStyleType: 'disc',
+          paddingLeft: '24px',
+          marginBottom: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px'
+        }}>
+          {listItems.map((item, idx) => (
+            <li key={idx} style={{ fontSize: '0.975rem', lineHeight: '1.6', color: 'var(--ledger-primary-text, #374151)' }}>
+              {parseInline(item)}
+            </li>
+          ))}
+        </ul>
+      )
+      listItems = []
+    }
+  }
+
+  const flushTable = (key: number) => {
+    if (tableRows.length > 0) {
+      const headers = tableRows[0]
+      const dataRows = tableRows.slice(1).filter(row => {
+        return !row.every(cell => cell.trim().match(/^:?-+:?$/))
+      })
+
+      elements.push(
+        <div key={`table-container-${key}`} className="forms-dashboard-table-wrap" style={{ overflowX: 'auto', marginBottom: '24px', border: '1px solid var(--ledger-border)', borderRadius: '12px' }}>
+          <table className="forms-dashboard-table" style={{ width: '100%', borderCollapse: 'collapse', margin: 0 }}>
+            <thead>
+              <tr style={{ background: 'rgba(0,0,0,0.02)' }}>
+                {headers.map((cell, idx) => (
+                  <th key={idx} style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, fontSize: '0.9rem', borderBottom: '1px solid var(--ledger-border)' }}>
+                    {parseInline(cell.trim())}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {dataRows.map((row, rIdx) => (
+                <tr key={rIdx} style={{ borderBottom: rIdx === dataRows.length - 1 ? 'none' : '1px solid var(--ledger-border)' }}>
+                  {row.map((cell, cIdx) => (
+                    <td key={cIdx} style={{ padding: '12px 16px', fontSize: '0.925rem', color: 'var(--ledger-primary-text)' }}>
+                      {parseInline(cell.trim())}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+      tableRows = []
+      inTable = false
+    }
+  }
+
+  let keyCounter = 0
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const trimmed = line.trim()
+
+    if (trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 1) {
+      flushList(keyCounter++)
+      inTable = true
+      const cells = trimmed.slice(1, -1).split('|')
+      tableRows.push(cells)
+      continue
+    } else if (inTable && !trimmed.startsWith('|')) {
+      flushTable(keyCounter++)
+    }
+
+    if (trimmed.startsWith('# ')) {
+      flushList(keyCounter++)
+      elements.push(
+        <h1 key={keyCounter++} style={{
+          fontSize: '1.8rem',
+          fontWeight: 800,
+          marginTop: '28px',
+          marginBottom: '16px',
+          borderBottom: '2px solid var(--ledger-border)',
+          paddingBottom: '10px',
+          color: 'var(--ledger-primary-text, #111827)'
+        }}>
+          {parseInline(trimmed.slice(2))}
+        </h1>
+      )
+    } else if (trimmed.startsWith('## ')) {
+      flushList(keyCounter++)
+      elements.push(
+        <h2 key={keyCounter++} style={{
+          fontSize: '1.45rem',
+          fontWeight: 700,
+          marginTop: '24px',
+          marginBottom: '12px',
+          borderBottom: '1px solid var(--ledger-border)',
+          paddingBottom: '6px',
+          color: 'var(--ledger-primary-text, #1f2937)'
+        }}>
+          {parseInline(trimmed.slice(3))}
+        </h2>
+      )
+    } else if (trimmed.startsWith('### ')) {
+      flushList(keyCounter++)
+      elements.push(
+        <h3 key={keyCounter++} style={{
+          fontSize: '1.2rem',
+          fontWeight: 600,
+          marginTop: '20px',
+          marginBottom: '10px',
+          color: 'var(--ledger-primary-text, #374151)'
+        }}>
+          {parseInline(trimmed.slice(4))}
+        </h3>
+      )
+    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      listItems.push(trimmed.slice(2))
+    } else if (trimmed.match(/^\d+\.\s/)) {
+      flushList(keyCounter++)
+      const match = trimmed.match(/^(\d+)\.\s(.*)/)
+      if (match) {
+        elements.push(
+          <div key={keyCounter++} style={{
+            display: 'flex',
+            gap: '8px',
+            marginBottom: '8px',
+            paddingLeft: '16px',
+            fontSize: '0.975rem',
+            lineHeight: '1.6',
+            color: 'var(--ledger-primary-text, #374151)'
+          }}>
+            <span style={{ fontWeight: 700, color: 'var(--ledger-primary)' }}>{match[1]}.</span>
+            <span>{parseInline(match[2])}</span>
+          </div>
+        )
+      }
+    } else if (trimmed === '') {
+      flushList(keyCounter++)
+    } else {
+      flushList(keyCounter++)
+      elements.push(
+        <p key={keyCounter++} style={{
+          fontSize: '0.975rem',
+          lineHeight: '1.6',
+          marginBottom: '16px',
+          color: 'var(--ledger-primary-text, #374151)'
+        }}>
+          {parseInline(line)}
+        </p>
+      )
+    }
+  }
+
+  flushList(keyCounter++)
+  flushTable(keyCounter++)
+
+  return <div className="markdown-body" style={{ color: 'var(--ledger-primary-text)' }}>{elements}</div>
+}
+
 interface SubmissionColumn {
   id: string
   name: string
@@ -119,6 +314,20 @@ export default function AdminFormSubmissions({ formId }: Props) {
   const [exportingPage, setExportingPage] = useState<number | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [pendingBulkDelete, setPendingBulkDelete] = useState(false)
+
+  const [activeTab, setActiveTab] = useState<'data' | 'ai-analysis'>('data')
+  const [aiAnalysis, setAiAnalysis] = useState<{
+    id: string
+    formId: string
+    analysisText: string
+    analyzedCount: number
+    modelUsed: string
+    createdAt: string
+    updatedAt: string
+  } | null>(null)
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false)
+  const [generatingAnalysis, setGeneratingAnalysis] = useState(false)
+  const [analysisError, setAnalysisError] = useState<string | null>(null)
 
   useEffect(() => {
     setSelectedIds([])
@@ -281,6 +490,55 @@ export default function AdminFormSubmissions({ formId }: Props) {
     void load()
   }, [load])
 
+  const loadAiAnalysis = useCallback(async () => {
+    setLoadingAnalysis(true)
+    setAnalysisError(null)
+    try {
+      const res = await fetch(`/api/admin/forms/${formId}/ai-analysis`)
+      const json = await res.json()
+      if (res.ok) {
+        setAiAnalysis(json.data)
+      } else {
+        if (res.status === 404) {
+          setAiAnalysis(null)
+        } else {
+          setAnalysisError(json.error || 'Gagal memuat analisis AI')
+        }
+      }
+    } catch {
+      setAnalysisError('Gagal memuat analisis AI')
+    } finally {
+      setLoadingAnalysis(false)
+    }
+  }, [formId])
+
+  const generateAiAnalysis = async () => {
+    if (generatingAnalysis) return
+    setGeneratingAnalysis(true)
+    setAnalysisError(null)
+    try {
+      const res = await fetch(`/api/admin/forms/${formId}/ai-analysis`, {
+        method: 'POST',
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setAiAnalysis(json.data)
+        setFeedback({ type: 'success', message: 'Analisis AI berhasil diperbarui' })
+      } else {
+        setAnalysisError(json.error || 'Gagal membuat analisis AI')
+      }
+    } catch {
+      setAnalysisError('Terjadi kesalahan saat memanggil API Analisis AI')
+    } finally {
+      setGeneratingAnalysis(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'ai-analysis') {
+      void loadAiAnalysis()
+    }
+  }, [activeTab, loadAiAnalysis])
 
   useEffect(() => {
     setPage(1)
@@ -576,6 +834,54 @@ export default function AdminFormSubmissions({ formId }: Props) {
           <span className="admin-breadcrumb-current">Kiriman</span>
         </nav>
 
+        {/* Tab Navigation */}
+        <div className="submissions-tab-navigation" style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--ledger-border)', marginBottom: '24px', paddingBottom: '0' }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('data')}
+            className={`submissions-tab-button ${activeTab === 'data' ? 'active' : ''}`}
+            style={{
+              padding: '12px 18px',
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'data' ? '2.5px solid var(--ledger-primary, #4f46e5)' : '2.5px solid transparent',
+              color: activeTab === 'data' ? 'var(--ledger-primary, #4f46e5)' : 'var(--ledger-secondary, #6b7280)',
+              cursor: 'pointer',
+              marginBottom: '-1px',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Data Masuk
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('ai-analysis')}
+            className={`submissions-tab-button ${activeTab === 'ai-analysis' ? 'active' : ''}`}
+            style={{
+              padding: '12px 18px',
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'ai-analysis' ? '2.5px solid var(--ledger-primary, #4f46e5)' : '2.5px solid transparent',
+              color: activeTab === 'ai-analysis' ? 'var(--ledger-primary, #4f46e5)' : 'var(--ledger-secondary, #6b7280)',
+              cursor: 'pointer',
+              marginBottom: '-1px',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <span>Analisis AI</span>
+            <span style={{ fontSize: '0.75rem', background: 'rgba(124, 58, 237, 0.12)', color: '#7c3aed', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>Baru</span>
+          </button>
+        </div>
+
+      {activeTab === 'data' && (
+        <>
           <section className="forms-dashboard-hero submissions-dashboard-hero">
             <div className="forms-dashboard-hero-copy">
               <p className="forms-dashboard-overline">Tinjauan Kiriman</p>
@@ -1027,6 +1333,228 @@ export default function AdminFormSubmissions({ formId }: Props) {
             </dl>
           </article>
         </section>
+        </>
+      )}
+
+      {activeTab === 'ai-analysis' && (
+        <div className="submissions-ai-analysis-container space-y-6 animate-fade-in" style={{ padding: '0 4px', marginBottom: '32px' }}>
+          {/* Metadata & Actions Panel */}
+          <div className="forms-dashboard-panel" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--ledger-border)', background: 'var(--ledger-bg-card, #ffffff)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <div style={{
+                  width: '54px',
+                  height: '54px',
+                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(124, 58, 237, 0.25)',
+                  color: '#ffffff'
+                }}>
+                  <svg style={{ width: '28px', height: '28px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2v2" />
+                    <path d="M12 20v2" />
+                    <path d="M4.93 4.93l1.41 1.41" />
+                    <path d="M17.66 17.66l1.41 1.41" />
+                    <path d="M2 12h2" />
+                    <path d="M20 12h2" />
+                    <path d="M6.34 17.66l-1.41 1.41" />
+                    <path d="M19.07 4.93l-1.41 1.41" />
+                    <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--ledger-primary-text, #1f2937)' }}>Analisis Sentimen & Kualitatif AI</h2>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: 'var(--ledger-secondary-text, #6b7280)' }}>
+                    Gunakan kecerdasan buatan untuk merangkum masukan, sentimen, dan korelasi data.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={generateAiAnalysis}
+                  disabled={generatingAnalysis || loading}
+                  className="editorial-form-editor-primary-btn"
+                  style={{
+                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                    border: 'none',
+                    boxShadow: '0 4px 14px rgba(124, 58, 237, 0.3)',
+                    color: '#ffffff',
+                    padding: '12px 24px',
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'transform 0.1s ease',
+                  }}
+                >
+                  {generatingAnalysis ? (
+                    <>
+                      <span className="spinner" style={{ borderColor: '#ffffff', borderTopColor: 'transparent' }} />
+                      <span>Menganalisis ({data.filteredItems} Respon)...</span>
+                    </>
+                  ) : aiAnalysis ? (
+                    <>
+                      <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                      </svg>
+                      <span>Perbarui Analisis AI</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m12 3-1.912 5.886L4.2 10.8l5.887 1.912L12 18.6l1.912-5.886L19.8 10.8l-5.887-1.912z" />
+                      </svg>
+                      <span>Mulai Analisis AI</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* AI Metadata Stats */}
+            {aiAnalysis && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+                marginTop: '24px',
+                paddingTop: '20px',
+                borderTop: '1px solid var(--ledger-border)'
+              }}>
+                <div style={{ padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--ledger-border)' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--ledger-secondary-text)', display: 'block', marginBottom: '4px' }}>Sampel Dianalisis</span>
+                  <strong style={{ fontSize: '1.1rem', color: 'var(--ledger-primary-text)' }}>{aiAnalysis.analyzedCount} Submissions</strong>
+                </div>
+                <div style={{ padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--ledger-border)' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--ledger-secondary-text)', display: 'block', marginBottom: '4px' }}>Model AI</span>
+                  <strong style={{ fontSize: '1.1rem', color: 'var(--ledger-primary-text)', fontFamily: 'monospace' }}>{aiAnalysis.modelUsed}</strong>
+                </div>
+                <div style={{ padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--ledger-border)' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--ledger-secondary-text)', display: 'block', marginBottom: '4px' }}>Terakhir Diperbarui</span>
+                  <strong style={{ fontSize: '1.1rem', color: 'var(--ledger-primary-text)' }}>{new Date(aiAnalysis.updatedAt).toLocaleString('id-ID')}</strong>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Analysis Content or States */}
+          {loadingAnalysis ? (
+            <div className="forms-dashboard-panel" style={{ padding: '48px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', borderRadius: '16px', border: '1px solid var(--ledger-border)' }}>
+              <span className="spinner" style={{ width: '40px', height: '40px', borderWidth: '3px' }} />
+              <p style={{ color: 'var(--ledger-secondary-text)', margin: 0 }}>Memuat hasil analisis AI dari database...</p>
+            </div>
+          ) : analysisError ? (
+            <div className="forms-dashboard-panel" style={{ padding: '32px', borderRadius: '16px', border: '1px solid #fee2e2', background: '#fef2f2', color: '#991b1b' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <svg style={{ width: '24px', height: '24px', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <div style={{ fontWeight: 600 }}>{analysisError}</div>
+              </div>
+            </div>
+          ) : aiAnalysis ? (
+            <div className="forms-dashboard-panel" style={{
+              padding: '40px',
+              borderRadius: '16px',
+              border: '1px solid var(--ledger-border)',
+              background: 'var(--ledger-bg-card, #ffffff)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Subtle top indicator bar */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '4px',
+                background: 'linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%)'
+              }} />
+              
+              <MarkdownRenderer content={aiAnalysis.analysisText} />
+            </div>
+          ) : (
+            <div className="forms-dashboard-panel" style={{
+              padding: '64px 32px',
+              borderRadius: '16px',
+              border: '2px dashed var(--ledger-border)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
+              background: 'rgba(0,0,0,0.01)'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: 'rgba(124, 58, 237, 0.08)',
+                color: '#7c3aed',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '20px'
+              }}>
+                <svg style={{ width: '32px', height: '32px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m12 3-1.912 5.886L4.2 10.8l5.887 1.912L12 18.6l1.912-5.886L19.8 10.8l-5.887-1.912z" />
+                  <path d="M5 3v4" />
+                  <path d="M3 5h4" />
+                  <path d="M19 17v4" />
+                  <path d="M17 19h4" />
+                </svg>
+              </div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600, margin: '0 0 8px', color: 'var(--ledger-primary-text)' }}>Belum Ada Analisis AI</h3>
+              <p style={{ maxWidth: '460px', margin: '0 0 24px', fontSize: '0.925rem', color: 'var(--ledger-secondary-text)', lineHeight: 1.5 }}>
+                Hasil analisis kualitatif kepegawaian belum digenerasi untuk formulir ini. Klik tombol di bawah untuk mulai menganalisis kiriman menggunakan kecerdasan buatan.
+              </p>
+              <button
+                type="button"
+                onClick={generateAiAnalysis}
+                disabled={generatingAnalysis || loading}
+                className="editorial-form-editor-primary-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                  border: 'none',
+                  boxShadow: '0 4px 14px rgba(124, 58, 237, 0.3)',
+                  color: '#ffffff',
+                  padding: '12px 28px',
+                  borderRadius: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                {generatingAnalysis ? (
+                  <>
+                    <span className="spinner" style={{ borderColor: '#ffffff', borderTopColor: 'transparent' }} />
+                    <span>Menganalisis ({data.filteredItems} Respon)...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m12 3-1.912 5.886L4.2 10.8l5.887 1.912L12 18.6l1.912-5.886L19.8 10.8l-5.887-1.912z" />
+                    </svg>
+                    <span>Mulai Analisis AI Pertama</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
       </div>
 
       {pendingDeleteId && (
