@@ -24,7 +24,7 @@ export interface AggregatedData {
 }
 
 export function isChoiceField(type: string): boolean {
-  return ['radio', 'select', 'likert'].includes(type)
+  return ['radio', 'select', 'likert', 'yes_no'].includes(type)
 }
 
 export async function preAggregateSubmissions(formId: string): Promise<AggregatedData | null> {
@@ -167,12 +167,12 @@ Tuliskan laporan analisis Anda dalam Markdown Bahasa Indonesia yang profesional,
 
 export async function callLlmApi(prompt: string): Promise<string> {
   const apiKey = process.env.LLM_API_KEY
-  if (!apiKey) {
-    throw new Error('LLM_API_KEY tidak dikonfigurasi di file env')
-  }
+  const apiBase = process.env.LLM_API_BASE
+  const modelName = process.env.LLM_MODEL
 
-  const apiBase = process.env.LLM_API_BASE || 'https://sembilan.kelazz.my.id/v1'
-  const modelName = process.env.LLM_MODEL || 'gpt-4o'
+  if (!apiKey || !apiBase || !modelName) {
+    throw new Error('Konfigurasi LLM (.env) tidak lengkap. LLM_API_KEY, LLM_API_BASE, dan LLM_MODEL harus didefinisikan secara lengkap.')
+  }
 
   const res = await fetch(`${apiBase}/chat/completions`, {
     method: 'POST',
@@ -218,6 +218,14 @@ export async function getFormAiAnalysis(formId: string) {
 }
 
 export async function generateAndSaveFormAiAnalysis(formId: string) {
+  const apiKey = process.env.LLM_API_KEY
+  const apiBase = process.env.LLM_API_BASE
+  const modelName = process.env.LLM_MODEL
+
+  if (!apiKey || !apiBase || !modelName) {
+    throw new Error('Konfigurasi LLM (.env) tidak lengkap. LLM_API_KEY, LLM_API_BASE, dan LLM_MODEL harus didefinisikan secara lengkap.')
+  }
+
   const aggregated = await preAggregateSubmissions(formId)
   if (!aggregated) {
     throw new Error('Form tidak ditemukan atau data kosong')
@@ -229,7 +237,7 @@ export async function generateAndSaveFormAiAnalysis(formId: string) {
 
   const prompt = buildPrompt(aggregated)
   const analysisText = await callLlmApi(prompt)
-  const modelUsed = process.env.LLM_MODEL || 'gpt-4o'
+  const modelUsed = modelName
 
   const saved = await prisma.formAiAnalysis.upsert({
     where: { formId },

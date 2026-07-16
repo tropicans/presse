@@ -555,7 +555,7 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
                 aria-describedby={describedBy}
                 aria-invalid={fieldErrors[field.name] ? 'true' : 'false'}
               >
-                {field.options.map((option) => {
+                {field.options.map((option: string) => {
                   const parsedOption = field.type === 'likert' ? parseLikertOption(option) : null
 
                   return (

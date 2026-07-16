@@ -17,7 +17,7 @@ type FieldType = 'SHORT_TEXT' | 'LONG_TEXT' | 'RADIO' | 'SELECT' | 'YES_NO' | 'S
 export type FormWorkflow = 'STANDARD' | 'WEBINAR'
 export type FormMode = 'STANDARD' | 'QUIZ' | 'ATTENDANCE'
 
-export type FormFieldType = 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature'
+export type FormFieldType = 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature' | 'yes_no'
 
 const CONDITIONAL_ROUTE_SUBMIT = '__SUBMIT__'
 
@@ -53,7 +53,11 @@ export interface SignatureField extends BaseField {
   type: 'signature'
 }
 
-export type FormField = TextField | RadioField | SelectField | SignatureField
+export interface YesNoField extends BaseField {
+  type: 'yes_no'
+}
+
+export type FormField = TextField | RadioField | SelectField | SignatureField | YesNoField
 
 export interface FormPageDefinition {
   id: string
@@ -438,6 +442,8 @@ function mapFieldType(type: FieldType): FormFieldType | null {
       return 'select'
     case 'SIGNATURE':
       return 'signature'
+    case 'YES_NO':
+      return 'yes_no'
     default:
       return null
   }
@@ -1480,6 +1486,16 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
       }]
     }
 
+    if (mappedType === 'yes_no') {
+      return [{
+        id: field.id,
+        name,
+        label: field.label,
+        type: mappedType,
+        required: field.required,
+      }]
+    }
+
     if (mappedType === 'signature') {
       return [{
         id: field.id,
@@ -2308,6 +2324,8 @@ function mapFormFieldTypeToDb(type: FormFieldType): FieldType {
       return 'SELECT'
     case 'signature':
       return 'SIGNATURE'
+    case 'yes_no':
+      return 'YES_NO'
   }
 }
 
@@ -2438,7 +2456,7 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
   const conditionalRoutes = normalizeAdminConditionalRoutes(normalizedPayloadFields, formPages)
 
   const editableFieldIds = new Set(current.fields.map((field) => field.id))
-  const allowedTypes = new Set<FormFieldType>(['text', 'textarea', 'radio', 'select', 'likert', 'signature'])
+  const allowedTypes = new Set<FormFieldType>(['text', 'textarea', 'radio', 'select', 'likert', 'signature', 'yes_no'])
 
   if (normalizedPayloadFields.length === 0) {
     throw new FormSubmissionError('Form harus memiliki minimal satu field', 400)
@@ -2839,11 +2857,14 @@ export async function listAdminFormSubmissions(
 
   const allItems = Array.from(itemsById.values())
   const filteredItems = applyAdminSubmissionFilters(allItems, filters)
+  const maxPageLimit = pagination?.pageSize === ADMIN_EXCEL_EXPORT_ROW_LIMIT
+    ? ADMIN_EXCEL_EXPORT_ROW_LIMIT
+    : pagination?.pageSize && pagination.pageSize > MAX_ADMIN_SUBMISSION_PAGE_SIZE
+      ? Math.min(pagination.pageSize, 1000)
+      : MAX_ADMIN_SUBMISSION_PAGE_SIZE
   const normalizedPagination = normalizeAdminSubmissionPagination(
     pagination,
-    pagination?.pageSize === ADMIN_EXCEL_EXPORT_ROW_LIMIT
-      ? ADMIN_EXCEL_EXPORT_ROW_LIMIT
-      : MAX_ADMIN_SUBMISSION_PAGE_SIZE
+    maxPageLimit
   )
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / normalizedPagination.pageSize))
   const safePage = Math.min(normalizedPagination.page, totalPages)

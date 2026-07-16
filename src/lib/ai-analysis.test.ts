@@ -20,6 +20,7 @@ describe('ai-analysis helpers', () => {
       expect(isChoiceField('radio')).toBe(true)
       expect(isChoiceField('select')).toBe(true)
       expect(isChoiceField('likert')).toBe(true)
+      expect(isChoiceField('yes_no')).toBe(true)
     })
 
     it('returns false for other fields', () => {
@@ -51,6 +52,14 @@ describe('ai-analysis helpers', () => {
               'Cukup': 2,
             },
           },
+          hadir: {
+            label: 'Kehadiran Peserta',
+            type: 'yes_no',
+            stats: {
+              'Ya': 4,
+              'Tidak': 1,
+            },
+          },
           saran: {
             label: 'Saran Anda',
             type: 'textarea',
@@ -70,6 +79,9 @@ describe('ai-analysis helpers', () => {
       expect(prompt).toContain('Rating Program')
       expect(prompt).toContain('Sangat Baik: 3')
       expect(prompt).toContain('Cukup: 2')
+      expect(prompt).toContain('Kehadiran Peserta')
+      expect(prompt).toContain('Ya: 4')
+      expect(prompt).toContain('Tidak: 1')
       expect(prompt).toContain('Saran Anda')
       expect(prompt).toContain('Program sudah sangat baik')
     })
