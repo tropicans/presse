@@ -6,17 +6,17 @@
 ## v1.3 Requirements (LLM Submission Analysis)
 
 ### API Connection & Config
-- [ ] **LLM-ANALYSIS-01**: Konfigurasi koneksi LLM OpenAI-compatible di `https://sembilan.kelazz.my.id/v1` dengan autentikasi API Key (`LLM_API_KEY`) dan nama model (`LLM_MODEL`) melalui berkas env.
+- [x] **LLM-ANALYSIS-01**: Konfigurasi koneksi LLM OpenAI-compatible di `https://sembilan.kelazz.my.id/v1` dengan autentikasi API Key (`LLM_API_KEY`) dan nama model (`LLM_MODEL`) melalui berkas env.
 
 ### Data Storage Schema
-- [ ] **LLM-ANALYSIS-02**: Skema model database `FormAiAnalysis` (menggunakan Prisma migrate) untuk menyimpan teks analisis (Markdown), jumlah data yang dianalisis, nama model, dan timestamp pembaruan terakhir.
+- [x] **LLM-ANALYSIS-02**: Skema model database `FormAiAnalysis` (menggunakan Prisma migrate) untuk menyimpan teks analisis (Markdown), jumlah data yang dianalisis, nama model, dan timestamp pembaruan terakhir.
 
 ### Backend Endpoints
-- [ ] **LLM-ANALYSIS-03**: Handler API `POST /api/admin/forms/[id]/ai-analysis` yang mengumpulkan data kiriman, memformat prompt analisis kualitatif/kuantitatif, memanggil LLM, dan memperbarui database.
-- [ ] **LLM-ANALYSIS-04**: Handler API `GET /api/admin/forms/[id]/ai-analysis` untuk mengambil data analisis terakhir.
+- [x] **LLM-ANALYSIS-03**: Handler API `POST /api/admin/forms/[id]/ai-analysis` yang mengumpulkan data kiriman, memformat prompt analisis kualitatif/kuantitatif, memanggil LLM, dan memperbarui database.
+- [x] **LLM-ANALYSIS-04**: Handler API `GET /api/admin/forms/[id]/ai-analysis` untuk mengambil data analisis terakhir.
 
 ### Frontend Integration
-- [ ] **LLM-ANALYSIS-05**: Tab/Card baru "Analisis AI" pada rute `/admin/forms/[id]/submissions` yang menampilkan Markdown hasil analisis, ringkasan metadata sampel, dan tombol interaktif "Buat Analisis AI" dengan status loading spinner.
+- [x] **LLM-ANALYSIS-05**: Tab/Card baru "Analisis AI" pada rute `/admin/forms/[id]/submissions` yang menampilkan Markdown hasil analisis, ringkasan metadata sampel, dan tombol interaktif "Buat Analisis AI" dengan status loading spinner.
 
 ## Out of Scope
 - Analisis otomatis di background worker setiap kali ada kiriman baru (dibatasi pemicuan tombol manual saja).
