@@ -42,6 +42,7 @@ Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepa
 - Tech Stack: Next.js (App Router), Prisma, PostgreSQL.
 - Koneksi OpenAI-compatible menggunakan base URL kustom: `https://sembilan.kelazz.my.id/v1` dengan autentikasi API Key.
 - Data input LLM mencakup seluruh data isian dari `SubmissionAnswer` yang terhubung to `Submission` pada formulir terkait.
+- Shipped v1.3 with ~1,250 source/test LOC added. Tech stack is stable with Prisma PostgreSQL and customized OpenAI client wrapper.
 
 ## Key Decisions
 | Decision | Rationale | Outcome |
@@ -51,7 +52,10 @@ Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepa
 | Eksekusi Perbaikan Langsung (v1.1) | Menyelesaikan temuan audit (quick wins & high impact) demi memulihkan aksesibilitas dan responsivitas admin | ✓ Selesai |
 | UX Audit Mendalam (v1.2) | Melakukan evaluasi pengalaman pengguna komprehensif tingkat enterprise untuk menentukan roadmap produk jangka panjang | ✓ Selesai |
 | Tombol Hapus Nonaktif untuk Template | Mencegah admin berasumsi tombol aktif bisa digunakan untuk menghapus template default | ✓ Selesai |
-| Analisis Manual Ter-cache | Menggunakan pemicu tombol manual dan menyimpan hasil analisis di DB untuk mengoptimalkan kuota dan biaya API | Aktif |
+| Analisis Manual Ter-cache | Menggunakan pemicu tombol manual dan menyimpan hasil analisis di DB untuk mengoptimalkan kuota dan biaya API | ✓ Selesai |
+| Fail-fast Env Validation | Gated environment checks fail-fast on load to abort request processing immediately when keys are missing | ✓ Selesai |
+| Qualitative Free-text Sampling | Gated qualitative free-text data to a static sample size of 50 to maintain performance inside standard token limits | ✓ Selesai |
+| Custom Dependency-free Parser | Confirmed custom parser implementation without introducing heavy external markdown libraries | ✓ Selesai |
 
 ## Evolution
 
@@ -71,4 +75,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-16 after completing Frontend Integration & Markdown Rendering phase*
+*Last updated: 2026-07-16 after completing v1.3 milestone*
