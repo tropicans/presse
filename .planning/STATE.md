@@ -20,10 +20,10 @@ current_phase_name: Frontend Integration & Markdown Rendering
 
 ## Project Reference
 
-See: [.planning/PROJECT.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/PROJECT.md) (updated 2026-06-17)
+See: [.planning/PROJECT.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/PROJECT.md) (updated 2026-07-16)
 
-**Core value:** Membantu administrator menganalisis kiriman pengguna secara mendalam dan otomatis dengan LLM (OpenAI-compatible) langsung dari dashboard admin.
-**Current focus:** Phase 11 — Frontend Integration & Markdown Rendering
+**Core value:** Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
+**Current focus:** Planning next milestone
 
 ## Current Position
 
