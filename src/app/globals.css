@@ -457,7 +457,7 @@ body {
   background: var(--white);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl), var(--shadow-glow);
-  overflow: hidden;
+  overflow: visible;
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -479,6 +479,8 @@ body {
   text-align: center;
   position: relative;
   overflow: hidden;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
 }
 
 .form-header::before {
