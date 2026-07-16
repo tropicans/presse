@@ -1,24 +1,51 @@
-# ---- Stage 1: Build ----
-FROM node:22-alpine AS builder
+# ---- Base ----
+FROM node:22-alpine AS base
 WORKDIR /app
 
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# ---- Stage 1: Dependencies ----
+FROM base AS deps
+
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund
+
+# ---- Stage 2: Build ----
+FROM deps AS builder
 
 COPY . .
 
-# Generate Prisma client
+# Generate Prisma client for build-time types
 RUN npx prisma generate
 
-# Build Next.js
+# Next.js evaluates route modules while collecting page data during image builds.
+# Runtime containers still receive real values from compose env; these placeholders
+# only let build-time module evaluation complete without embedding real secrets.
+ENV DATABASE_URL="postgresql://build:build@localhost:5432/build?schema=public"
+ENV NEXTAUTH_URL="http://localhost:3456"
+ENV NEXTAUTH_SECRET="build-time-placeholder-secret"
+ENV GOOGLE_CLIENT_ID="build-time-placeholder.apps.googleusercontent.com"
+ENV GOOGLE_CLIENT_SECRET="build-time-placeholder-secret"
+ENV ADMIN_EMAILS="admin@example.com"
+ENV INTERNAL_WORKER_TOKEN="build-time-placeholder-token"
+
+# Build Next.js standalone output
 RUN npm run build
 
-# ---- Stage 2: Production ----
-FROM node:22-alpine AS runner
-WORKDIR /app
+# ---- Stage 3: Production dependencies ----
+FROM deps AS prod-deps
+
+COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
+
+RUN npx prisma generate \
+  && npm prune --omit=dev \
+  && npm cache clean --force
+
+# ---- Stage 4: Production runtime ----
+FROM base AS runner
 
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3456
 ENV HOSTNAME="0.0.0.0"
 
@@ -35,15 +62,19 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/scripts ./scripts
 
-# Copy ALL production node_modules (ensures pg, @prisma/adapter-pg are included)
-COPY --from=builder /app/node_modules ./node_modules
+# Copy only production node_modules with generated Prisma client
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=builder /app/start.sh ./start.sh
 
 # Set ownership
-RUN chown -R nextjs:nodejs /app
+RUN sed -i 's/\r$//' /app/start.sh && \
+    chmod +x /app/start.sh && \
+    chown -R nextjs:nodejs /app
 
 USER nextjs
 
 EXPOSE 3456
 
-CMD ["node", "server.js"]
+CMD ["./start.sh"]

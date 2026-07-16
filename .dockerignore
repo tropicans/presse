@@ -2,9 +2,17 @@ node_modules
 .next
 npm-debug.log
 .env
+.env.production
 .env.local
 .git
 .gitignore
 README.md
 .DS_Store
 *.pem
+*.log
+*.ps1
+.opencode
+infra
+load-tests
+new_design
+AGENTS.md

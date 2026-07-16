@@ -3,7 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { getAdminSession } from '@/lib/auth'
 import ExcelJS from 'exceljs'
 
-export async function GET() {
+const ATTENDANCE_EXPORT_ROW_LIMIT = 1000
+const MAX_EXPORT_SIGNATURE_LENGTH = 500000
+
+export async function GET(request: Request) {
   try {
     // Auth guard — admin only
     const session = await getAdminSession()
@@ -14,8 +17,20 @@ export async function GET() {
       )
     }
 
+    const url = new URL(request.url)
+    const idsParam = url.searchParams.get('ids')
+    let whereClause = {}
+    if (idsParam) {
+      const ids = idsParam.split(',').map((v) => Number(v.trim())).filter((v) => !isNaN(v))
+      if (ids.length > 0) {
+        whereClause = { id: { in: ids } }
+      }
+    }
+
     const attendances = await prisma.attendance.findMany({
+      where: whereClause,
       orderBy: { createdAt: 'asc' },
+      take: ATTENDANCE_EXPORT_ROW_LIMIT + 1,
       select: {
         id: true,
         namaLengkap: true,
@@ -27,6 +42,13 @@ export async function GET() {
         createdAt: true,
       },
     })
+
+    if (attendances.length > ATTENDANCE_EXPORT_ROW_LIMIT) {
+      return NextResponse.json(
+        { error: `Export maksimal ${ATTENDANCE_EXPORT_ROW_LIMIT} baris. Gunakan filter atau ekspor bertahap.` },
+        { status: 413 }
+      )
+    }
 
     const workbook = new ExcelJS.Workbook()
     workbook.creator = 'Daftar Hadir'
@@ -82,7 +104,7 @@ export async function GET() {
       row.height = 60
 
       // Embed signature image
-      if (att.signature && att.signature.startsWith('data:image/png;base64,')) {
+      if (att.signature && att.signature.startsWith('data:image/png;base64,') && att.signature.length <= MAX_EXPORT_SIGNATURE_LENGTH) {
         try {
           const base64Data = att.signature.replace('data:image/png;base64,', '')
           const imageId = workbook.addImage({
