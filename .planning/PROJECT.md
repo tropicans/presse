@@ -28,13 +28,11 @@ Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepa
 - ✓ **LIKERT-03**: Penyelarasan meta label ekstrem/tengah skala Likert untuk jumlah opsi ganjil (neutral) dan genap (non-neutral)
 - ✓ **AUDIT-01** - **AUDIT-06**: Audit Frontend Admin (v1.1)
 - ✓ **UX-AUDIT-01** - **UX-AUDIT-09**: UX Audit & Perbaikan Phase 1-3 (v1.2 - Auto-save, Bulk actions Kehadiran & Submissions, Toggle Preview responsif mobile, Visual disabled button safety)
+- ✓ **LLM-ANALYSIS-01** - **LLM-ANALYSIS-04**: OpenAI-compatible LLM connectivity configuration, Prisma schema updates, and endpoint handlers for ai-analysis (Validated in Phase 10)
+- ✓ **LLM-ANALYSIS-05**: Tabbed UI panel, custom Markdown renderer, manual regenerate triggers, and sample metadata display (Validated in Phase 11)
 
 ### Active
-- **LLM-ANALYSIS-01**: Konfigurasi koneksi LLM OpenAI-compatible di `https://sembilan.kelazz.my.id/v1` menggunakan kunci API (`LLM_API_KEY`) dan opsi model (`LLM_MODEL`).
-- **LLM-ANALYSIS-02**: Skema penyimpanan model data `FormAiAnalysis` untuk menyimpan draf teks hasil analisis, jumlah submission yang dianalisis, nama model, dan waktu terakhir di-generate.
-- **LLM-ANALYSIS-03**: API Route handler `POST /api/admin/forms/[id]/ai-analysis` yang memformat seluruh isian pengguna (teks bebas, kuis, sentimen, Likert) ke prompt dan memanggil API LLM untuk analisis mendalam.
-- **LLM-ANALYSIS-04**: API Route handler `GET /api/admin/forms/[id]/ai-analysis` untuk memuat draf analisis tersimpan.
-- **LLM-ANALYSIS-05**: UI Tab/Card "Analisis AI" di halaman kiriman form (`/admin/forms/[id]/submissions`) yang menampilkan Markdown hasil analisis, metadata (model, waktu, jumlah sampel), dan tombol pemicu manual "Buat Analisis AI" dengan loading state.
+(Semua persyaratan aktif untuk milestone ini telah selesai diverifikasi)
 
 ### Out of Scope
 - Analisis otomatis setiap kali submission baru masuk (pemicuan dibatasi secara manual demi efisiensi biaya API).
@@ -73,4 +71,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-17 after initializing LLM Submission Analysis milestone*
+*Last updated: 2026-07-16 after completing Frontend Integration & Markdown Rendering phase*
