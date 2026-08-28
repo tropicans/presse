@@ -6,15 +6,14 @@ Platform pengelolaan formulir publik, kiriman (submissions), dan dashboard admin
 ## Core Value
 Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
 
-## Current Milestone: v1.3 llm-submission-analysis
+## Current Milestone: v1.4 UI Polish & Admin Experience Enhancement
 
-**Goal:** Mengintegrasikan LLM (OpenAI-compatible) untuk melakukan analisis mendalam secara kualitatif dan kuantitatif terhadap data kiriman (*submissions*) pengguna dari Admin Panel.
+**Goal:** Mengimplementasikan peningkatan visual dan ergonomi antarmuka pengguna pada suite Admin berdasarkan temuan UI Designer Audit untuk meningkatkan kenyamanan, persepsi performa, dan estetika premium.
 
 **Target features:**
-- Integrasi koneksi API OpenAI-compatible (`https://sembilan.kelazz.my.id/v1`) via env variables.
-- Skema penyimpanan model `FormAiAnalysis` di basis data untuk menyimpan histori analisis.
-- API Route endpoint untuk memicu proses analisis secara manual dan mengambil hasilnya.
-- UI tab/panel baru "Analisis AI" pada halaman kiriman formulir dengan dukungan render Markdown hasil analisis.
+- **Sticky Table Header:** Menjadikan baris `<thead>` pada tabel kiriman (`/admin/forms/[id]/submissions`) tetap mengambang di atas saat scroll data panjang, dengan latar belakang solid dan layering border yang rapi pada mode terang dan gelap.
+- **Skeleton Shimmer Loaders:** Menggantikan spinner loading statis dengan skeleton shimmer card dan placeholder rows pada Dashboard Form (`/admin/forms`) dan Tabel Submissions.
+- **Enhanced Empty States:** Menghadirkan visual SVG minimalis yang elegan beserta instruksi / tombol Call-to-Action (CTA) kontekstual ketika belum ada data formulir atau kiriman.
 
 ## Requirements
 
@@ -32,17 +31,18 @@ Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepa
 - ✓ **LLM-ANALYSIS-05**: Tabbed UI panel, custom Markdown renderer, manual regenerate triggers, and sample metadata display (Validated in Phase 11)
 
 ### Active
-(Semua persyaratan aktif untuk milestone ini telah selesai diverifikasi)
+- [ ] **UIPOLISH-01**: Sticky header pada tabel kiriman (`/admin/forms/[id]/submissions`) dengan penanganan z-index dan background color adaptif di light dan dark theme.
+- [ ] **UIPOLISH-02**: Komponen skeleton shimmer cards untuk pemuatan awal dashboard `/admin/forms` dan baris placeholder pada tabel submissions.
+- [ ] **UIPOLISH-03**: Visual empty state dengan ilustrasi SVG bertema dan tombol aksi (CTA) yang jelas saat daftar formulir atau submissions kosong.
 
 ### Out of Scope
-- Analisis otomatis setiap kali submission baru masuk (pemicuan dibatasi secara manual demi efisiensi biaya API).
-- Visualisasi grafik canggih di luar rendering teks Markdown yang rapi dan terformat di UI.
+- Perubahan arsitektur basis data atau modifikasi skema Prisma.
+- Penambahan pustaka animasi JavaScript pihak ketiga (tetap menggunakan Vanilla CSS murni dan keyframe animations).
 
 ## Context
-- Tech Stack: Next.js (App Router), Prisma, PostgreSQL.
-- Koneksi OpenAI-compatible menggunakan base URL kustom: `https://sembilan.kelazz.my.id/v1` dengan autentikasi API Key.
-- Data input LLM mencakup seluruh data isian dari `SubmissionAnswer` yang terhubung to `Submission` pada formulir terkait.
-- Shipped v1.3 with ~1,250 source/test LOC added. Tech stack is stable with Prisma PostgreSQL and customized OpenAI client wrapper.
+- Tech Stack: Next.js (App Router), React 19, Vanilla CSS Design System (`globals.css`), Prisma, PostgreSQL.
+- Semua styling harus tetap mengacu pada token warna institusional di `globals.css` (Ocean Teal, Slate, Ledger theme).
+- Milestone v1.3 selesai dengan integrasi LLM. Milestone v1.4 berfokus pada visual excellence dan polished micro-interactions.
 
 ## Key Decisions
 | Decision | Rationale | Outcome |
@@ -53,9 +53,7 @@ Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepa
 | UX Audit Mendalam (v1.2) | Melakukan evaluasi pengalaman pengguna komprehensif tingkat enterprise untuk menentukan roadmap produk jangka panjang | ✓ Selesai |
 | Tombol Hapus Nonaktif untuk Template | Mencegah admin berasumsi tombol aktif bisa digunakan untuk menghapus template default | ✓ Selesai |
 | Analisis Manual Ter-cache | Menggunakan pemicu tombol manual dan menyimpan hasil analisis di DB untuk mengoptimalkan kuota dan biaya API | ✓ Selesai |
-| Fail-fast Env Validation | Gated environment checks fail-fast on load to abort request processing immediately when keys are missing | ✓ Selesai |
-| Qualitative Free-text Sampling | Gated qualitative free-text data to a static sample size of 50 to maintain performance inside standard token limits | ✓ Selesai |
-| Custom Dependency-free Parser | Confirmed custom parser implementation without introducing heavy external markdown libraries | ✓ Selesai |
+| Pure CSS Animations | Menjaga performa render 60fps tanpa membebani bundle JS runtime | Aktif |
 
 ## Evolution
 
@@ -75,4 +73,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-16 after completing v1.3 milestone*
+*Last updated: 2026-08-28 after starting v1.4 milestone*
