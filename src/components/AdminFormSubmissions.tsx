@@ -328,6 +328,28 @@ export default function AdminFormSubmissions({ formId }: Props) {
   const [loadingAnalysis, setLoadingAnalysis] = useState(false)
   const [generatingAnalysis, setGeneratingAnalysis] = useState(false)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
+  const [copiedPublicUrl, setCopiedPublicUrl] = useState(false)
+
+  const handleCopyPublicUrl = async () => {
+    if (!data?.form.slug) return
+    try {
+      const url = new URL(`/f/${data.form.slug}`, window.location.origin).toString()
+      await navigator.clipboard.writeText(url)
+      setCopiedPublicUrl(true)
+      setFeedback({ type: 'success', message: 'Tautan form publik berhasil disalin' })
+      setTimeout(() => setCopiedPublicUrl(false), 2000)
+    } catch {
+      setFeedback({ type: 'error', message: 'Gagal menyalin tautan form' })
+    }
+  }
+
+  const handleResetFilters = () => {
+    setSearch('')
+    setParticipantFilter('all')
+    setQuizFilter('all')
+    setSortBy('newest')
+    setPage(1)
+  }
 
   useEffect(() => {
     setSelectedIds([])
@@ -595,6 +617,18 @@ export default function AdminFormSubmissions({ formId }: Props) {
         </header>
 
         <div className="editorial-form-editor-content submissions-dashboard-content">
+          <div className="editorial-form-editor-statusbar" aria-live="polite">
+            <div>
+              <div className="admin-skeleton-line short" style={{ height: '14px', marginBottom: '8px' }} />
+              <div className="admin-skeleton-line" style={{ width: '220px', height: '22px', marginBottom: '8px' }} />
+              <div className="admin-skeleton-line medium" style={{ height: '14px' }} />
+            </div>
+            <div className="editorial-form-editor-status-meta">
+              <div className="admin-skeleton-badge" />
+              <div className="admin-skeleton-line short" style={{ width: '60px' }} />
+            </div>
+          </div>
+
           <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
             <Link href="/admin" className="admin-breadcrumb-link">Admin</Link>
             <span className="admin-breadcrumb-separator">/</span>
@@ -603,10 +637,52 @@ export default function AdminFormSubmissions({ formId }: Props) {
             <span className="admin-breadcrumb-current muted">Memuat...</span>
           </nav>
 
-          <div className="forms-dashboard-empty-state">
-            <h3>Memuat kiriman</h3>
-            <p>Dashboard sedang mengambil data kiriman formulir.</p>
-          </div>
+          <section className="forms-dashboard-stats" aria-label="Ringkasan kiriman">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <article key={i} className="forms-dashboard-stat-card">
+                <div className="forms-dashboard-stat-head">
+                  <div className="admin-skeleton-line short" style={{ width: '80px', height: '14px' }} />
+                </div>
+                <div className="admin-skeleton-line" style={{ width: '60px', height: '32px', margin: '8px 0' }} />
+                <div className="admin-skeleton-line medium" style={{ height: '12px' }} />
+              </article>
+            ))}
+          </section>
+
+          <section className="forms-dashboard-panel forms-dashboard-table-panel">
+            <div className="forms-dashboard-panel-header">
+              <div>
+                <div className="admin-skeleton-line short" style={{ width: '100px', height: '14px', marginBottom: '6px' }} />
+                <div className="admin-skeleton-line" style={{ width: '160px', height: '24px' }} />
+              </div>
+            </div>
+
+            <div className="forms-dashboard-table-wrap">
+              <div className="submissions-dashboard-card-list">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <article key={index} className="submissions-dashboard-card">
+                    <div className="submissions-dashboard-card-head">
+                      <div className="submissions-dashboard-primary-cell">
+                        <div className="admin-skeleton-line short" style={{ marginBottom: '6px' }} />
+                        <div className="admin-skeleton-line" style={{ width: '150px' }} />
+                      </div>
+                      <div className="submissions-dashboard-card-badges">
+                        <div className="admin-skeleton-line" style={{ width: '80px', height: '24px', borderRadius: '12px' }} />
+                      </div>
+                    </div>
+                    <div className="submissions-dashboard-answer-grid" style={{ marginTop: '16px' }}>
+                      {Array.from({ length: 3 }).map((_, fieldIdx) => (
+                        <div key={fieldIdx}>
+                          <div className="admin-skeleton-line short" style={{ marginBottom: '8px' }} />
+                          <div className="admin-skeleton-line" />
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     )
@@ -649,8 +725,20 @@ export default function AdminFormSubmissions({ formId }: Props) {
           </nav>
 
           <div className="forms-dashboard-empty-state">
+            <div className="admin-empty-icon-wrap" aria-hidden="true" style={{ color: 'var(--ledger-danger, #ef4444)', background: 'rgba(239, 68, 68, 0.12)' }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
             <h3>Terjadi Kesalahan</h3>
             <p>{error || 'Data tidak ditemukan'}</p>
+            <div className="admin-empty-state-actions">
+              <Link href="/admin/forms" className="forms-dashboard-secondary-button">
+                Kembali ke Formulir
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -1089,13 +1177,84 @@ export default function AdminFormSubmissions({ formId }: Props) {
               </div>
             ) : data.totalItems === 0 ? (
               <div className="forms-dashboard-empty-state">
-                  <h3>Belum ada kiriman</h3>
-                <p>Form ini belum menerima kiriman data.</p>
+                <div className="admin-empty-icon-wrap" aria-hidden="true">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+                    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+                  </svg>
+                </div>
+                <h3>Belum Ada Kiriman Masuk</h3>
+                {data.form.status === 'PUBLISHED' ? (
+                  <>
+                    <p>
+                      Formulir ini sudah dipublikasikan tetapi belum menerima kiriman data. Bagikan tautan formulir kepada responden untuk mulai mengumpulkan tanggapan.
+                    </p>
+                    <div className="admin-empty-state-actions">
+                      <button
+                        type="button"
+                        className="forms-dashboard-primary-button"
+                        onClick={handleCopyPublicUrl}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                        <span>{copiedPublicUrl ? 'Tautan Disalin!' : 'Salin Tautan Form'}</span>
+                      </button>
+                      <a
+                        href={`/f/${data.form.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="forms-dashboard-secondary-button"
+                      >
+                        <span>Buka Form Publik &rarr;</span>
+                      </a>
+                    </div>
+                  </>
+                ) : data.form.status === 'DRAFT' ? (
+                  <>
+                    <p>
+                      Formulir ini masih berstatus Draf dan belum dapat diakses oleh publik. Buka editor formulir untuk mempublikasikannya agar responden dapat mengisi.
+                    </p>
+                    <div className="admin-empty-state-actions">
+                      <Link href={`/admin/forms/${formId}`} className="forms-dashboard-primary-button">
+                        <span>Buka Form Editor</span>
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      Formulir ini telah diarsipkan dan tidak lagi menerima kiriman data baru.
+                    </p>
+                    <div className="admin-empty-state-actions">
+                      <Link href={`/admin/forms/${formId}`} className="forms-dashboard-secondary-button">
+                        <span>Buka Form Editor</span>
+                      </Link>
+                    </div>
+                  </>
+                )}
               </div>
             ) : filteredItems.length === 0 ? (
               <div className="forms-dashboard-empty-state">
-                <h3>Tidak ada hasil yang cocok</h3>
-                  <p>Ubah kata kunci pencarian, filter peserta, filter kuis, atau urutan untuk melihat kiriman lain.</p>
+                <div className="admin-empty-icon-wrap" aria-hidden="true">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    <line x1="8" y1="11" x2="14" y2="11" />
+                  </svg>
+                </div>
+                <h3>Tidak Ada Kiriman yang Cocok</h3>
+                <p>Tidak ditemukan data kiriman yang sesuai dengan filter atau kata kunci saat ini.</p>
+                <div className="admin-empty-state-actions">
+                  <button
+                    type="button"
+                    className="forms-dashboard-secondary-button"
+                    onClick={handleResetFilters}
+                  >
+                    Reset Semua Filter
+                  </button>
+                </div>
               </div>
             ) : (
               <>

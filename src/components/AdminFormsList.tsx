@@ -490,19 +490,95 @@ export default function AdminFormsList() {
             </div>
 
             {loading ? (
-              <div className="forms-dashboard-empty-state">
-                <h3>Memuat form</h3>
-                <p>Dashboard sedang mengambil daftar form terbaru.</p>
+              <div className="forms-dashboard-table-wrap forms-dashboard-table-wrap-compact">
+                <table className="forms-dashboard-table forms-dashboard-table-compact">
+                  <thead>
+                    <tr>
+                      <th scope="col">Judul &amp; Deskripsi</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Mode</th>
+                      <th scope="col">Kiriman</th>
+                      <th scope="col">Diperbarui</th>
+                      <th scope="col">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <tr key={index}>
+                        <td data-label="Judul & Deskripsi">
+                          <div className="admin-skeleton-line" style={{ width: '60%', height: '18px', marginBottom: '8px' }} />
+                          <div className="admin-skeleton-line short" style={{ marginBottom: '8px' }} />
+                          <div className="admin-skeleton-line" style={{ width: '25%', height: '12px' }} />
+                        </td>
+                        <td data-label="Status">
+                          <div className="admin-skeleton-badge" />
+                        </td>
+                        <td data-label="Mode">
+                          <div className="admin-skeleton-badge" style={{ width: '70px' }} />
+                        </td>
+                        <td data-label="Kiriman">
+                          <div className="admin-skeleton-line short" style={{ height: '24px', width: '40px' }} />
+                        </td>
+                        <td data-label="Diperbarui">
+                          <div className="admin-skeleton-line medium" />
+                        </td>
+                        <td data-label="Aksi">
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <div className="admin-skeleton-line" style={{ width: '50px', height: '32px', borderRadius: '999px' }} />
+                            <div className="admin-skeleton-line" style={{ width: '80px', height: '32px', borderRadius: '999px' }} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : forms.length === 0 ? (
               <div className="forms-dashboard-empty-state">
-                <h3>Belum ada form</h3>
-                <p>Mulai dengan membuat form pertama dari tombol Buat Form di atas.</p>
+                <div className="admin-empty-icon-wrap" aria-hidden="true">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <line x1="9" y1="15" x2="15" y2="15" />
+                  </svg>
+                </div>
+                <h3>Belum Ada Formulir</h3>
+                <p>Mulai buat formulir pertama Anda untuk mengumpulkan respons survei, pendaftaran acara, atau kuis interaktif.</p>
+                <div className="admin-empty-state-actions">
+                  <button
+                    type="button"
+                    className="forms-dashboard-primary-button"
+                    onClick={handleOpenCreateModal}
+                  >
+                    <span>+</span>
+                    <span>Buat Formulir Baru</span>
+                  </button>
+                </div>
               </div>
             ) : filteredForms.length === 0 ? (
               <div className="forms-dashboard-empty-state">
-                <h3>Tidak ada form yang cocok</h3>
-                <p>Ubah kata kunci pencarian atau filter status untuk melihat form lain.</p>
+                <div className="admin-empty-icon-wrap" aria-hidden="true">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    <line x1="8" y1="11" x2="14" y2="11" />
+                  </svg>
+                </div>
+                <h3>Tidak Ada Form yang Cocok</h3>
+                <p>Tidak ditemukan formulir dengan kata kunci atau filter status tersebut. Ubah kata kunci pencarian atau reset filter.</p>
+                <div className="admin-empty-state-actions">
+                  <button
+                    type="button"
+                    className="forms-dashboard-secondary-button"
+                    onClick={() => {
+                      setSearch('')
+                      setStatusFilter('all')
+                    }}
+                  >
+                    Reset Filter &amp; Pencarian
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="forms-dashboard-table-wrap forms-dashboard-table-wrap-compact">
