@@ -1,77 +1,75 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-07-16
+**Analysis Date:** 2026-08-28
 
 ## Naming Patterns
 
 **Files:**
-- `PascalCase.tsx` for React components (e.g., `AdminFormsList.tsx`).
-- `kebab-case.ts` for helper/library files (e.g., `rate-limit.ts`).
-- `*.test.ts` for tests collocated with the code (e.g., `forms.test.ts` collocated in `src/lib/`).
-- App router files are named standard `page.tsx`, `layout.tsx`, `route.ts`.
+- `PascalCase.tsx` for React components (e.g. `AdminFormsList.tsx`, `AttendanceForm.tsx`).
+- `kebab-case.ts` for helper/library files (e.g. `rate-limit.ts`, `admin-display.ts`).
+- `*.test.ts` for unit/integration tests collocated alongside code (e.g. `forms.test.ts`).
+- Next.js App Router files use standard convention: `page.tsx`, `layout.tsx`, `route.ts`.
 
 **Functions:**
-- `camelCase` for functions (e.g., `validateFormSubmission`, `isAdminEmail`).
-- No specific prefix/suffix for async functions (they return `Promise<T>`).
-- Component event handlers use `handle[Event]` naming convention (e.g., `handleSubmit`, `handleSignatureClear`).
+- `camelCase` for functions (e.g. `validateFormSubmission`, `isAdminEmail`, `getAdminSession`).
+- Async functions return `Promise<T>` with standard async/await syntax.
+- Component event handlers use `handle[Event]` prefix (e.g. `handleSubmit`, `handleSignatureClear`, `handleFieldChange`).
 
-**Variables:**
-- `camelCase` for standard variables (e.g., `nextAuthSecret`, `safeBatchSize`).
-- `UPPER_SNAKE_CASE` for global or module-level constants (e.g., `MAX_TEXT_LENGTH`, `ATTENDANCE_FORM_SLUG`).
-- Avoid prefixing private attributes/methods (e.g., do not use `_myPrivateVariable`).
+**Variables & Constants:**
+- `camelCase` for local variables and parameters (e.g. `nextAuthSecret`, `safeBatchSize`, `activePage`).
+- `UPPER_SNAKE_CASE` for module-level constants (e.g. `MAX_TEXT_LENGTH`, `MAX_SIGNATURE_LENGTH`, `DEFAULT_PAGE_SIZE`).
+- No private variable underscore prefixes (avoid `_var`).
 
-**Types:**
-- `PascalCase` for Interfaces and Types (e.g., `FormSettings`, `PublicSubmissionResult`), with no Hungarian prefix (do not use `IFormSettings`).
-- `PascalCase` for enum names, `UPPER_CASE` for values (e.g., `FormStatus.DRAFT`, `FormMode.QUIZ`).
+**Types & Interfaces:**
+- `PascalCase` for Interfaces and Types (e.g. `FormSettings`, `PublicSubmissionResult`, `AggregatedData`). No Hungarian notation prefixes (`IFormSettings` is discouraged).
+- `PascalCase` for enum types, `UPPER_SNAKE_CASE` for values (e.g. `FormStatus.DRAFT`, `FormMode.QUIZ`).
 
 ## Code Style
 
 **Formatting:**
 - **Indentation:** 2 spaces.
-- **Semicolons:** Omitted (do not write semicolons at the end of statements).
-- **Quotes:** Single quotes for string literals (`'use client'`, `'next/cache'`), unless double quotes or backticks are syntactically required.
-- **Trailing commas:** Used wherever possible for clean git diffs.
+- **Semicolons:** Omitted (no trailing semicolons).
+- **Quotes:** Single quotes for string literals (`'use client'`, `'next/cache'`), unless double quotes or template literals are syntactically needed.
+- **Trailing Commas:** Multi-line objects and arrays use trailing commas.
 
-**Linting:**
-- Configured using Flat Config in `eslint.config.mjs`.
-- Rules extend Next.js core web vitals and typescript presets.
-- Run typechecking and linting checks via `npm run lint` and `npx tsc --noEmit`.
+**Linting & Typechecking:**
+- ESLint Flat Config (`eslint.config.mjs`) extending Next.js core web vitals and TypeScript rules.
+- Run typecheck and lint via:
+  ```bash
+  npm run lint
+  npx tsc --noEmit --pretty false
+  ```
 
 ## Import Organization
 
-**Order:**
-1. React core hooks and React-specific imports.
-2. Next.js modules and frameworks.
-3. External npm packages (e.g., `@prisma/client`, `exceljs`).
-4. Path alias imports matching `@/*` (e.g., `@/lib/prisma`, `@/components/ThemeToggle`).
-5. Relative imports (e.g., `./SignaturePad`).
+**Order & Grouping:**
+1. React core hooks and imports (`import { useState, useEffect } from 'react'`)
+2. Next.js modules (`import { NextResponse } from 'next/server'`, `'next/cache'`)
+3. External npm packages (`@prisma/client`, `exceljs`, `next-auth`)
+4. Internal path alias imports (`@/lib/prisma`, `@/components/ThemeToggle`)
+5. Relative local imports (`./SignaturePad`)
 
-**Grouping:**
-- Keep clear separations with empty lines between groups.
-- Sort imports alphabetically within each group.
+Separate import groups with empty lines and keep imports sorted logically.
 
 ## Error Handling
 
 **Patterns:**
-- Throw exceptions in library modules (like `FormSubmissionError` in `src/lib/forms.ts`) and catch them at the API/Route boundary to convert them to HTTP error status codes.
-- Use explicit try/catch blocks for async actions and operations dealing with external APIs or DB queries.
-
-**Error Types:**
-- Extend the native JavaScript `Error` class to create domain-specific classes.
+- Throw domain errors in business logic modules (e.g. `FormSubmissionError` in `src/lib/forms.ts`).
+- Catch errors at the route boundary (`src/app/api/**/route.ts`) and translate to clear HTTP status codes (400 for bad input, 401 for unauthorized, 429 for rate limited, 500 for internal errors).
+- Use explicit try/catch blocks when handling database transactions, file operations, or external LLM API calls.
 
 ## Logging
 
 **Framework:**
-- Native `console.log` and `console.error` are utilized for outputting server/worker states.
-- Log error contents along with trace details in catch statements (e.g., `console.error('[submission-worker]', error)`).
+- Native `console.log` and `console.error` with clear module identifiers.
+- Example: `console.error('[submission-worker]', error)`.
 
 ## Module Design
 
 **Exports:**
-- Named exports are preferred for utilities, classes, and helper libraries.
-- Default exports are strictly reserved for Next.js router items (pages, layouts, templates) and components.
+- Named exports are standard for libraries, utilities, classes, and helper functions (`export function rateLimit(...)`).
+- Default exports are strictly reserved for Next.js App Router entry points (pages, layouts, route handlers) and React components.
 
 ---
 
-*Convention analysis: 2026-07-16*
-*Update when patterns change*
+*Convention analysis: 2026-08-28*

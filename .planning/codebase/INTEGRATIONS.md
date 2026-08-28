@@ -1,60 +1,70 @@
 # External Integrations
 
-**Analysis Date:** 2026-07-16
+**Analysis Date:** 2026-08-28
 
 ## APIs & External Services
 
-**LLM API Integration:**
-- OpenAI-compatible LLM endpoint used to perform qualitative analysis on form submissions.
-  - SDK/Client: REST API calling via native `fetch` client inside `src/lib/ai-analysis.ts`.
-  - Auth: API key configured in `LLM_API_KEY` environment variable.
-  - Base URL: Configurable via `LLM_API_BASE` (defaults to `https://sembilan.kelazz.my.id/v1`).
-  - Model: Configurable via `LLM_MODEL` (defaults to `gpt-4o`).
+**LLM Qualitative Analysis:**
+- OpenAI-compatible chat completion endpoint used to generate qualitative feedback analysis from open-text form submissions.
+  - SDK/Client: Direct HTTP POST via native `fetch` in `src/lib/ai-analysis.ts`.
+  - Auth: `LLM_API_KEY` Bearer token.
+  - Base URL: `LLM_API_BASE` (e.g. `https://sembilan.kelazz.my.id/v1`).
+  - Model: `LLM_MODEL` (e.g. `gpt-4o`).
+
+**Google OAuth Authentication:**
+- OAuth 2.0 provider for administrator login.
+  - SDK/Client: NextAuth.js Google Provider in `src/lib/auth.ts`.
+  - Credentials: `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`.
+  - Access Control: Validated against `ADMIN_EMAILS` allowlist in NextAuth `signIn` callback.
 
 ## Data Storage
 
 **Databases:**
-- PostgreSQL (pinned to `postgres:16-alpine` in Docker)
-  - Connection: Configured via `DATABASE_URL` environment variable. E.g., `postgresql://user:password@host:port/db?schema=public`.
-  - Client: Prisma ORM v7.4.2 (`prisma` client with raw SQL fallback for form engine and dynamic tables).
-  - Migrations: Database migration SQL scripts located in `prisma/migrations/`.
+- PostgreSQL 16 (running via `postgres:16-alpine` in Docker or local instance).
+  - Connection: `DATABASE_URL` environment variable.
+  - Client: Prisma Client with `@prisma/adapter-pg` connection pool adapter (`src/lib/prisma.ts`).
+  - Raw SQL Engine: Dynamic form builder, submission mutations, and job locking use raw queries (`prisma.$queryRaw` / `prisma.$executeRaw`) in `src/lib/forms.ts`.
+  - Migrations: SQL migration files located in `prisma/migrations/`.
 
 **File Storage:**
-- None. Signatures are encoded and stored in the database as base64 string buffers (text data type).
+- Signatures and canvas inputs are encoded as base64 string buffers and stored directly in database text columns (`SignaturePad.tsx`, `Attendance.signature`, `SubmissionAnswer.valueText`). No external S3/blob storage is used.
 
 **Caching:**
-- Local per-process in-memory caching and Next.js route caching.
+- In-memory per-process sliding-window rate limiter in `src/lib/rate-limit.ts`.
+- Next.js route caching and Next.js ISR/cache revalidation (`revalidatePath`) in `src/lib/forms.ts`.
 
 ## Authentication & Identity
 
 **Auth Provider:**
-- NextAuth.js v4 using custom callbacks to filter users by email address allowlist.
-  - Session strategy: Default session management with sign-in paths gated under `/admin/login`.
-
-**OAuth Integrations:**
-- Google OAuth provider used for logging in administrators.
-  - Credentials: `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET` configured in environment.
-  - Allowlist: Managed in `ADMIN_EMAILS` (comma-separated list of Google accounts allowed access).
+- NextAuth.js v4 with Google Provider.
+  - Sign-in and error pages gated at `/admin/login`.
+  - Server-side session verification via `getAdminSession()` in `src/lib/auth.ts`.
+  - Restricted to verified Google account emails defined in `ADMIN_EMAILS`.
 
 ## Monitoring & Observability
 
-**Logs:**
-- Standalone stdout/stderr console output for server and worker processes.
+**Health Check:**
+- HTTP GET endpoint at `/api/health` returning database connectivity status and process health (`src/app/api/health/route.ts`).
+- Integrated into Docker Compose healthchecks for `isian-app` and `isian-worker`.
+
+**Logging:**
+- Standard output (`console.log`, `console.error`) with module tag prefixes (e.g. `[submission-worker]`, `[ai-analysis]`).
 
 ## CI/CD & Deployment
 
-**Hosting:**
-- Containerized runtime using Docker and Docker Compose.
-  - Port: Gated behind port `3456` locally (or `3457` when running k6 benchmarks via Nginx proxy).
+**Hosting & Containers:**
+- Multi-stage Docker containerization (`Dockerfile`) producing standalone Node.js Alpine runtime.
+- Managed through Docker Compose (`docker-compose.yml`) exposing app on port `3456`.
+- Optional benchmark infrastructure with multi-replica load balancing via Nginx (`infra/nginx/benchmark.conf`).
 
 ## Webhooks & Callbacks
 
-**Internal Worker Pull Hook:**
-- Background task worker `scripts/submission-worker.mjs` executes pulling requests to the internal API route:
+**Internal Worker Job Polling:**
+- Background worker `scripts/submission-worker.mjs` executes HTTP POST polling loop:
   - Endpoint: `/api/internal/submission-jobs/process`
-  - Verification: Authenticated via header `x-worker-token` containing the `INTERNAL_WORKER_TOKEN`.
+  - Authentication: Validated via header `x-worker-token` matching `INTERNAL_WORKER_TOKEN`.
+  - Workload: Claims pending jobs with `FOR UPDATE SKIP LOCKED`, executes form submission processing, and handles retries.
 
 ---
 
-*Integration audit: 2026-07-16*
-*Update when adding/removing external services*
+*Integration audit: 2026-08-28*

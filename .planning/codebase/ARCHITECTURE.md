@@ -1,97 +1,143 @@
+<!-- refreshed: 2026-08-28 -->
 # Architecture
 
-**Analysis Date:** 2026-07-16
+**Analysis Date:** 2026-08-28
+
+## System Overview
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                      Client Layer                           │
+├──────────────────┬──────────────────┬───────────────────────┤
+│   Public Form    │   Admin Forms    │    Admin Submissions  │
+│ `AttendanceForm` │`AdminFormEditor` │`AdminFormSubmissions` │
+└────────┬─────────┴────────┬─────────┴──────────┬────────────┘
+         │                  │                     │
+         ▼                  ▼                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 Next.js 16 App Router                       │
+│    `/f/[slug]`  ·  `/admin/**`  ·  `/api/**`                │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Domain & Service Layer                    │
+│   `src/lib/forms.ts` · `src/lib/auth.ts` · `ai-analysis.ts` │
+│                `src/lib/rate-limit.ts`                      │
+└────────┬─────────────────────────────────────────┬──────────┘
+         │                                         │
+         ▼                                         ▼
+┌──────────────────┐                     ┌────────────────────┐
+│   Prisma Client  │                     │  Submission Worker │
+│ `src/lib/prisma` │                     │`submission-worker` │
+└────────┬─────────┘                     └─────────┬──────────┘
+         │                                         │
+         ▼                                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      PostgreSQL 16                          │
+│        Tables: forms, form_fields, submissions,             │
+│        submission_answers, submission_jobs, ai_analyses     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Component Responsibilities
+
+| Component | Responsibility | File |
+|-----------|----------------|------|
+| Public Form Runner | Multi-step interactive form filling, validation, conditional branching, quiz handling, signature pad | `src/components/AttendanceForm.tsx` |
+| Admin Form Editor | Form builder UI (fields, settings, scoring rules, workflow branching) | `src/components/AdminFormEditor.tsx` |
+| Admin Submissions | Submissions table viewer, filters, quiz metrics, Excel/CSV export, AI analysis trigger | `src/components/AdminFormSubmissions.tsx` |
+| Form Engine | Form CRUD, answer validation, scoring, raw SQL persistence, job queuing, CSV generation | `src/lib/forms.ts` |
+| Auth & Sessions | NextAuth Google provider configuration and `ADMIN_EMAILS` allowlist checks | `src/lib/auth.ts` |
+| AI Analysis | Open-text answer summarization, sentiment classification, LLM prompt engineering | `src/lib/ai-analysis.ts` |
+| Rate Limiter | Sliding-window in-memory request throttle for public submission APIs | `src/lib/rate-limit.ts` |
+| Background Worker | Async polling daemon invoking internal job processing API | `scripts/submission-worker.mjs` |
 
 ## Pattern Overview
 
-**Overall:** Full-stack Next.js Monolith with separate Background Worker process.
+**Overall:** Full-stack Next.js Monolith (App Router) with decoupled async queue worker.
 
 **Key Characteristics:**
-- **App Router:** Thin server routes delegating to pure typescript domain logic libraries.
-- **Client/Server Hybrid:** Next.js Server Components gate session authentication, while rich React client components handle local draft states, signature pads, and form steps.
-- **Direct Database Manipulation:** Combined usage of Prisma Client and raw PostgreSQL transaction SQL to implement a schema-less, highly dynamic form builder engine.
-- **Background Worker Queue:** Separate Node.js script processing transactional queue items over API calls.
+- **App Router Architecture:** Lightweight server routes delegating logic to domain service libraries (`src/lib/*`).
+- **Hybrid Rendering:** Server components gate authentication, while rich interactive React client components manage draft states and multi-step forms.
+- **Dynamic Form Engine:** Flexible JSON settings paired with raw SQL queries (`prisma.$queryRaw` / `prisma.$executeRaw`) to support dynamic schema-free field types.
+- **Transactional Job Queue:** Dedicated `submission_jobs` table processed asynchronously using PostgreSQL row locking (`FOR UPDATE SKIP LOCKED`).
 
 ## Layers
 
 **Routing & Controller Layer:**
-- Purpose: Entry point for requests, query/params parsing, security gates, and response rendering.
-- Files:
-  - Pages: `src/app/**/page.tsx`
-  - Routes: `src/app/**/route.ts`
-- Depends on: Session Helpers (`src/lib/auth.ts`), Core Engine Functions (`src/lib/forms.ts`, `src/lib/ai-analysis.ts`).
+- Purpose: HTTP request parsing, authentication gating, rate limiting, and response dispatching.
+- Location: `src/app/**/page.tsx`, `src/app/**/route.ts`
+- Depends on: `src/lib/auth.ts`, `src/lib/forms.ts`, `src/lib/ai-analysis.ts`, `src/lib/rate-limit.ts`.
 
 **Domain Logic Layer:**
-- Purpose: Houses forms rendering configurations, validations, score calculations, export compilation, and job queue management.
-- Files:
-  - Form Actions: `src/lib/forms.ts`
-  - AI Analytics: `src/lib/ai-analysis.ts`
-  - Rate Limiter: `src/lib/rate-limit.ts`
-- Depends on: Database Access (`src/lib/prisma.ts`).
+- Purpose: Form definition processing, submission validation, quiz scoring calculations, export file building, and AI prompt composition.
+- Location: `src/lib/`
+- Contains: `forms.ts`, `auth.ts`, `ai-analysis.ts`, `rate-limit.ts`, `admin-display.ts`, `env.ts`.
+- Depends on: `src/lib/prisma.ts`.
 
 **Database Persistence Layer:**
-- Purpose: Store structures and values.
-- Files:
-  - Prisma Models: `prisma/schema.prisma`
-  - Raw SQL Mapping: Inline tags in `src/lib/forms.ts`.
+- Purpose: Data persistence, transaction management, and connection pooling.
+- Location: `prisma/schema.prisma`, `src/lib/prisma.ts`, raw SQL in `src/lib/forms.ts`.
 
 ## Data Flow
 
 ### Public Submission Workflow
-1. User loads `/f/[slug]` which renders `src/app/f/[slug]/page.tsx` fetching public definitions.
-2. Form answers entered on page steps inside `src/components/AttendanceForm.tsx` (supports standard fields, Likert options, signatures, branching logic).
-3. Upon submit, POST requests `/api/public/forms/[slug]/submit`.
-4. Submit endpoint extracts headers via `getClientIp()`, validates rate limits via `rateLimit()`, validates inputs via `validateFormSubmission()`, stores answers, and creates a task entry in `SubmissionJob` table.
-5. User is redirected to `/success`.
+1. User loads `/f/[slug]` (`src/app/f/[slug]/page.tsx`), which renders `src/components/PublicFormPage.tsx` and `src/components/AttendanceForm.tsx`.
+2. User fills out questions, signatures, and navigates conditional branches.
+3. Form submits via POST to `/api/public/forms/[slug]/submit`.
+4. Submit handler extracts IP (`getClientIp`), enforces sliding-window rate limit (`rateLimit`), validates answers (`validateFormSubmission`), stores submission records, and enqueues a `SubmissionJob`.
+5. User is redirected to `/success?slug=<slug>&submissionId=<id>`.
 
 ### Job Queue Processing Loop
-1. Worker script `scripts/submission-worker.mjs` executes an infinite loop.
-2. Sends POST to `/api/internal/submission-jobs/process` with `INTERNAL_WORKER_TOKEN`.
-3. API route calls `processQueuedSubmissionJobs()`.
-4. Retrieves `PENDING` jobs from `submission_jobs` using `FOR UPDATE SKIP LOCKED` database transaction.
-5. Updates job state to `PROCESSING`, runs mutations, then marks `COMPLETED` (or increments attempts and schedules delay retries if failed).
+1. Background script `scripts/submission-worker.mjs` runs an infinite interval loop.
+2. Sends HTTP POST to `/api/internal/submission-jobs/process` with header `x-worker-token`.
+3. Handler executes `processQueuedSubmissionJobs()` in `src/lib/forms.ts`.
+4. Pending jobs are locked via `SELECT ... FOR UPDATE SKIP LOCKED`, processed, and marked `COMPLETED` (or scheduled for exponential backoff retry on failure).
 
 ### Admin Management Flow
-1. Admin visits `/admin/forms` or pages under `/admin/forms/[id]`.
+1. Admin navigates to `/admin/forms` or `/admin/forms/[id]`.
 2. Session checked on server via `getAdminSession()`.
-3. Client component fetches endpoints like `/api/admin/forms/[id]/submissions` or initiates AI Analysis via POST to `/api/admin/forms/[id]/ai-analysis`.
+3. Client components fetch data via `/api/admin/forms/**` and `/api/admin/forms/[id]/submissions`.
+4. Admin can trigger AI qualitative analysis via `/api/admin/forms/[id]/ai-analysis` or export data via `/api/admin/forms/[id]/export`.
 
 ## Key Abstractions
 
-**Dynamic Form Schema Engine:**
-- Encapsulates forms as JSON settings models including pages, conditional routes, and branching configurations.
-- Bypasses static schema migration limits by compiling fields dynamically via raw PostgreSQL client execution.
+**Dynamic Form Schema:**
+- Forms contain JSON settings (`settingsJson`) specifying workflows, branching logic, score thresholds, and page structures.
+- Field types supported: `SHORT_TEXT`, `LONG_TEXT`, `RADIO`, `SELECT`, `YES_NO`, `SIGNATURE`, `LIKERT`.
 
-**Google Auth Allowlist:**
-- Restricts Admin portal to specific authorized emails configured in `ADMIN_EMAILS` env variable inside `src/lib/auth.ts`.
+**Admin Authorization Gate:**
+- Restricts admin access exclusively to Google accounts present in `ADMIN_EMAILS` environment variable.
 
 ## Entry Points
 
-**Main Server:**
-- Location: `.next/standalone/server.js` (compiled production bundle) or `npm run dev` in development.
-- Responsibilities: Server routing, server components rendering, API endpoints.
+**Next.js App Server:**
+- Location: `src/app/page.tsx`, `.next/standalone/server.js`
+- Responsibilities: Web UI rendering, public forms, admin portal, REST APIs.
 
-**Task Worker:**
+**Background Submission Worker:**
 - Location: `scripts/submission-worker.mjs`
-- Responsibilities: Runs infinite async batch loop checking for database tasks to execute.
+- Responsibilities: Asynchronous submission job execution, deduplication checks, and failure retry dispatching.
+
+## Architectural Constraints
+
+- **Single-Process Rate Limiting:** Rate limiter in `src/lib/rate-limit.ts` uses an in-memory `Map`. Horizontal scaling across multiple containers requires setting `RATE_LIMIT_SINGLE_INSTANCE_OK=true` or migrating to a shared Redis store.
+- **Connection Pool Sizing:** PostgreSQL connection pool in `src/lib/prisma.ts` is configured via `DB_POOL_MAX` and `DB_POOL_MIN` to prevent database connection exhaustion.
+- **Dual SQL Paradigm:** Prisma schema models `Attendance` and relations, while form-builder tables rely on raw PostgreSQL queries within `src/lib/forms.ts`.
 
 ## Error Handling
 
-**App Boundary:**
-- Form submission errors throw custom classes like `FormSubmissionError` which are captured at endpoints to yield clean HTTP 400 JSON payloads.
-
-**Worker Retries:**
-- Failed tasks are automatically rescheduled with exponential backoff (`attempts * 2 seconds`), capped at 5 total attempts before marking status as `FAILED`.
+**Strategy:**
+- Custom error classes (e.g. `FormSubmissionError`) thrown in domain layer (`src/lib/forms.ts`) and converted to HTTP status codes at the route boundary.
+- Worker jobs retry with exponential backoff up to 5 attempts before terminal failure (`FAILED`).
 
 ## Cross-Cutting Concerns
 
-**Rate Limiting:**
-- Per-process sliding window limiter inside `src/lib/rate-limit.ts` (monitored by IP headers).
-
-**AI Analysis:**
-- Aggregates quantitative and qualitative responses and invokes OpenAI endpoint to generate Markdown summary inside `src/lib/ai-analysis.ts`.
+- **Logging:** Prefixed console logs for server and background worker processes.
+- **Validation:** Server-side payload validation in `validateFormSubmission()`.
+- **Display Helpers:** Formatting helpers in `src/lib/admin-display.ts`.
 
 ---
 
-*Architecture analysis: 2026-07-16*
-*Update when major patterns change*
+*Architecture analysis: 2026-08-28*

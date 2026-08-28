@@ -1,28 +1,29 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-07-16
+**Analysis Date:** 2026-08-28
 
 ## Test Framework
 
 **Runner:**
 - Vitest ^4.1.5
-- Configuration: `vitest.config.ts` in the project root.
+- Configuration: `vitest.config.ts` in project root
 
 **Assertion Library:**
-- Vitest built-in assertions (`expect`).
-- Matchers: `toBe`, `toEqual`, `toThrow`, `rejects.toThrow`, `toHaveBeenCalledWith`.
+- Vitest built-in assertions (`expect`)
+- Common matchers: `toBe`, `toEqual`, `toThrow`, `rejects.toThrow`, `toHaveBeenCalledWith`, `toBeTruthy`
 
 **Run Commands:**
 ```bash
-npm run test                          # Run all tests (executes 'vitest run')
-npm run test:watch                    # Watch mode for interactive testing
-npx vitest run src/lib/forms.test.ts  # Run a specific test file
+npm run test                          # Run all unit/integration tests with Vitest
+npm run test:watch                    # Interactive watch mode
+npx vitest run src/lib/forms.test.ts  # Run a specific test suite
+npm run load:test:public              # Run public form journey k6 load test
 ```
 
 ## Test File Organization
 
 **Location:**
-- Collocated directly alongside source files in the codebase (e.g., in `src/lib/`).
+- Collocated directly alongside the corresponding implementation files under `src/lib/` and `src/app/`.
 
 **Naming:**
 - Named with `*.test.ts` pattern.
@@ -30,47 +31,46 @@ npx vitest run src/lib/forms.test.ts  # Run a specific test file
 **Structure:**
 ```
 src/
-  lib/
-    forms.ts
-    forms.test.ts
-    rate-limit.ts
-    rate-limit.test.ts
+├── app/
+│   └── globals.test.ts
+└── lib/
+    ├── ai-analysis.test.ts
+    ├── env.test.ts
+    ├── form-delete-utils.test.ts
+    ├── forms.test.ts
+    └── rate-limit.test.ts
 ```
 
 ## Test Structure
 
 **Suite Organization:**
-Tests use the standard BDD style with `describe` and `it` blocks:
+Tests use BDD style `describe` and `it` blocks:
 ```typescript
 import { describe, expect, it, vi } from 'vitest'
 
-describe('ModuleName', () => {
-  describe('functionUnderTest', () => {
-    it('should behave correctly under specific condition', () => {
-      // arrange
-      const input = ...
+describe('forms domain logic', () => {
+  describe('validateFormSubmission', () => {
+    it('should validate required fields and return formatted answers', () => {
+      const form = buildFormFixture()
+      const rawAnswers = { nama: 'Budi Santoso' }
       
-      // act
-      const result = functionUnderTest(input)
-      
-      // assert
-      expect(result).toBe(expected)
+      const result = validateFormSubmission(form, rawAnswers)
+      expect(result.isValid).toBe(true)
     })
   })
 })
 ```
 
 **Patterns:**
-- Mock modules at the top of the test file using `vi.mock()`.
-- Colocate helper factory functions directly in the test file where they are needed.
+- Isolate external dependencies using `vi.mock()` at the top level of test files.
+- Reset mock call counters and in-memory caches between test cases using `beforeEach`.
 
 ## Mocking
 
 **Framework:**
-- Vitest built-in `vi` utility.
+- Vitest `vi` mock utilities.
 
-**Patterns:**
-Mocks are often used to stub next/cache or database layers:
+**Common Mock Patterns:**
 ```typescript
 // Mock Next.js cache revalidation
 vi.mock('next/cache', () => ({
@@ -82,55 +82,52 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     $queryRaw: vi.fn().mockResolvedValue([]),
     $executeRaw: vi.fn().mockResolvedValue(1),
-  }
+    formAiAnalysis: {
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+    },
+  },
 }))
 ```
 
 **What to Mock:**
-- Caching (`revalidatePath`).
-- Database client and transaction pools.
-- External API calls (like OpenAI completions).
-- Current timestamp if date/time calculations are tested.
+- Next.js server runtime features (`next/cache`, `next/headers`).
+- Database client and transaction handles (`@/lib/prisma`).
+- External HTTP endpoints (e.g. LLM completion APIs).
 
 **What NOT to Mock:**
-- Pure validation routines.
-- In-memory algorithms.
+- Pure domain business rules (e.g. form validation logic, score thresholds, answer formatting, branching decision graphs).
 
 ## Fixtures and Factories
 
 **Test Data:**
-Inline factory builders are declared directly within test files to return standardized mock data with customizable overrides:
+Inline factory builder functions create reproducible test objects:
 ```typescript
-function buildForm(): PublicFormDefinition {
+function buildTestFormDefinition(overrides = {}): PublicFormDefinition {
   return {
-    id: 'form_1',
-    slug: 'test-form',
-    title: 'Test Form',
+    id: 'form_test_1',
+    slug: 'kuis-kepegawaian',
+    title: 'Kuis Evaluasi',
+    mode: 'QUIZ',
     fields: [
-      { id: 'name', name: 'name', label: 'Nama', type: 'text', required: true }
+      { id: 'f1', name: 'q1', label: 'Soal 1', type: 'radio', required: true }
     ],
-    settings: { workflow: 'STANDARD' }
+    ...overrides,
   }
 }
 ```
 
-## Coverage
+## Coverage & Test Types
 
-**Requirements:**
-- No strict coverage gates. Coverage is run ad-hoc to ensure business pathways are covered.
+**Unit & Integration Tests:**
+- Validate helper logic, environment variable parsing, rate limiting, form validation, branching calculations, score evaluation, and AI data aggregation.
+- Executed via `npm run test`.
 
-## Test Types
-
-**Unit/Integration Tests:**
-- Validate library helper logic, validation patterns, error handling, rate limiting, and quiz calculations.
-- Executed instantly using Vitest in memory.
-
-**Load Tests:**
-- Located in `load-tests/`.
-- Written in JavaScript and executed via `k6` to test `/f/[slug]` endpoints and submission scaling.
-- Configured via environment variables (`BASE_URL`, `FORM_SLUG`, etc.) and run via: `npm run load:test:public`.
+**Performance & Load Tests:**
+- k6 scripts located in `load-tests/`.
+- Simulates realistic user journeys (form landing, fetching definitions, form submission with simulated latency).
+- Run via: `npm run load:test:public` (configurable via `BASE_URL`, `FORM_SLUG`, `K6_VUS`, `K6_MAX_DURATION`).
 
 ---
 
-*Testing analysis: 2026-07-16*
-*Update when test patterns change*
+*Testing analysis: 2026-08-28*
