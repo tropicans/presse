@@ -1,32 +1,36 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-08-28
+**Analysis Date:** 2026-09-25
 
 ## Test Framework
 
 **Runner:**
-- Vitest ^4.1.5
-- Configuration: `vitest.config.ts` in project root
+- Vitest 4.1.5
+- Configuration: `vitest.config.ts` (configured with `environment: 'node'` and `@/*` alias)
 
 **Assertion Library:**
-- Vitest built-in assertions (`expect`)
-- Common matchers: `toBe`, `toEqual`, `toThrow`, `rejects.toThrow`, `toHaveBeenCalledWith`, `toBeTruthy`
+- Vitest standard assertions (`expect`, `describe`, `it`, `beforeEach`, `vi`)
 
 **Run Commands:**
 ```bash
-npm run test                          # Run all unit/integration tests with Vitest
-npm run test:watch                    # Interactive watch mode
-npx vitest run src/lib/forms.test.ts  # Run a specific test suite
-npm run load:test:public              # Run public form journey k6 load test
+npm test                 # Run all unit/integration tests with Vitest once
+npm run test:watch       # Run Vitest in interactive watch mode
+npm run load:test:public # Run k6 load test for public form submission journey
 ```
 
 ## Test File Organization
 
 **Location:**
-- Collocated directly alongside the corresponding implementation files under `src/lib/` and `src/app/`.
+- Co-located directly alongside source code files under `src/lib/` and `src/app/`.
 
 **Naming:**
-- Named with `*.test.ts` pattern.
+- Named with `.test.ts` extension matching the module name:
+  - `src/lib/forms.test.ts` tests `src/lib/forms.ts`
+  - `src/lib/ai-analysis.test.ts` tests `src/lib/ai-analysis.ts`
+  - `src/lib/env.test.ts` tests `src/lib/env.ts`
+  - `src/lib/rate-limit.test.ts` tests `src/lib/rate-limit.ts`
+  - `src/lib/form-delete-utils.test.ts` tests `src/lib/form-delete-utils.ts`
+  - `src/app/globals.test.ts` tests CSS / token sanity
 
 **Structure:**
 ```
@@ -44,90 +48,125 @@ src/
 ## Test Structure
 
 **Suite Organization:**
-Tests use BDD style `describe` and `it` blocks:
 ```typescript
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { validateFormSubmission, FormSubmissionError } from './forms'
 
-describe('forms domain logic', () => {
+describe('forms domain', () => {
   describe('validateFormSubmission', () => {
-    it('should validate required fields and return formatted answers', () => {
-      const form = buildFormFixture()
-      const rawAnswers = { nama: 'Budi Santoso' }
-      
-      const result = validateFormSubmission(form, rawAnswers)
-      expect(result.isValid).toBe(true)
+    it('throws error when a required field is missing', () => {
+      const mockForm = {
+        id: 'form-1',
+        fields: [{ id: 'f1', label: 'Nama', type: 'text', required: true }],
+      }
+
+      expect(() => validateFormSubmission(mockForm as any, {}))
+        .toThrow(FormSubmissionError)
     })
   })
 })
 ```
 
 **Patterns:**
-- Isolate external dependencies using `vi.mock()` at the top level of test files.
-- Reset mock call counters and in-memory caches between test cases using `beforeEach`.
+- Use nested `describe` blocks to group by function/feature.
+- Use explicit AAA pattern (Arrange, Act, Assert).
+- Reset state in `beforeEach` when testing modules with stateful stores (e.g. rate limiter).
 
 ## Mocking
 
 **Framework:**
-- Vitest `vi` mock utilities.
+- Vitest built-in `vi` mocking tools (`vi.mock`, `vi.fn`, `vi.spyOn`).
 
-**Common Mock Patterns:**
-```typescript
-// Mock Next.js cache revalidation
-vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
-}))
-
-// Mock Prisma Client methods
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    $queryRaw: vi.fn().mockResolvedValue([]),
-    $executeRaw: vi.fn().mockResolvedValue(1),
-    formAiAnalysis: {
-      findUnique: vi.fn(),
-      upsert: vi.fn(),
+**Patterns:**
+- Mocking Next.js cache APIs:
+  ```typescript
+  vi.mock('next/cache', () => ({
+    revalidatePath: vi.fn(),
+  }))
+  ```
+- Mocking Prisma Client and raw SQL methods:
+  ```typescript
+  vi.mock('@/lib/prisma', () => ({
+    prisma: {
+      $queryRaw: vi.fn().mockImplementation(async (strings: TemplateStringsArray) => {
+        const sql = strings.join('?')
+        if (sql.includes('FROM forms')) {
+          return [{ id: 'form_123', slug: 'test-form', status: 'DRAFT' }]
+        }
+        return []
+      }),
+      $executeRaw: vi.fn().mockResolvedValue(1),
     },
-  },
-}))
-```
+  }))
+  ```
+- Mocking Global `fetch` for external APIs (e.g. LLM endpoints):
+  ```typescript
+  global.fetch = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      choices: [{ message: { content: 'Hasil analisis...' } }],
+    }),
+  } as Response)
+  ```
 
 **What to Mock:**
-- Next.js server runtime features (`next/cache`, `next/headers`).
-- Database client and transaction handles (`@/lib/prisma`).
-- External HTTP endpoints (e.g. LLM completion APIs).
+- Next.js internal server functions (`next/cache`, `next/navigation`).
+- External HTTP endpoints (Google OAuth token validation, OpenAI LLM endpoints).
+- Database calls when running fast unit tests.
 
 **What NOT to Mock:**
-- Pure domain business rules (e.g. form validation logic, score thresholds, answer formatting, branching decision graphs).
+- Pure domain algorithms (scoring formulas, branching route logic, data pre-aggregation).
+- Validation and schema parsing functions.
 
 ## Fixtures and Factories
 
 **Test Data:**
-Inline factory builder functions create reproducible test objects:
-```typescript
-function buildTestFormDefinition(overrides = {}): PublicFormDefinition {
-  return {
-    id: 'form_test_1',
-    slug: 'kuis-kepegawaian',
-    title: 'Kuis Evaluasi',
-    mode: 'QUIZ',
-    fields: [
-      { id: 'f1', name: 'q1', label: 'Soal 1', type: 'radio', required: true }
-    ],
-    ...overrides,
+- Collocated inline factories for lightweight test mock objects:
+  ```typescript
+  function createMockForm(overrides = {}): PublicFormDefinition {
+    return {
+      id: 'mock-form-1',
+      slug: 'mock-slug',
+      title: 'Mock Form Title',
+      mode: 'STANDARD',
+      workflow: 'STANDARD',
+      fields: [],
+      pages: [],
+      conditionalRoutes: [],
+      ...overrides,
+    }
   }
-}
+  ```
+
+## Coverage
+
+**Requirements:**
+- No strict threshold is enforced in CI yet; aim for high test coverage on critical form validation, branching, scoring, and authentication gating.
+
+**View Coverage:**
+```bash
+npx vitest run --coverage
 ```
 
-## Coverage & Test Types
+## Test Types
 
-**Unit & Integration Tests:**
-- Validate helper logic, environment variable parsing, rate limiting, form validation, branching calculations, score evaluation, and AI data aggregation.
-- Executed via `npm run test`.
+**Unit Tests:**
+- Test isolated business logic in `src/lib/`:
+  - Form field submission validation and sanitization.
+  - Likert scale and quiz score calculations.
+  - Environment variable schema verification.
+  - In-memory rate limiting counter math and reset windows.
 
-**Performance & Load Tests:**
-- k6 scripts located in `load-tests/`.
-- Simulates realistic user journeys (form landing, fetching definitions, form submission with simulated latency).
-- Run via: `npm run load:test:public` (configurable via `BASE_URL`, `FORM_SLUG`, `K6_VUS`, `K6_MAX_DURATION`).
+**Integration Tests:**
+- Test end-to-end flows with mocked DB clients:
+  - Form update and revalidation pipelines.
+  - AI analysis report generation and persistence logic.
+
+**Load & Performance Tests:**
+- Written in k6 (`load-tests/public-form-journey.k6.js`).
+- Tests public form fetch, page loading, and submission throughput under load.
+- Configurable via environment variables (`BASE_URL`, `K6_VUS`, `SUBMIT_FORM`, `UNIQUE_IPS`).
 
 ---
 
-*Testing analysis: 2026-08-28*
+*Testing analysis: 2026-09-25*

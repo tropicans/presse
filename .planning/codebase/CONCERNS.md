@@ -1,85 +1,113 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-08-28
+**Analysis Date:** 2026-09-25
 
 ## Tech Debt
 
-**Raw SQL Query Dependency in Form Engine:**
-- Issue: Dynamic form operations, submissions lookups, and worker transactions use raw queries via `prisma.$queryRaw` and `prisma.$executeRaw` instead of type-safe Prisma client model queries.
-- Files: `src/lib/forms.ts` (`processQueuedSubmissionJobs`, `listAdminFormSubmissions`, `createAdminForm`).
-- Why: Accommodates schema-free, dynamic question types and dynamic columns without creating a database migration per form field.
-- Impact: Elevated risk of PostgreSQL syntax errors, complex manual type casting, and higher maintenance overhead during database schema updates.
-- Fix approach: Abstract raw SQL calls into dedicated query builder modules with strict runtime validation, or consider PostgreSQL JSONB columns for dynamic answer storage.
+**Monolithic Domain Engine (`src/lib/forms.ts`):**
+- Issue: `src/lib/forms.ts` exceeds 3,000 lines of code. It acts as a massive god-module housing CRUD operations, raw SQL tagged template queries, submission validations, conditional branching navigation, quiz grading, CSV/Excel export builders, and queue drainage functions.
+- Files: `src/lib/forms.ts`
+- Impact: High cognitive load, elevated risk of regressions when modifying one feature that inadvertently affects another, and difficulty in testing sub-domains in isolation.
+- Fix approach: Modularize into dedicated submodules under `src/lib/forms/`:
+  - `src/lib/forms/validation.ts`
+  - `src/lib/forms/scoring.ts`
+  - `src/lib/forms/export.ts`
+  - `src/lib/forms/queue.ts`
+  - `src/lib/forms/repository.ts`
 
-**Large Multi-Workflow UI Component in `AttendanceForm.tsx`:**
-- Issue: A single React component (`src/components/AttendanceForm.tsx`) orchestrates standard forms, webinar registrations, attendance tracking, and interactive quizzes.
-- Files: `src/components/AttendanceForm.tsx`.
-- Why: Historical evolution from a simple attendance sheet into a general-purpose dynamic form runner.
-- Impact: High UI state complexity, making subtle branching or scoring modifications prone to regressions in other form workflows.
-- Fix approach: Refactor form modes into modular sub-components and isolated React state providers.
+**Monolithic Global Stylesheet (`src/app/globals.css`):**
+- Issue: `src/app/globals.css` contains over 6,200 lines of CSS rules, combining base reset, design tokens, light/dark theme variables, form components, admin data tables, modals, and responsive layout classes in a single file.
+- Files: `src/app/globals.css`
+- Impact: Increased CSS bundle size on initial load, high specificity conflicts, and fragile styling modifications.
+- Fix approach: Split into modular token files or CSS modules matching components (`components/admin.module.css`, `components/form.module.css`).
 
-## Known Bugs
+**Dual Persistence Mechanism (Prisma ORM vs. Raw SQL):**
+- Issue: The application relies on Prisma Schema (`prisma/schema.prisma`) for typing and certain models, but extensively executes raw parameterized SQL (`prisma.$queryRaw` and `prisma.$executeRaw`) in `src/lib/forms.ts`.
+- Files: `prisma/schema.prisma`, `src/lib/forms.ts`, `prisma/migrations/`
+- Impact: Schema changes require triple maintenance (Prisma schema, migration SQL files, and embedded raw SQL query strings). Omitting one causes subtle runtime failures.
+- Fix approach: Standardize query helpers or use a query builder / complete Prisma model mapping to avoid query string drifting.
 
-**Process-Local Rate Limiting:**
-- Symptoms: Rate limits can be bypassed or behave inconsistently if the application is scaled horizontally across multiple instances behind a load balancer.
-- Trigger: Inbound requests landing on different application containers.
-- Files: `src/lib/rate-limit.ts`.
-- Workaround: Production single-instance deployments require `RATE_LIMIT_SINGLE_INSTANCE_OK="true"`.
-- Root cause: Rate limiting relies on an in-memory `Map` store per process.
-- Fix: Replace in-memory store with a shared Redis or database-backed rate limiter adapter for multi-instance deployments.
+## Known Bugs & Edge Cases
+
+**Excel Export Memory Pressure:**
+- Symptoms: Large export requests can lead to high memory consumption on the Node.js process.
+- Files: `src/lib/forms.ts`, `src/app/api/admin/forms/[id]/export/route.ts`
+- Trigger: Exporting forms with thousands of submission rows containing long text or rich answers.
+- Workaround: A hard cap (`ADMIN_EXCEL_EXPORT_ROW_LIMIT = 500`) is in place. Submissions exceeding 500 rows cannot currently be exported in a single batch without pagination.
 
 ## Security Considerations
 
-**Static Environment Admin Allowlist:**
-- Risk: Administrator authorization checks match against the static `ADMIN_EMAILS` environment variable. Adding/removing administrators requires modifying environment variables and restarting the service.
-- Files: `src/lib/auth.ts`, `src/lib/env.ts`.
-- Current mitigation: Checked server-side during the NextAuth `signIn` callback.
-- Recommendations: Store admin users and roles in a database table with an invitation workflow.
+**In-Memory Rate Limiting on Multi-Instance Deployments:**
+- Risk: `src/lib/rate-limit.ts` uses an in-memory sliding window `Map`. In a multi-replica or auto-scaling container environment, requests from the same IP hitting different instances will bypass rate limits.
+- Files: `src/lib/rate-limit.ts`
+- Current mitigation: A deployment guard (`RATE_LIMIT_SINGLE_INSTANCE_OK`) forces administrators to acknowledge single-instance deployment.
+- Recommendations: Implement a Redis-backed or database-backed distributed rate limiter when scaling horizontally.
 
-**Large Base64 Canvas Signature Payloads:**
-- Risk: Digital signature fields allow submitting raw base64 encoded PNG strings up to 500,000 characters directly into PostgreSQL text columns.
-- Files: `src/components/SignaturePad.tsx`, `src/lib/forms.ts`.
-- Current mitigation: Size validated on submit (`MAX_SIGNATURE_LENGTH = 500000`).
-- Recommendations: Offload large signature binaries to S3/MinIO object storage and store signed URLs in database tables.
+**Client IP Header Spoofing:**
+- Risk: When deployed behind multiple proxies or CDN layers, reading `x-forwarded-for` without verifying trusted upstream proxies could allow attackers to spoof client IPs and circumvent rate limiting.
+- Files: `src/lib/rate-limit.ts`, `src/app/api/public/forms/[slug]/submit/route.ts`
+- Current mitigation: Reads standard headers, but assumes trusted proxy setup.
+- Recommendations: Configure explicit trusted proxy hops in Nginx/Docker network.
+
+**Large Payload & Signature Storage:**
+- Risk: Base64-encoded signatures (`MAX_SIGNATURE_LENGTH = 500000`) and JSON payloads stored directly in PostgreSQL text columns can lead to database bloat if spam submissions occur.
+- Files: `src/lib/forms.ts`, `prisma/schema.prisma`
+- Current mitigation: Strict length validation in `validateFormSubmission`.
+- Recommendations: Store high-resolution binary signatures in an S3-compatible object store (e.g. MinIO) and store only references in PostgreSQL.
 
 ## Performance Bottlenecks
 
-**Database Connection Pool Starvation Under High Concurrency:**
-- Problem: Heavy concurrent traffic during mass form submissions or simultaneous AI analyses can saturate PostgreSQL connection pools.
-- Files: `src/lib/prisma.ts`, `docker-compose.yml`.
-- Cause: Next.js standalone workers and background queue workers each maintain distinct connection pools.
-- Improvement path: Tune `DB_POOL_MAX` and `DB_POOL_MIN` in relation to PostgreSQL server `max_connections` (configured to 300 in Docker).
+**In-Memory Submissions Aggregation for AI Analysis:**
+- Problem: `preAggregateSubmissions` fetches up to 1,000 submission rows and processes them in Node memory.
+- Files: `src/lib/ai-analysis.ts:L30-L75`
+- Cause: Lack of SQL-level `GROUP BY` aggregation for choice questions.
+- Improvement path: Migrate quantitative counts (radio, select, yes/no) to SQL aggregate queries (`SELECT value_text, COUNT(*) FROM submission_answers GROUP BY value_text`) to reduce memory and transfer overhead.
 
 ## Fragile Areas
 
-**Dual Schema vs Raw Migration Alignment:**
-- Files: `prisma/schema.prisma`, `prisma/migrations/`, `src/lib/forms.ts`.
-- Why fragile: Changes to form-builder database tables must be reflected in raw SQL migration scripts as well as embedded SQL queries inside `src/lib/forms.ts`. Prisma schema edits alone do not automatically update raw form-builder queries.
-- Test coverage: Covered by unit tests in `src/lib/forms.test.ts` using mocked Prisma calls.
+**Conditional Branching Engine:**
+- Files: `src/lib/forms.ts`, `src/components/AttendanceForm.tsx`, `src/components/AdminFormEditor.tsx`
+- Why fragile: Page routing logic depends on dynamic field values evaluated on the client and re-evaluated during server validation. Any discrepancy between client route computation and server step resolution will cause submission rejections.
+- Safe modification: When modifying branching algorithms, test multi-page branching flows in both `AttendanceForm.tsx` and `forms.test.ts`.
 
 ## Scaling Limits
 
-**Worker Fetch Polling:**
-- Current capacity: Batch processing up to 25–100 jobs per interval.
-- Limit: Polling-based execution in `scripts/submission-worker.mjs` may introduce slight processing delay during sudden bursts of thousands of submissions.
-- Symptoms: Submissions remain in `PENDING` state longer than normal.
-- Scaling path: Run multiple worker replicas (as demonstrated in the `docker-compose` bench profile) or adopt event-driven notifications.
+**Submission Worker Concurrency:**
+- Current capacity: Single worker script (`scripts/submission-worker.mjs`) draining batches of 25 items every 250ms.
+- Limit: PostgreSQL connection pool limits and serial batch loop.
+- Scaling path: Run multiple worker replicas safely using PostgreSQL's `FOR UPDATE SKIP LOCKED` query mechanism.
+
+## Dependencies at Risk
+
+**`@hono/node-server` Dependency Override:**
+- Risk: Overridden to `^1.19.13` in `package.json:overrides` to satisfy peer dependencies without a clear direct import in the core codebase.
+- Impact: Potential version mismatches during major dependency upgrades.
+- Migration plan: Audit whether the override is still required after upgrading to newer Next.js / Node versions.
 
 ## Missing Critical Features
 
-**Admin Queue Failure Notifications:**
-- Problem: Failed submission jobs reach `FAILED` status after 5 retries without dispatching email or webhook alerts.
-- Current workaround: Administrators must manually review logs or database records.
-- Priority: Medium.
+**Automated CI/CD Pipeline:**
+- Problem: No GitHub Actions or GitLab CI workflow configuration exists in the repository.
+- Blocks: Automated PR verification (lint, typecheck, tests) must be performed manually by developers before merging.
+
+**UI Component Testing:**
+- Problem: Zero component-level unit tests (e.g. React Testing Library) or E2E browser tests (Playwright).
+- Blocks: Regressions in user interaction (canvas drawing, step navigation, modal dialogues) can only be caught through manual QA.
 
 ## Test Coverage Gaps
 
-**UI Integration and End-to-End Browser Testing:**
-- What's not tested: Complex UI flows such as multi-step page transitions, signature canvas interaction, client-side draft recovery, and Google OAuth redirect flows.
-- Risk: Client-side UI regressions can escape unit tests.
+**Client Components (`src/components/`):**
+- What's not tested: `AttendanceForm.tsx`, `AdminFormEditor.tsx`, `AdminFormSubmissions.tsx`, `SignaturePad.tsx`.
+- Files: All files in `src/components/`.
+- Risk: Breaking changes in canvas event listeners, form pagination state, or table filters can slip into production unnoticed.
 - Priority: High.
-- Recommended fix: Introduce Playwright or Cypress for automated E2E testing of `/f/[slug]` and `/admin/forms`.
+
+**Admin API Route Handlers:**
+- What's not tested: Route-level integration tests for `/api/admin/forms/*` endpoints.
+- Files: `src/app/api/admin/forms/**/route.ts`.
+- Risk: Authentication session leaks or HTTP serialization errors.
+- Priority: Medium.
 
 ---
 
-*Concerns audit: 2026-08-28*
+*Concerns audit: 2026-09-25*

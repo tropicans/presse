@@ -1,143 +1,197 @@
-<!-- refreshed: 2026-08-28 -->
+<!-- refreshed: 2026-09-25 -->
 # Architecture
 
-**Analysis Date:** 2026-08-28
+**Analysis Date:** 2026-09-25
 
 ## System Overview
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                      Client Layer                           │
-├──────────────────┬──────────────────┬───────────────────────┤
-│   Public Form    │   Admin Forms    │    Admin Submissions  │
-│ `AttendanceForm` │`AdminFormEditor` │`AdminFormSubmissions` │
-└────────┬─────────┴────────┬─────────┴──────────┬────────────┘
-         │                  │                     │
-         ▼                  ▼                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 Next.js 16 App Router                       │
-│    `/f/[slug]`  ·  `/admin/**`  ·  `/api/**`                │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Domain & Service Layer                    │
-│   `src/lib/forms.ts` · `src/lib/auth.ts` · `ai-analysis.ts` │
-│                `src/lib/rate-limit.ts`                      │
-└────────┬─────────────────────────────────────────┬──────────┘
-         │                                         │
-         ▼                                         ▼
-┌──────────────────┐                     ┌────────────────────┐
-│   Prisma Client  │                     │  Submission Worker │
-│ `src/lib/prisma` │                     │`submission-worker` │
-└────────┬─────────┘                     └─────────┬──────────┘
-         │                                         │
-         ▼                                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      PostgreSQL 16                          │
-│        Tables: forms, form_fields, submissions,             │
-│        submission_answers, submission_jobs, ai_analyses     │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                               Browser UI                                │
+├────────────────────────────────────┬────────────────────────────────────┤
+│         Public Submitter           │             Admin User             │
+│   `src/components/AttendanceForm`  │ `src/components/AdminFormEditor`   │
+│   `src/app/f/[slug]/page.tsx`      │ `src/app/admin/forms/[id]/page.tsx`│
+└─────────────────┬──────────────────┴──────────────────┬─────────────────┘
+                  │                                     │
+                  ▼                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         App Router API Handlers                         │
+│  - `src/app/api/public/forms/[slug]/route.ts`                           │
+│  - `src/app/api/public/forms/[slug]/submit/route.ts`                    │
+│  - `src/app/api/admin/forms/[id]/submissions/route.ts`                  │
+│  - `src/app/api/internal/submission-jobs/process/route.ts`             │
+└─────────────────┬──────────────────┬──────────────────┬─────────────────┘
+                  │                  │                  │
+                  ▼                  ▼                  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Domain / Service Layer                        │
+│  - Form Engine & Validation: `src/lib/forms.ts`                         │
+│  - Authentication & RBAC: `src/lib/auth.ts`                             │
+│  - Rate Limiting: `src/lib/rate-limit.ts`                               │
+│  - AI Summarization: `src/lib/ai-analysis.ts`                           │
+└─────────────────┬─────────────────────────────────────┬─────────────────┘
+                  │                                     │
+                  ▼                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                             Persistence Layer                           │
+│  - Prisma Adapter: `src/lib/prisma.ts`                                  │
+│  - Schema & Raw SQL: `prisma/schema.prisma` & `prisma/migrations`       │
+│  - PostgreSQL 16 (Tables: forms, form_fields, submissions, jobs)        │
+└─────────────────────────────────────────────────────────────────────────┘
+                  ▲
+                  │ Worker batch polling
+┌─────────────────┴───────────────────────────────────────────────────────┐
+│                       Background Submission Worker                      │
+│                  `scripts/submission-worker.mjs`                        │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Component Responsibilities
 
 | Component | Responsibility | File |
 |-----------|----------------|------|
-| Public Form Runner | Multi-step interactive form filling, validation, conditional branching, quiz handling, signature pad | `src/components/AttendanceForm.tsx` |
-| Admin Form Editor | Form builder UI (fields, settings, scoring rules, workflow branching) | `src/components/AdminFormEditor.tsx` |
-| Admin Submissions | Submissions table viewer, filters, quiz metrics, Excel/CSV export, AI analysis trigger | `src/components/AdminFormSubmissions.tsx` |
-| Form Engine | Form CRUD, answer validation, scoring, raw SQL persistence, job queuing, CSV generation | `src/lib/forms.ts` |
-| Auth & Sessions | NextAuth Google provider configuration and `ADMIN_EMAILS` allowlist checks | `src/lib/auth.ts` |
-| AI Analysis | Open-text answer summarization, sentiment classification, LLM prompt engineering | `src/lib/ai-analysis.ts` |
-| Rate Limiter | Sliding-window in-memory request throttle for public submission APIs | `src/lib/rate-limit.ts` |
-| Background Worker | Async polling daemon invoking internal job processing API | `scripts/submission-worker.mjs` |
+| Public Form Shell | Central public form entry, step navigation, validation display, signature capture | `src/components/AttendanceForm.tsx` |
+| Admin Forms List | Form dashboard, status toggling, deletion modals, creation entry | `src/components/AdminFormsList.tsx` |
+| Admin Form Editor | Drag-free form schema builder, branching/pages config, quiz settings | `src/components/AdminFormEditor.tsx` |
+| Admin Submissions | Submissions table, pagination, search filters, detail drawers, export triggers | `src/components/AdminFormSubmissions.tsx` |
+| Admin Form Preview | Unsaved draft live preview via `localStorage` synchronization | `src/components/AdminFormPreview.tsx` |
+| Form Engine | Form CRUD, raw SQL querying, branching rules, scoring, batch job queue | `src/lib/forms.ts` |
+| AI Analysis Engine | Submission aggregation, prompt synthesis, OpenAI-compatible LLM invocation | `src/lib/ai-analysis.ts` |
+| Auth & Permissions | NextAuth Google OAuth session handling, admin email allowlist check | `src/lib/auth.ts` |
+| Rate Limiter | In-memory sliding window IP request limiting for public endpoints | `src/lib/rate-limit.ts` |
+| Submission Worker | Standalone Node process polling `/api/internal/submission-jobs/process` | `scripts/submission-worker.mjs` |
 
 ## Pattern Overview
 
-**Overall:** Full-stack Next.js Monolith (App Router) with decoupled async queue worker.
+**Overall:** Thin Server Routes + Fat Domain Module + React Client Components + Asynchronous Job Queue.
 
 **Key Characteristics:**
-- **App Router Architecture:** Lightweight server routes delegating logic to domain service libraries (`src/lib/*`).
-- **Hybrid Rendering:** Server components gate authentication, while rich interactive React client components manage draft states and multi-step forms.
-- **Dynamic Form Engine:** Flexible JSON settings paired with raw SQL queries (`prisma.$queryRaw` / `prisma.$executeRaw`) to support dynamic schema-free field types.
-- **Transactional Job Queue:** Dedicated `submission_jobs` table processed asynchronously using PostgreSQL row locking (`FOR UPDATE SKIP LOCKED`).
+- **Thin App Router Handlers:** Route files (`src/app/api/**/route.ts`) parse inputs, check auth/rate-limits, and delegate directly to pure TypeScript domain functions in `src/lib/`.
+- **Hybrid Data Modeling:** Prisma models provide TypeScript typing and structure, but performance-critical and dynamic builder logic executes via parameterized raw SQL (`prisma.$queryRaw` and `prisma.$executeRaw` in `src/lib/forms.ts`).
+- **Asynchronous Submission Queue:** Heavy form submissions can be queued into `submission_jobs` and asynchronously drained by `scripts/submission-worker.mjs` to keep public submission response times under ~100ms.
+- **Client Draft Synchronization:** Live preview of unsaved editor changes uses browser `localStorage` and `useSyncExternalStore` (`src/lib/admin-form-preview.ts`), avoiding premature database writes.
 
 ## Layers
 
-**Routing & Controller Layer:**
-- Purpose: HTTP request parsing, authentication gating, rate limiting, and response dispatching.
-- Location: `src/app/**/page.tsx`, `src/app/**/route.ts`
-- Depends on: `src/lib/auth.ts`, `src/lib/forms.ts`, `src/lib/ai-analysis.ts`, `src/lib/rate-limit.ts`.
+**Presentation Layer (App Router):**
+- Purpose: HTTP request routing, parameter extraction, response serialization, and server-side authentication gates.
+- Location: `src/app/`
+- Contains: `page.tsx`, `layout.tsx`, `route.ts`.
+- Depends on: `src/lib/auth.ts`, `src/lib/forms.ts`, `src/lib/rate-limit.ts`, `src/lib/ai-analysis.ts`.
 
-**Domain Logic Layer:**
-- Purpose: Form definition processing, submission validation, quiz scoring calculations, export file building, and AI prompt composition.
+**Client UI Layer:**
+- Purpose: Interactive form rendering, multi-step page advancement, canvas signature pad, admin data grids.
+- Location: `src/components/`
+- Contains: Client React components marked with `'use client'`.
+- Depends on: Browser APIs, `signature_pad`, native `fetch`.
+
+**Domain / Service Layer:**
+- Purpose: Business logic, validation schemas, scoring algorithms, export generation, and job queue management.
 - Location: `src/lib/`
-- Contains: `forms.ts`, `auth.ts`, `ai-analysis.ts`, `rate-limit.ts`, `admin-display.ts`, `env.ts`.
-- Depends on: `src/lib/prisma.ts`.
+- Contains: `forms.ts`, `ai-analysis.ts`, `rate-limit.ts`, `auth.ts`, `env.ts`.
+- Depends on: `src/lib/prisma.ts`, external LLM HTTP endpoints, ExcelJS.
 
-**Database Persistence Layer:**
-- Purpose: Data persistence, transaction management, and connection pooling.
-- Location: `prisma/schema.prisma`, `src/lib/prisma.ts`, raw SQL in `src/lib/forms.ts`.
+**Persistence Layer:**
+- Purpose: Relational data storage, connection pooling, and migrations.
+- Location: `prisma/` and `src/lib/prisma.ts`
+- Contains: `schema.prisma`, SQL migrations under `prisma/migrations/`.
+- Depends on: PostgreSQL 16 database.
+
+**Background Worker Layer:**
+- Purpose: Offloaded batch execution for asynchronous submissions.
+- Location: `scripts/`
+- Contains: `submission-worker.mjs`.
+- Depends on: Node.js fetch runtime, internal worker API routes.
 
 ## Data Flow
 
-### Public Submission Workflow
-1. User loads `/f/[slug]` (`src/app/f/[slug]/page.tsx`), which renders `src/components/PublicFormPage.tsx` and `src/components/AttendanceForm.tsx`.
-2. User fills out questions, signatures, and navigates conditional branches.
-3. Form submits via POST to `/api/public/forms/[slug]/submit`.
-4. Submit handler extracts IP (`getClientIp`), enforces sliding-window rate limit (`rateLimit`), validates answers (`validateFormSubmission`), stores submission records, and enqueues a `SubmissionJob`.
-5. User is redirected to `/success?slug=<slug>&submissionId=<id>`.
+### Primary Request Path (Public Form Submission)
 
-### Job Queue Processing Loop
-1. Background script `scripts/submission-worker.mjs` runs an infinite interval loop.
-2. Sends HTTP POST to `/api/internal/submission-jobs/process` with header `x-worker-token`.
-3. Handler executes `processQueuedSubmissionJobs()` in `src/lib/forms.ts`.
-4. Pending jobs are locked via `SELECT ... FOR UPDATE SKIP LOCKED`, processed, and marked `COMPLETED` (or scheduled for exponential backoff retry on failure).
+1. Participant enters form at `/f/[slug]` (`src/app/f/[slug]/page.tsx`).
+2. Public form definition loaded via `getPublicFormBySlug(slug)` (`src/lib/forms.ts:L311`).
+3. Participant submits form payload to `POST /api/public/forms/[slug]/submit` (`src/app/api/public/forms/[slug]/submit/route.ts`).
+4. IP rate limiter checked via `rateLimit(ip, ...)` (`src/lib/rate-limit.ts:L38`).
+5. Submission payload validated via `validateFormSubmission(form, payload)` (`src/lib/forms.ts:L912`).
+6. Submission either committed immediately or queued to `submission_jobs` table via `enqueueSubmissionJob(...)` (`src/lib/forms.ts`).
+7. Client redirected to `/success?slug=[slug]&submissionId=[id]` (`src/app/success/page.tsx`).
 
-### Admin Management Flow
-1. Admin navigates to `/admin/forms` or `/admin/forms/[id]`.
-2. Session checked on server via `getAdminSession()`.
-3. Client components fetch data via `/api/admin/forms/**` and `/api/admin/forms/[id]/submissions`.
-4. Admin can trigger AI qualitative analysis via `/api/admin/forms/[id]/ai-analysis` or export data via `/api/admin/forms/[id]/export`.
+### Asynchronous Worker Drainage Loop
+
+1. `scripts/submission-worker.mjs` executes continuous polling loop.
+2. Worker sends `POST /api/internal/submission-jobs/process?batch=25` with `x-worker-token`.
+3. Route verifies worker token against `INTERNAL_WORKER_TOKEN`.
+4. Domain helper `processSubmissionJobBatch(batchSize)` selects pending jobs with row-level lock (`FOR UPDATE SKIP LOCKED`).
+5. Answers are persisted into `submission_answers` and job status is updated to `COMPLETED` (or `FAILED` with retry backoff).
+
+### Admin Form Management & AI Analysis
+
+1. Admin accesses `/admin/forms` or `/admin/forms/[id]` gated by `getAdminSession()` (`src/lib/auth.ts`).
+2. Changes saved via `PATCH/PUT /api/admin/forms/[id]`.
+3. Admin clicks "Analisis AI" triggering `POST /api/admin/forms/[id]/ai-analysis`.
+4. `generateAndSaveFormAiAnalysis(formId)` aggregates quantitative answers, gathers text responses, and sends structured prompt to LLM (`src/lib/ai-analysis.ts`).
+5. Analysis result markdown is stored in `form_ai_analyses` table and returned for display.
 
 ## Key Abstractions
 
-**Dynamic Form Schema:**
-- Forms contain JSON settings (`settingsJson`) specifying workflows, branching logic, score thresholds, and page structures.
-- Field types supported: `SHORT_TEXT`, `LONG_TEXT`, `RADIO`, `SELECT`, `YES_NO`, `SIGNATURE`, `LIKERT`.
+**PublicFormDefinition & FormSettings:**
+- Purpose: Flexible JSON settings representing dynamic form pages, conditional branching rules, quiz pass rates, and display configs.
+- Examples: `src/lib/forms.ts` (`PublicFormDefinition`, `FormSettingsJson`).
 
-**Admin Authorization Gate:**
-- Restricts admin access exclusively to Google accounts present in `ADMIN_EMAILS` environment variable.
+**SubmissionJob:**
+- Purpose: Encapsulates asynchronous submission tasks for high-throughput resilience.
+- Examples: `src/lib/forms.ts`, `prisma/schema.prisma` (`model SubmissionJob`).
+
+**In-Memory RateLimiter:**
+- Purpose: Sliding window request throttler by IP address.
+- Examples: `src/lib/rate-limit.ts`.
 
 ## Entry Points
 
-**Next.js App Server:**
-- Location: `src/app/page.tsx`, `.next/standalone/server.js`
-- Responsibilities: Web UI rendering, public forms, admin portal, REST APIs.
+**Web Application Server:**
+- Location: `src/app/layout.tsx`, `src/app/page.tsx`, `next dev` / `next start` (or `.next/standalone/server.js` in production).
+- Responsibilities: Serves Next.js App Router, handles public & admin HTTP endpoints.
 
-**Background Submission Worker:**
-- Location: `scripts/submission-worker.mjs`
-- Responsibilities: Asynchronous submission job execution, deduplication checks, and failure retry dispatching.
+**Submission Worker Process:**
+- Location: `scripts/submission-worker.mjs` (`npm run worker:submission`).
+- Responsibilities: Standalone Node.js daemon draining pending database submission jobs.
 
 ## Architectural Constraints
 
-- **Single-Process Rate Limiting:** Rate limiter in `src/lib/rate-limit.ts` uses an in-memory `Map`. Horizontal scaling across multiple containers requires setting `RATE_LIMIT_SINGLE_INSTANCE_OK=true` or migrating to a shared Redis store.
-- **Connection Pool Sizing:** PostgreSQL connection pool in `src/lib/prisma.ts` is configured via `DB_POOL_MAX` and `DB_POOL_MIN` to prevent database connection exhaustion.
-- **Dual SQL Paradigm:** Prisma schema models `Attendance` and relations, while form-builder tables rely on raw PostgreSQL queries within `src/lib/forms.ts`.
+- **Single-Threaded Worker Execution:** The background submission worker operates as an external Node.js loop; race conditions on job claims are prevented by PostgreSQL row-level locks (`SKIP LOCKED`).
+- **In-Memory Rate Limiting Scope:** `src/lib/rate-limit.ts` uses an in-memory `Map`. For multi-instance scaling, `RATE_LIMIT_SINGLE_INSTANCE_OK` must be explicitly reviewed or replaced with Redis.
+- **Strict DB Pool Configuration:** `src/lib/prisma.ts` enforces configurable connection limits (`DB_POOL_MAX`, `DB_POOL_MIN`, timeouts) to prevent connection exhaustion.
+- **SQL Migration Parity:** Because `src/lib/forms.ts` issues raw SQL queries alongside Prisma models, schema changes require direct alignment between `schema.prisma`, migration files, and raw SQL queries.
+
+## Anti-Patterns
+
+### Monolithic Domain Engine
+
+**What happens:** `src/lib/forms.ts` contains over 3,000 lines of code combining CRUD, validation, branching calculations, quiz evaluation, SQL queries, Excel generation, and queue processing.
+**Why it's wrong:** High risk of regression when touching unrelated form behaviors; cognitive overload during maintenance.
+**Do this instead:** Refactor sub-domains into distinct modules under `src/lib/forms/` (e.g., `validation.ts`, `scoring.ts`, `export.ts`, `queue.ts`).
+
+### Monolithic CSS File
+
+**What happens:** All application styling (admin tables, public form layouts, modals, signatures, dark mode overrides) is bundled in a single 6,200+ line `src/app/globals.css`.
+**Why it's wrong:** High selector specificity clashes and difficult maintainability.
+**Do this instead:** Extract modular CSS files or component-scoped styles while adhering to vanilla CSS tokens.
 
 ## Error Handling
 
-**Strategy:**
-- Custom error classes (e.g. `FormSubmissionError`) thrown in domain layer (`src/lib/forms.ts`) and converted to HTTP status codes at the route boundary.
-- Worker jobs retry with exponential backoff up to 5 attempts before terminal failure (`FAILED`).
+**Strategy:** Typed domain error throwing converted to semantic HTTP responses at route boundaries.
+
+**Patterns:**
+- Custom `FormSubmissionError` (`src/lib/forms.ts`) thrown on invalid form states or payload validation failures.
+- Route handlers catch `FormSubmissionError` and return `NextResponse.json({ error: err.message }, { status: 400 })`.
+- Unhandled unexpected exceptions return HTTP 500 with sanitized messages to clients, while full traces are logged to `console.error`.
 
 ## Cross-Cutting Concerns
 
-- **Logging:** Prefixed console logs for server and background worker processes.
-- **Validation:** Server-side payload validation in `validateFormSubmission()`.
-- **Display Helpers:** Formatting helpers in `src/lib/admin-display.ts`.
+**Logging:** Prefixed console logs for worker tasks and database operations (`[submission-worker]`, `[prisma]`).
+**Validation:** Strict input validation and sanitization in `validateFormSubmission` (`src/lib/forms.ts`) and environment validation in `src/lib/env.ts`.
+**Authentication:** Session checks via `getAdminSession()` and `isAdminEmail()` in `src/lib/auth.ts`.
 
 ---
 
-*Architecture analysis: 2026-08-28*
+*Architecture analysis: 2026-09-25*
