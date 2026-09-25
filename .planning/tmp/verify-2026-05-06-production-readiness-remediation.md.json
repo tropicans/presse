@@ -1,0 +1,20 @@
+{
+  "doc_path": "docs/plans/2026-05-06-production-readiness-remediation.md",
+  "claims_checked": 112,
+  "claims_passed": 110,
+  "claims_failed": 2,
+  "failures": [
+    {
+      "line": 525,
+      "claim": "src/app/api/health/route.test.ts",
+      "expected": "file exists",
+      "actual": "file not found at src/app/api/health/route.test.ts"
+    },
+    {
+      "line": 525,
+      "claim": "src/lib/health.test.ts",
+      "expected": "file exists",
+      "actual": "file not found at src/lib/health.test.ts"
+    }
+  ]
+}

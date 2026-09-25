@@ -1,30 +1,18 @@
-import Image from 'next/image'
-import AttendanceForm from '@/components/AttendanceForm'
+import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
+import { getAdminSession } from '@/lib/auth'
 
-export default function HomePage() {
-  return (
-    <div className="page-wrapper">
-      <div className="form-card">
-        <div className="form-header">
-          <Image
-            src="/garuda.png"
-            alt="Garuda Pancasila"
-            width={80}
-            height={80}
-            className="header-logo"
-            priority
-          />
-          <h1 className="header-title">Daftar Hadir</h1>
-          <p className="header-subtitle">
-            Seminar Evaluasi Rancangan Aktualisasi Pelatihan Dasar CPNS
-            Golongan II Angkatan V dan Golongan III Angkatan X
-            Kemensetneg Tahun 2026
-          </p>
-        </div>
-        <div className="form-body">
-          <AttendanceForm />
-        </div>
-      </div>
-    </div>
-  )
+export const metadata: Metadata = {
+  title: 'Masuk Admin | isian',
+  description: 'Akses cepat ke dashboard admin isian menggunakan akun Google yang sudah diizinkan.',
+}
+
+export default async function HomePage() {
+  const session = await getAdminSession()
+
+  if (session) {
+    redirect('/admin/forms')
+  }
+
+  redirect('/admin/login')
 }

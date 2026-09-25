@@ -1,20 +1,27 @@
+import { readRequiredEnv, readRequiredEnvList } from './env'
 import type { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { getServerSession } from 'next-auth'
 
+const googleClientId = readRequiredEnv(process.env, 'GOOGLE_CLIENT_ID')
+const googleClientSecret = readRequiredEnv(process.env, 'GOOGLE_CLIENT_SECRET')
+const nextAuthSecret = readRequiredEnv(process.env, 'NEXTAUTH_SECRET')
+
+function getAdminEmails() {
+  return readRequiredEnvList(process.env, 'ADMIN_EMAILS').map((email) => email.toLowerCase())
+}
+
 export const authOptions: NextAuthOptions = {
+  secret: nextAuthSecret,
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
     }),
   ],
   callbacks: {
     async signIn({ user }) {
-      const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-        .split(',')
-        .map((e) => e.trim().toLowerCase())
-      return adminEmails.includes(user.email?.toLowerCase() ?? '')
+      return getAdminEmails().includes(user.email?.toLowerCase() ?? '')
     },
     async session({ session }) {
       return session
@@ -31,8 +38,5 @@ export async function getAdminSession() {
 }
 
 export function isAdminEmail(email: string): boolean {
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-  return adminEmails.includes(email.toLowerCase())
+  return getAdminEmails().includes(email.toLowerCase())
 }

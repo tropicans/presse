@@ -1,0 +1,7 @@
+DO $$
+BEGIN
+  ALTER TYPE "FormMode" ADD VALUE IF NOT EXISTS 'ATTENDANCE';
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END
+$$;

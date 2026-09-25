@@ -1,0 +1,14 @@
+{
+  "doc_path": "AGENTS.md",
+  "claims_checked": 51,
+  "claims_passed": 50,
+  "claims_failed": 1,
+  "failures": [
+    {
+      "line": 40,
+      "claim": "npm run lint -- src/components/AttendanceForm.tsx",
+      "expected": "file exists",
+      "actual": "file not found at npm run lint -- src/components/AttendanceForm.tsx"
+    }
+  ]
+}
