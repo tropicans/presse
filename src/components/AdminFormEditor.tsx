@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import AdminFormPreview from './AdminFormPreview'
 import { getAdminFormStatusLabel } from '@/lib/admin-display'
 import { getAdminPreviewStorageKey, type AdminPreviewField, type AdminPreviewForm, type AdminPreviewPage } from '@/lib/admin-form-preview'
 
@@ -142,7 +141,6 @@ export default function AdminFormEditor({ formId }: Props) {
   const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null)
   const [bulkText, setBulkText] = useState('')
   const [bulkFieldId, setBulkFieldId] = useState<string | null>(null)
-  const [showMobilePreview, setShowMobilePreview] = useState(false)
   const [activeStepTab, setActiveStepTab] = useState<string>('all')
   const [collapsedFieldIds, setCollapsedFieldIds] = useState<Set<string>>(new Set())
   const [showOutline, setShowOutline] = useState(false)
@@ -817,13 +815,24 @@ export default function AdminFormEditor({ formId }: Props) {
         <div className="editorial-form-editor-topbar-actions">
           <button
             type="button"
-            className="editorial-form-editor-ghost-btn mobile-preview-toggle-btn"
-            onClick={() => setShowMobilePreview((prev) => !prev)}
+            className="editorial-form-editor-ghost-btn"
+            onClick={() => handleOpenPreviewTab('desktop')}
+            title="Buka pratinjau form interaktif di tab baru"
           >
-            {showMobilePreview ? 'Sembunyikan Pratinjau' : 'Tampilkan Pratinjau'}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            <span>Pratinjau Form</span>
           </button>
           <Link href={`/admin/forms/${form.id}/submissions`} className="editorial-form-editor-ghost-btn" onClick={(e) => handleLinkClick(e, `/admin/forms/${form.id}/submissions`)}>
-            Lihat Kiriman
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+            <span>Lihat Kiriman</span>
           </Link>
           <button
             type="button"
@@ -831,7 +840,7 @@ export default function AdminFormEditor({ formId }: Props) {
             onClick={handleDiscardChanges}
             disabled={!isDirty || saving}
           >
-            Batalkan Perubahan
+            Batalkan
           </button>
           <button
             type="button"
@@ -852,14 +861,16 @@ export default function AdminFormEditor({ formId }: Props) {
         )}
 
         <div className="editorial-form-editor-statusbar" aria-live="polite">
-          <div>
-            <p className="forms-dashboard-overline">Status penyuntingan</p>
-            <strong>{saving ? 'Menyimpan perubahan...' : isDirty ? 'Perubahan belum disimpan' : 'Semua perubahan tersimpan'}</strong>
-            <span>
-              {isDirty
-                ? 'Simpan setelah selesai mengubah form agar versi publik ikut terbarui.'
-                : 'Versi penyuntingan dan data tersimpan sudah sinkron.'}
-            </span>
+          <div className="editorial-form-editor-statusbar-info">
+            <span className={`editorial-form-editor-status-dot ${isDirty ? 'dirty' : 'saved'}`} aria-hidden="true" />
+            <div>
+              <strong>{saving ? 'Menyimpan perubahan...' : isDirty ? 'Perubahan belum disimpan' : 'Semua perubahan tersimpan'}</strong>
+              <span>
+                {isDirty
+                  ? 'Simpan perubahan agar formulir publik ikut diperbarui.'
+                  : 'Versi editor dan database tersinkronisasi.'}
+              </span>
+            </div>
           </div>
           <div className="editorial-form-editor-status-meta">
             <span className={`forms-dashboard-status-chip ${form.status.toLowerCase()}`}>{getAdminFormStatusLabel(form.status)}</span>
@@ -1321,52 +1332,55 @@ export default function AdminFormEditor({ formId }: Props) {
                   {!isCollapsed && (
                   <div className="admin-builder-card-body" style={{ display: 'grid', gap: '16px' }}>
 
-                <label className="admin-builder-field">
-                  <span>Tipe</span>
-                  <select
-                    value={field.type}
-                    onChange={(e) => updateField(field.id, {
-                      type: e.target.value as EditableField['type'],
-                      options: createOptionsForType(
-                        e.target.value as EditableField['type'],
-                        field.options
-                      ),
-                      placeholder: e.target.value === 'signature'
-                        || e.target.value === 'radio'
-                        || e.target.value === 'select'
-                        || e.target.value === 'likert'
-                        ? ''
-                        : field.placeholder,
-                    })}
-                    className="admin-builder-select"
-                  >
-                    {fieldTypeOptions.map((type) => (
-                      <option key={type} value={type}>{fieldTypeLabels[type]}</option>
-                    ))}
-                  </select>
-                </label>
+                    <div className="admin-builder-field-grid">
+                      <label className="admin-builder-field admin-builder-field-main">
+                        <span>Label Pertanyaan</span>
+                        <input
+                          value={field.label}
+                          onChange={(e) => updateField(field.id, { label: e.target.value })}
+                          className="admin-builder-input"
+                          placeholder="Tulis teks pertanyaan di sini..."
+                        />
+                      </label>
 
-                <label className="admin-builder-field">
-                  <span>Label</span>
-                  <input
-                    value={field.label}
-                    onChange={(e) => updateField(field.id, { label: e.target.value })}
-                    className="admin-builder-input"
-                  />
-                </label>
+                      <label className="admin-builder-field">
+                        <span>Tipe Field</span>
+                        <select
+                          value={field.type}
+                          onChange={(e) => updateField(field.id, {
+                            type: e.target.value as EditableField['type'],
+                            options: createOptionsForType(
+                              e.target.value as EditableField['type'],
+                              field.options
+                            ),
+                            placeholder: e.target.value === 'signature'
+                              || e.target.value === 'radio'
+                              || e.target.value === 'select'
+                              || e.target.value === 'likert'
+                              ? ''
+                              : field.placeholder,
+                          })}
+                          className="admin-builder-select"
+                        >
+                          {fieldTypeOptions.map((type) => (
+                            <option key={type} value={type}>{fieldTypeLabels[type]}</option>
+                          ))}
+                        </select>
+                      </label>
 
-                <label className="admin-builder-field">
-                  <span>Langkah</span>
-                  <select
-                    value={field.pageId}
-                    onChange={(e) => updateField(field.id, { pageId: e.target.value })}
-                    className="admin-builder-select"
-                  >
-                    {form.pages.map((page, pageIndex) => (
-                      <option key={page.id} value={page.id}>{`Langkah ${pageIndex + 1}`}</option>
-                    ))}
-                  </select>
-                </label>
+                      <label className="admin-builder-field">
+                        <span>Langkah</span>
+                        <select
+                          value={field.pageId}
+                          onChange={(e) => updateField(field.id, { pageId: e.target.value })}
+                          className="admin-builder-select"
+                        >
+                          {form.pages.map((page, pageIndex) => (
+                            <option key={page.id} value={page.id}>{`Langkah ${pageIndex + 1}`}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
 
                 {(field.type === 'text' || field.type === 'textarea') && (
                   <label className="admin-builder-field">
@@ -1547,33 +1561,7 @@ export default function AdminFormEditor({ formId }: Props) {
           </div>
         )
           }))}
-          </div>
-          </section>
-
-          <section className={`admin-builder-panel editorial-form-editor-panel editorial-form-editor-preview-panel ${showMobilePreview ? '' : 'mobile-preview-hidden'}`}>
-          <h2>Pratinjau form</h2>
-          <p className="editorial-form-editor-section-note">
-            Gunakan pratinjau ini untuk mengecek urutan langkah dan pengalaman pengisi sebelum form dipublikasikan.
-          </p>
-          <div className="editorial-form-editor-preview-actions">
-            <button
-              type="button"
-              className="admin-link-btn"
-              onClick={() => handleOpenPreviewTab('desktop')}
-            >
-              Buka di tab baru
-            </button>
-            <button
-              type="button"
-              className="admin-link-btn"
-              onClick={() => handleOpenPreviewTab('mobile')}
-            >
-              Buka mode mobile
-            </button>
-          </div>
-          <AdminFormPreview
-            form={createPreviewForm(form)}
-          />
+            </div>
           </section>
         </div>
       </div>
