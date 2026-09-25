@@ -8,11 +8,18 @@ Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepa
 
 ## Current State
 Milestone **v1.4 UI Polish & Admin Experience Enhancement** has shipped (2026-08-28).
+Currently starting **Milestone v1.5 Admin Form Builder UX & Scalability Enhancement** (2026-09-25).
 
-**Accomplishments in v1.4:**
-- **Sticky Table Headers:** Baris `<thead>` pada tabel kiriman (`/admin/forms/[id]/submissions`) mengambang di atas saat scrolling dengan background solid adaptif di mode terang dan gelap (`TABLE-01`).
-- **Skeleton Shimmer Loaders:** Spinner statis digantikan dengan skeleton shimmer animation di `/admin/forms` (`LOAD-01`) dan `/admin/forms/[id]/submissions` (`LOAD-02`).
-- **Enhanced Empty States & Visual CTAs:** Visual ilustrasi SVG bertema dengan tombol Call-to-Action (CTA) kontekstual dan aksi pencarian reset di `/admin/forms` (`EMPTY-01`) dan `/admin/forms/[id]/submissions` (`EMPTY-02`).
+## Current Milestone: v1.5 Admin Form Builder UX & Scalability Enhancement
+
+**Goal:** Memodernisasi UI & UX Admin Form Editor agar pengelolaan formulir dengan puluhan field menjadi ringkas, terstruktur per langkah, cepat dinavigasi, dan nyaman disunting tanpa scroll vertikal tanpa akhir.
+
+**Target features:**
+- **Step Tabs Navigation:** Pengelompokan dan penyaringan field berdasarkan langkah aktif (Step Tabs) dengan opsi "Semua Langkah".
+- **Collapsible Field Cards & Compact View:** Kartu field dapat dilipat/dibuka secara individual maupun massal (Expand All / Collapse All) dengan ringkasan header (tipe, status wajib, opsi).
+- **Field Outline & Quick Jump Panel:** Panel samping navigasi hierarki untuk melompat langsung ke pertanyaan dan melakukan reorder cepat.
+- **Fast Field Manipulation:** Aksi duplikasi field, penambahan field langsung ke langkah yang sedang aktif, dan pemindahan antar langkah.
+- **Workspace Layout Polish:** Sticky action bar, visual density seimbang, status auto-save jelas, dan pengurangan visual clutter pada form panjang.
 
 ## Requirements
 
@@ -35,16 +42,20 @@ Milestone **v1.4 UI Polish & Admin Experience Enhancement** has shipped (2026-08
 - ✓ **EMPTY-02**: Minimalist SVG illustration & contextual guidance on `/admin/forms/[id]/submissions` (Validated in Phase 13)
 
 ### Active
-*(None — milestone v1.4 complete. Define next milestone with `/gsd-new-milestone`)*
+- **BUILDER-01**: Step Tabs Navigation — Navigasi tab langkah (Langkah 1, 2, ..., n, dan "Semua Langkah") untuk menyaring tampilan field sesuai langkah aktif di editor form.
+- **BUILDER-02**: Collapsible Field Cards & Header Badges — Kartu field compact secara default dengan badge ringkasan (tipe, required, opsi count, jump) dan tombol Expand/Collapse All.
+- **BUILDER-03**: Quick Outline / Field Jump Sidebar — Panel outline ringkas untuk melompat langsung ke field tertentu dan melihat peta pertanyaan form secara terstruktur.
+- **BUILDER-04**: Fast Field Actions (Duplicate & Active Step Insertion) — Menambahkan field baru langsung ke langkah yang sedang aktif dan tombol duplikasi field dalam 1 klik.
+- **BUILDER-05**: Editor Workspace & Sticky Bar Polish — Sticky header/toolbar tindakan, status sinkronisasi/auto-save yang lebih tenang, dan penyelarasan visual spacing.
 
 ### Out of Scope
-- Perubahan arsitektur basis data atau modifikasi skema Prisma (untuk v1.4).
-- Penambahan pustaka animasi JavaScript pihak ketiga (tetap menggunakan Vanilla CSS murni dan keyframe animations).
+- Perubahan arsitektur basis data atau skema SQL publik (struktur `pages` dan `fields` JSON sudah mendukung multi-step).
+- Pustaka drag-and-drop eksternal yang berat (menggunakan navigasi keyboard/tombol aksi instan dan HTML5 reorder ringan atau action-based move).
 
 ## Context
-- Tech Stack: Next.js (App Router), React 19, Vanilla CSS Design System (`globals.css`), Prisma, PostgreSQL.
-- Semua styling mengacu pada token warna institusional di `globals.css` (Ocean Teal, Slate, Ledger theme).
-- Milestone v1.4 selesai dengan peningkatan visual UI/UX & micro-interactions.
+- Tech Stack: Next.js 16 (App Router), React 19, Vanilla CSS Design System (`globals.css`), Prisma, PostgreSQL.
+- Form editor utama berada di `src/components/AdminFormEditor.tsx`.
+- Styling mengacu pada token tema institusional di `src/app/globals.css`.
 
 ## Key Decisions
 | Decision | Rationale | Outcome |
@@ -58,6 +69,7 @@ Milestone **v1.4 UI Polish & Admin Experience Enhancement** has shipped (2026-08
 | Pure CSS Animations | Menjaga performa render 60fps tanpa membebani bundle JS runtime | ✓ Selesai |
 | Sticky Table Headers & Skeleton Loaders | Meningkatkan kenyamanan visual dan persepsi performa saat navigasi data besar | ✓ Selesai |
 | Actionable SVG Empty States | Memberikan instruksi onboarding yang jelas dan langsung dapat ditindaklanjuti saat data kosong | ✓ Selesai |
+| Step-Centric Builder Architecture (v1.5) | Memecah tumpukan kartu field menjadi per langkah dan mode ringkas agar form besar tetap ringan dan mudah dikelola | Direncanakan |
 
 ## Evolution
 
@@ -77,4 +89,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-28 after completing v1.4 milestone*
+*Last updated: 2026-09-25 for Milestone v1.5*

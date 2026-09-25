@@ -1,18 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: UI Polish & Admin Experience Enhancement
-status: complete
-last_updated: "2026-08-28T06:16:00.000Z"
-last_activity: 2026-08-28
+milestone: v1.5
+milestone_name: Admin Form Builder UX & Scalability Enhancement
+status: planning
+last_updated: "2026-09-25T06:53:23.021Z"
+last_activity: 2026-09-25
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
-current_phase: 13
-current_phase_name: Enhanced Empty States & Visual CTAs
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State: UI Polish & Admin Experience Enhancement
@@ -26,9 +24,10 @@ See: [.planning/PROJECT.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.p
 
 ## Current Position
 
-Milestone: v1.4 UI Polish & Admin Experience Enhancement (Complete & Archived)
-Status: Complete
-Last activity: 2026-08-28 — Milestone v1.4 completed and archived
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-09-25 — Milestone v1.5 started
 
 ## Key Decisions
 
