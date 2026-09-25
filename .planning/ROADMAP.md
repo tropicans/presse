@@ -4,6 +4,7 @@
 
 - ✅ **v1.3 LLM Submission Analysis** — Phases 10-11 (shipped 2026-07-16)
 - ✅ **v1.4 UI Polish & Admin Experience Enhancement** — Phases 12-13 (shipped 2026-08-28)
+- 🟡 **v1.5 Admin Form Builder UX & Scalability Enhancement** — Phases 14-16 (in progress)
 
 ## Phases
 
@@ -27,6 +28,35 @@ See: [.planning/milestones/v1.4-ROADMAP.md](file:///c:/Users/yudhiar/Downloads/o
 
 </details>
 
+### 🟡 v1.5 Admin Form Builder UX & Scalability Enhancement (Phases 14-16)
+
+- [ ] **Phase 14: Step Tabs Navigation & Active-Step Insertion**
+  - **Goal:** Mengelompokkan tampilan field berdasarkan langkah aktif (Step Tabs) dengan badge jumlah field, indikasi langkah kosong, serta penambahan field baru langsung ke langkah yang sedang aktif.
+  - **Requirements:** BUILDER-01, BUILDER-02, BUILDER-09
+  - **Success Criteria:**
+    1. Bilah navigasi tab langkah merender tombol per langkah ditambah opsi "Semua Langkah" dengan badge jumlah field yang reaktif.
+    2. Memilih salah satu tab langkah memfilter daftar field di editor sehingga hanya field dari langkah tersebut yang tampil.
+    3. Menambahkan field baru melalui toolbar menyisipkan field langsung ke langkah yang sedang aktif.
+    4. Indikasi peringatan visual tampil jelas jika suatu langkah tidak memiliki field sama sekali.
+
+- [ ] **Phase 15: Collapsible Field Cards & Header Summaries**
+  - **Goal:** Menjadikan kartu field dapat dilipat (collapsed) secara default dengan ringkasan padat pada header kartu, serta tombol kontrol massal "Buka Semua" dan "Tutup Semua".
+  - **Requirements:** BUILDER-03, BUILDER-04, BUILDER-05
+  - **Success Criteria:**
+    1. Kartu field dapat dibuka (expand) atau dilipat (collapse) secara individual dengan mengklik baris header kartu.
+    2. Header kartu yang tertutup menyajikan nomor urut, label pertanyaan, pill tipe field, status required, dan badge jumlah opsi/skor kuis.
+    3. Interaksi klik pada tombol aksi di header (pindah urutan, hapus, duplikasi) tidak memicu toggle buka/tutup kartu.
+    4. Tombol aksi massal "Buka Semua" dan "Tutup Semua" berfungsi membuka atau menutup seluruh kartu field dalam satu klik.
+
+- [ ] **Phase 16: Outline Navigation Panel, 1-Click Duplicate & Sticky Toolbar Polish**
+  - **Goal:** Menghadirkan panel samping Outline untuk lompat cepat ke pertanyaan, fitur duplikasi field 1-klik, dan sticky toolbar yang menjaga tombol aksi tetap berada di jangkauan pengguna saat scrolling.
+  - **Requirements:** BUILDER-06, BUILDER-07, BUILDER-08, BUILDER-10
+  - **Success Criteria:**
+    1. Panel Outline samping menampilkan struktur hierarki langkah dan daftar seluruh pertanyaan formulir secara teratur.
+    2. Mengklik item di Outline secara otomatis menggeser viewport (`scrollIntoView`), mengalihkan tab langkah aktif bila perlu, dan membuka (auto-expand) kartu field target.
+    3. Tombol aksi "Duplikasi" menggandakan field beserta seluruh konfigurasi opsinya secara instan tepat di bawah field asal pada langkah yang sama.
+    4. Action header & toolbar tetap sticky saat scroll vertikal dengan status auto-save yang jelas dan tenang.
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -35,3 +65,10 @@ See: [.planning/milestones/v1.4-ROADMAP.md](file:///c:/Users/yudhiar/Downloads/o
 | 11. Frontend Integration & Markdown Rendering | v1.3 | 1/1 | Complete | 2026-07-16 |
 | 12. Sticky Table Headers & Skeleton Shimmer Loaders | v1.4 | 1/1 | Complete | 2026-08-28 |
 | 13. Enhanced Empty States & Visual CTAs | v1.4 | 1/1 | Complete | 2026-08-28 |
+| 14. Step Tabs Navigation & Active-Step Insertion | v1.5 | 0/1 | Planned | — |
+| 15. Collapsible Field Cards & Header Summaries | v1.5 | 0/1 | Planned | — |
+| 16. Outline Navigation Panel, 1-Click Duplicate & Sticky Toolbar Polish | v1.5 | 0/1 | Planned | — |
+
+---
+
+*Roadmap generated: 2026-09-25*

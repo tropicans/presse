@@ -44,16 +44,16 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILDER-01 | | Pending |
-| BUILDER-02 | | Pending |
-| BUILDER-03 | | Pending |
-| BUILDER-04 | | Pending |
-| BUILDER-05 | | Pending |
-| BUILDER-06 | | Pending |
-| BUILDER-07 | | Pending |
-| BUILDER-08 | | Pending |
-| BUILDER-09 | | Pending |
-| BUILDER-10 | | Pending |
+| BUILDER-01 | Phase 14 | Planned |
+| BUILDER-02 | Phase 14 | Planned |
+| BUILDER-03 | Phase 15 | Planned |
+| BUILDER-04 | Phase 15 | Planned |
+| BUILDER-05 | Phase 15 | Planned |
+| BUILDER-06 | Phase 16 | Planned |
+| BUILDER-07 | Phase 16 | Planned |
+| BUILDER-08 | Phase 16 | Planned |
+| BUILDER-09 | Phase 14 | Planned |
+| BUILDER-10 | Phase 16 | Planned |
 
 ---
 
