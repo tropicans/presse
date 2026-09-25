@@ -143,6 +143,10 @@ export default function AdminFormEditor({ formId }: Props) {
   const [bulkText, setBulkText] = useState('')
   const [bulkFieldId, setBulkFieldId] = useState<string | null>(null)
   const [showMobilePreview, setShowMobilePreview] = useState(false)
+  const [activeStepTab, setActiveStepTab] = useState<string>('all')
+  const [collapsedFieldIds, setCollapsedFieldIds] = useState<Set<string>>(new Set())
+  const [showOutline, setShowOutline] = useState(false)
+  const [highlightedFieldId, setHighlightedFieldId] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -160,6 +164,7 @@ export default function AdminFormEditor({ formId }: Props) {
 
         setForm(json.data)
         setLastSavedSnapshot(createFormSnapshot(json.data))
+        setActiveStepTab(json.data.pages[0]?.id ?? 'all')
       } catch {
         setError('Gagal memuat form')
       } finally {
@@ -202,6 +207,12 @@ export default function AdminFormEditor({ formId }: Props) {
 
     return createFormSnapshot(form) !== lastSavedSnapshot
   }, [form, lastSavedSnapshot])
+
+  const visibleFields = useMemo(() => {
+    if (!form) return []
+    if (activeStepTab === 'all') return form.fields
+    return form.fields.filter((field) => field.pageId === activeStepTab)
+  }, [form, activeStepTab])
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -299,6 +310,89 @@ export default function AdminFormEditor({ formId }: Props) {
         fields: current.fields.filter((field) => field.id !== fieldId),
       }
     })
+    setCollapsedFieldIds((prev) => {
+      const next = new Set(prev)
+      next.delete(fieldId)
+      return next
+    })
+  }
+
+  const toggleFieldCollapse = (fieldId: string) => {
+    setCollapsedFieldIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(fieldId)) {
+        next.delete(fieldId)
+      } else {
+        next.add(fieldId)
+      }
+      return next
+    })
+  }
+
+  const expandAll = () => {
+    setCollapsedFieldIds(new Set())
+  }
+
+  const collapseAll = () => {
+    if (!form) return
+    setCollapsedFieldIds(new Set(visibleFields.map((f) => f.id)))
+  }
+
+  const duplicateField = (fieldId: string) => {
+    setForm((current) => {
+      if (!current) return current
+
+      const index = current.fields.findIndex((f) => f.id === fieldId)
+      if (index === -1) return current
+
+      const source = current.fields[index]
+      const cloneId = `new-${crypto.randomUUID()}`
+      const clonedField: EditableField = {
+        ...source,
+        id: cloneId,
+        label: source.label ? `${source.label} (Salinan)` : 'Salinan Pertanyaan',
+        options: source.options.map((opt) => ({ ...opt })),
+      }
+
+      setCollapsedFieldIds((prev) => {
+        const next = new Set(prev)
+        next.delete(cloneId)
+        return next
+      })
+
+      const nextFields = [...current.fields]
+      nextFields.splice(index + 1, 0, clonedField)
+
+      return {
+        ...current,
+        fields: nextFields,
+      }
+    })
+  }
+
+  const handleJumpToField = (fieldId: string, pageId: string) => {
+    if (activeStepTab !== 'all' && activeStepTab !== pageId) {
+      setActiveStepTab(pageId)
+    }
+
+    setCollapsedFieldIds((prev) => {
+      if (!prev.has(fieldId)) return prev
+      const next = new Set(prev)
+      next.delete(fieldId)
+      return next
+    })
+
+    setHighlightedFieldId(fieldId)
+    setTimeout(() => {
+      const el = document.getElementById(`field-card-${fieldId}`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
+
+    setTimeout(() => {
+      setHighlightedFieldId((prev) => (prev === fieldId ? null : prev))
+    }, 2000)
   }
 
   const moveField = (fieldId: string, direction: 'up' | 'down') => {
@@ -324,23 +418,47 @@ export default function AdminFormEditor({ formId }: Props) {
   const addField = (type: EditableField['type']) => {
     setForm((current) => {
       if (!current) return current
-      const targetPageId = current.pages[current.pages.length - 1]?.id ?? 'page-1'
+      const targetPageId =
+        activeStepTab !== 'all' && current.pages.some((page) => page.id === activeStepTab)
+          ? activeStepTab
+          : current.pages[current.pages.length - 1]?.id ?? 'page-1'
+
+      const newField = createField(type, targetPageId)
+      setCollapsedFieldIds((prev) => {
+        const next = new Set(prev)
+        next.delete(newField.id)
+        return next
+      })
+
+      const lastIndexInPage = current.fields.reduce((lastIdx, field, idx) => {
+        return field.pageId === targetPageId ? idx : lastIdx
+      }, -1)
+
+      const nextFields = [...current.fields]
+      if (lastIndexInPage !== -1) {
+        nextFields.splice(lastIndexInPage + 1, 0, newField)
+      } else {
+        nextFields.push(newField)
+      }
+
       return {
         ...current,
-        fields: [...current.fields, createField(type, targetPageId)],
+        fields: nextFields,
       }
     })
   }
 
   const addPage = () => {
+    const newPage = createPage()
     setForm((current) => {
       if (!current) return current
 
       return {
         ...current,
-        pages: [...current.pages, createPage()],
+        pages: [...current.pages, newPage],
       }
     })
+    setActiveStepTab(newPage.id)
   }
 
   const removePage = (pageId: string) => {
@@ -362,6 +480,7 @@ export default function AdminFormEditor({ formId }: Props) {
         )),
       }
     })
+    setActiveStepTab((currentTab) => (currentTab === pageId ? 'all' : currentTab))
   }
 
   const updateOption = (
@@ -952,7 +1071,118 @@ export default function AdminFormEditor({ formId }: Props) {
               ))}
             </div>
           </div>
+          <div className="admin-outline-panel">
+            <div
+              className="admin-outline-header"
+              onClick={() => setShowOutline((prev) => !prev)}
+              role="button"
+              tabIndex={0}
+              aria-expanded={showOutline}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setShowOutline((prev) => !prev)
+                }
+              }}
+            >
+              <div className="admin-outline-header-left">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6" />
+                  <line x1="8" y1="12" x2="21" y2="12" />
+                  <line x1="8" y1="18" x2="21" y2="18" />
+                  <line x1="3" y1="6" x2="3.01" y2="6" />
+                  <line x1="3" y1="12" x2="3.01" y2="12" />
+                  <line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+                <strong>Peta Navigasi Formulir (Outline)</strong>
+                <small>({form.fields.length} pertanyaan)</small>
+              </div>
+              <span className={`admin-builder-chevron ${showOutline ? '' : 'collapsed'}`}>▼</span>
+            </div>
+
+            {showOutline && (
+              <div className="admin-outline-body">
+                {form.pages.map((page, pageIdx) => {
+                  const stepFields = form.fields.filter((f) => f.pageId === page.id)
+                  return (
+                    <div key={page.id} className="admin-outline-step-group">
+                      <div className="admin-outline-step-title">
+                        <span>{`Langkah ${pageIdx + 1}`}</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--ledger-muted)' }}>({stepFields.length} field)</span>
+                      </div>
+                      {stepFields.length === 0 ? (
+                        <small style={{ color: 'var(--ledger-muted)', paddingLeft: '8px', fontStyle: 'italic' }}>
+                          Belum ada field di langkah ini
+                        </small>
+                      ) : (
+                        <div className="admin-outline-list">
+                          {stepFields.map((f) => {
+                            const globalIdx = form.fields.findIndex((item) => item.id === f.id)
+                            return (
+                              <button
+                                key={f.id}
+                                type="button"
+                                className={`admin-outline-item ${highlightedFieldId === f.id ? 'active' : ''}`}
+                                onClick={() => handleJumpToField(f.id, f.pageId)}
+                              >
+                                <span className="admin-outline-item-index">#{globalIdx + 1}</span>
+                                <span className="admin-outline-item-label">{f.label || f.name || 'Pertanyaan tanpa label'}</span>
+                                <span className="admin-outline-item-type">{fieldTypeLabels[f.type]}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+          <div className="admin-step-tabs-container">
+            <div className="admin-step-tabs" role="tablist" aria-label="Navigasi Langkah Formulir">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeStepTab === 'all'}
+                className={`admin-step-tab ${activeStepTab === 'all' ? 'active' : ''}`}
+                onClick={() => setActiveStepTab('all')}
+              >
+                <span>Semua Langkah</span>
+                <span className="admin-step-tab-badge">{form.fields.length}</span>
+              </button>
+              {form.pages.map((page, index) => {
+                const count = getStepFieldCount(page.id)
+                const isActive = activeStepTab === page.id
+                return (
+                  <button
+                    key={page.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={`admin-step-tab ${isActive ? 'active' : ''}`}
+                    onClick={() => setActiveStepTab(page.id)}
+                  >
+                    <span>{`Langkah ${index + 1}`}</span>
+                    <span
+                      className={`admin-step-tab-badge ${count === 0 ? 'empty' : ''}`}
+                      title={count === 0 ? 'Langkah ini belum memiliki field' : undefined}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
           <div className="admin-builder-toolbar">
+            <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span className="admin-builder-toolbar-target-pill">
+                {activeStepTab === 'all'
+                  ? `Menambahkan ke: ${getStepLabel(form.pages[form.pages.length - 1]?.id ?? '')}`
+                  : `Menambahkan ke: ${getStepLabel(activeStepTab)}`}
+              </span>
+            </div>
             {fieldTypeOptions.map((type) => (
               <button
                 key={type}
@@ -965,41 +1195,131 @@ export default function AdminFormEditor({ formId }: Props) {
             ))}
           </div>
           <div className="admin-builder-fields">
-            {form.fields.map((field, index) => (
-                <div key={field.id} className="admin-builder-card">
-                  <div className="admin-builder-card-head">
-                    <strong>{field.label || field.name}</strong>
-                    <div className="admin-builder-card-actions">
-                      <span>{fieldTypeLabels[field.type]}</span>
-                    <button
-                      type="button"
-                      onClick={() => moveField(field.id, 'up')}
-                      className="admin-builder-icon-btn"
-                      disabled={index === 0}
-                      aria-label={`Pindahkan ${field.label || field.name} ke atas`}
+            <div className="admin-builder-mass-controls" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '0.82rem', color: 'var(--ledger-muted)', fontWeight: 600 }}>
+                {visibleFields.length} pertanyaan {activeStepTab !== 'all' ? 'di langkah ini' : 'total'}
+              </span>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={expandAll}
+                  className="admin-builder-mass-btn"
+                >
+                  Buka Semua
+                </button>
+                <span style={{ color: 'var(--ledger-muted)', fontSize: '0.8rem' }}>•</span>
+                <button
+                  type="button"
+                  onClick={collapseAll}
+                  className="admin-builder-mass-btn"
+                >
+                  Tutup Semua
+                </button>
+              </div>
+            </div>
+            {visibleFields.length === 0 && activeStepTab !== 'all' ? (
+              <div className="admin-step-empty-card">
+                <p>Langkah ini belum memiliki field.</p>
+                <small>Gunakan tombol tipe field di toolbar atas untuk menambahkan pertanyaan langsung ke langkah ini.</small>
+              </div>
+            ) : (
+              visibleFields.map((field) => {
+                const globalIndex = form.fields.findIndex((f) => f.id === field.id)
+                const isCollapsed = collapsedFieldIds.has(field.id)
+                return (
+                <div key={field.id} id={`field-card-${field.id}`} className={`admin-builder-card ${isCollapsed ? 'collapsed' : ''} ${highlightedFieldId === field.id ? 'admin-builder-card-highlight' : ''}`}>
+                  <div
+                    className="admin-builder-card-head clickable"
+                    onClick={() => toggleFieldCollapse(field.id)}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={!isCollapsed}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        toggleFieldCollapse(field.id)
+                      }
+                    }}
+                  >
+                    <div className="admin-builder-card-head-left">
+                      <span className={`admin-builder-chevron ${isCollapsed ? 'collapsed' : ''}`} aria-hidden="true">
+                        ▼
+                      </span>
+                      <span className="admin-builder-card-index-pill">
+                        #{globalIndex + 1}
+                      </span>
+                      <div className="admin-builder-card-title-group">
+                        <strong className="admin-builder-card-title-text" title={field.label || field.name}>
+                          {field.label || field.name || 'Pertanyaan tanpa label'}
+                        </strong>
+                        <span className="admin-builder-pill type">
+                          {fieldTypeLabels[field.type]}
+                        </span>
+                        {field.required && (
+                          <span className="admin-builder-pill required">
+                            Wajib
+                          </span>
+                        )}
+                        {(field.type === 'radio' || field.type === 'select' || field.type === 'likert') && (
+                          <span className="admin-builder-pill meta">
+                            {field.options.length} Opsi
+                          </span>
+                        )}
+                        {usesQuizScoring && field.type === 'radio' && (
+                          <span className="admin-builder-pill score">
+                            {field.options.find((o) => o.isCorrect) ? 'Kuis (1 Benar)' : 'Non-Skor'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div
+                      className="admin-builder-card-actions"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveField(field.id, 'down')}
-                      className="admin-builder-icon-btn"
-                      disabled={index === form.fields.length - 1}
-                      aria-label={`Pindahkan ${field.label || field.name} ke bawah`}
-                    >
-                      ↓
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeField(field.id)}
-                      className="admin-builder-icon-btn danger"
-                      disabled={form.fields.length === 1}
-                      aria-label={`Hapus field ${field.label || field.name}`}
-                    >
-                      ✕
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => moveField(field.id, 'up')}
+                        className="admin-builder-icon-btn"
+                        disabled={globalIndex === 0}
+                        aria-label={`Pindahkan ${field.label || field.name} ke atas`}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveField(field.id, 'down')}
+                        className="admin-builder-icon-btn"
+                        disabled={globalIndex === form.fields.length - 1}
+                        aria-label={`Pindahkan ${field.label || field.name} ke bawah`}
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => duplicateField(field.id)}
+                        className="admin-builder-icon-btn duplicate"
+                        title="Duplikasi pertanyaan ini"
+                        aria-label={`Duplikasi field ${field.label || field.name}`}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeField(field.id)}
+                        className="admin-builder-icon-btn danger"
+                        disabled={form.fields.length === 1}
+                        aria-label={`Hapus field ${field.label || field.name}`}
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                </div>
+
+                  {!isCollapsed && (
+                  <div className="admin-builder-card-body" style={{ display: 'grid', gap: '16px' }}>
 
                 <label className="admin-builder-field">
                   <span>Tipe</span>
@@ -1223,7 +1543,10 @@ export default function AdminFormEditor({ formId }: Props) {
                   Wajib diisi
                 </label>
               </div>
-            ))}
+            )}
+          </div>
+        )
+          }))}
           </div>
           </section>
 

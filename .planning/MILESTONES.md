@@ -1,5 +1,20 @@
 # Milestones
 
+## v1.5 Admin Form Builder UX & Scalability Enhancement (Shipped: 2026-09-25)
+
+**Phases completed:** 3 phases, 3 plans, 9 tasks
+
+**Key accomplishments:**
+
+- Implemented Step Tabs navigation bar with real-time field count badges, empty-step visual indicators, and automatic active-step field insertion.
+- Created collapsible field cards with interactive accordion toggles, isolated action buttons, and high-density summary headers displaying question index, label, type, required status, and option/quiz score counts.
+- Added mass controls ("Buka Semua" & "Tutup Semua") for instant macro overview and audit of complex forms.
+- Introduced an interactive Outline Navigation panel ("Peta Formulir") allowing 1-click smooth jump to any question across steps with auto-expand and luminous target card highlight.
+- Added 1-click field duplication with deep option cloning and immediate in-step positioning.
+- Polished sticky action header and toolbar with backdrop-filter blur and dark theme support for continuous editing flow.
+
+---
+
 ## v1.4 UI Polish & Admin Experience Enhancement (Shipped: 2026-08-28)
 
 **Phases completed:** 2 phases, 2 plans, 6 tasks

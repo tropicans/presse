@@ -7,19 +7,28 @@ Platform pengelolaan formulir publik, kiriman (submissions), dan dashboard admin
 Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
 
 ## Current State
-Milestone **v1.4 UI Polish & Admin Experience Enhancement** has shipped (2026-08-28).
-Currently starting **Milestone v1.5 Admin Form Builder UX & Scalability Enhancement** (2026-09-25).
+Milestone **v1.5 Admin Form Builder UX & Scalability Enhancement** has shipped (2026-09-25).
+All 16 phases across milestones v1.1 - v1.5 are complete and verified.
 
-## Current Milestone: v1.5 Admin Form Builder UX & Scalability Enhancement
+## Next Milestone Goals
+Milestone **v1.6** will be determined via `/gsd-new-milestone`. Potential areas:
+- Form section templates & reusable block snippets
+- Public form response analytics charts & visualizations
+- Advanced conditional display logic preview within the builder
+
+<details>
+<summary>Archived Milestone v1.5: Admin Form Builder UX & Scalability Enhancement</summary>
 
 **Goal:** Memodernisasi UI & UX Admin Form Editor agar pengelolaan formulir dengan puluhan field menjadi ringkas, terstruktur per langkah, cepat dinavigasi, dan nyaman disunting tanpa scroll vertikal tanpa akhir.
 
-**Target features:**
+**Delivered features:**
 - **Step Tabs Navigation:** Pengelompokan dan penyaringan field berdasarkan langkah aktif (Step Tabs) dengan opsi "Semua Langkah".
 - **Collapsible Field Cards & Compact View:** Kartu field dapat dilipat/dibuka secara individual maupun massal (Expand All / Collapse All) dengan ringkasan header (tipe, status wajib, opsi).
 - **Field Outline & Quick Jump Panel:** Panel samping navigasi hierarki untuk melompat langsung ke pertanyaan dan melakukan reorder cepat.
 - **Fast Field Manipulation:** Aksi duplikasi field, penambahan field langsung ke langkah yang sedang aktif, dan pemindahan antar langkah.
 - **Workspace Layout Polish:** Sticky action bar, visual density seimbang, status auto-save jelas, dan pengurangan visual clutter pada form panjang.
+
+</details>
 
 ## Requirements
 
@@ -40,13 +49,16 @@ Currently starting **Milestone v1.5 Admin Form Builder UX & Scalability Enhancem
 - ✓ **LOAD-02**: Skeleton shimmer loading animation on `/admin/forms/[id]/submissions` (Validated in Phase 12)
 - ✓ **EMPTY-01**: Minimalist SVG illustration & "Buat Formulir Baru" CTA button on `/admin/forms` (Validated in Phase 13)
 - ✓ **EMPTY-02**: Minimalist SVG illustration & contextual guidance on `/admin/forms/[id]/submissions` (Validated in Phase 13)
-
-### Active
-- **BUILDER-01**: Step Tabs Navigation — Navigasi tab langkah (Langkah 1, 2, ..., n, dan "Semua Langkah") untuk menyaring tampilan field sesuai langkah aktif di editor form.
-- **BUILDER-02**: Collapsible Field Cards & Header Badges — Kartu field compact secara default dengan badge ringkasan (tipe, required, opsi count, jump) dan tombol Expand/Collapse All.
-- **BUILDER-03**: Quick Outline / Field Jump Sidebar — Panel outline ringkas untuk melompat langsung ke field tertentu dan melihat peta pertanyaan form secara terstruktur.
-- **BUILDER-04**: Fast Field Actions (Duplicate & Active Step Insertion) — Menambahkan field baru langsung ke langkah yang sedang aktif dan tombol duplikasi field dalam 1 klik.
-- **BUILDER-05**: Editor Workspace & Sticky Bar Polish — Sticky header/toolbar tindakan, status sinkronisasi/auto-save yang lebih tenang, dan penyelarasan visual spacing.
+- ✓ **BUILDER-01**: Step Tabs Navigation — Navigasi tab langkah (Langkah 1, 2, ..., n, dan "Semua Langkah") untuk menyaring tampilan field sesuai langkah aktif di editor form (Validated in Phase 14)
+- ✓ **BUILDER-02**: Step Field Count & Empty Indicator — Bilah tab langkah menampilkan indikator jumlah field pada setiap tab dan indikasi visual jika suatu langkah masih kosong (Validated in Phase 14)
+- ✓ **BUILDER-03**: Collapsible Field Cards — Kartu field dapat dilipat dan dibuka secara individual dengan isolasi event klik (Validated in Phase 15)
+- ✓ **BUILDER-04**: Informative Collapsed Headers — Header kartu field yang tertutup menyajikan nomor urut, label pertanyaan, pill tipe field, badge wajib, dan jumlah opsi/poin kuis (Validated in Phase 15)
+- ✓ **BUILDER-05**: Mass Accordion Controls — Tombol "Buka Semua" dan "Tutup Semua" untuk audit makro formulir (Validated in Phase 15)
+- ✓ **BUILDER-06**: Outline Navigation Panel — Panel samping navigasi hierarki langkah dan daftar pertanyaan ("Peta Formulir") (Validated in Phase 16)
+- ✓ **BUILDER-07**: Smooth Quick Jump with Auto-Expand — Lompat langsung ke field target, auto-switch tab, auto-buka kartu, dan animasi sorotan glowing (Validated in Phase 16)
+- ✓ **BUILDER-08**: 1-Click Field Duplicate — Duplikasi field instan beserta konfigurasi dan opsi pada langkah yang sama (Validated in Phase 16)
+- ✓ **BUILDER-09**: Active Step Field Insertion — Field baru otomatis ditambahkan ke langkah yang sedang aktif (Validated in Phase 14)
+- ✓ **BUILDER-10**: Sticky Workspace Header & Toolbar — Sticky action header dan toolbar yang menjaga tombol kontrol tetap dalam jangkauan (Validated in Phase 16)
 
 ### Out of Scope
 - Perubahan arsitektur basis data atau skema SQL publik (struktur `pages` dan `fields` JSON sudah mendukung multi-step).
@@ -69,7 +81,8 @@ Currently starting **Milestone v1.5 Admin Form Builder UX & Scalability Enhancem
 | Pure CSS Animations | Menjaga performa render 60fps tanpa membebani bundle JS runtime | ✓ Selesai |
 | Sticky Table Headers & Skeleton Loaders | Meningkatkan kenyamanan visual dan persepsi performa saat navigasi data besar | ✓ Selesai |
 | Actionable SVG Empty States | Memberikan instruksi onboarding yang jelas dan langsung dapat ditindaklanjuti saat data kosong | ✓ Selesai |
-| Step-Centric Builder Architecture (v1.5) | Memecah tumpukan kartu field menjadi per langkah dan mode ringkas agar form besar tetap ringan dan mudah dikelola | Direncanakan |
+| Step-Centric Builder Architecture (v1.5) | Memecah tumpukan kartu field menjadi per langkah dan mode ringkas agar form besar tetap ringan dan mudah dikelola | ✓ Selesai |
+| Zero External DND/Animation Libs | Menghindari beban bundle JS dan konflik sentuh di tablet/mobile dengan mengandalkan tombol aksi instan & native CSS | ✓ Selesai |
 
 ## Evolution
 

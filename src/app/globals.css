@@ -4163,6 +4163,543 @@ html[data-theme='dark'] .forms-dashboard-table thead th {
   background: rgba(236, 238, 240, 0.82);
 }
 
+/* Step Tabs Navigation & Active Indicators (v1.5 Phase 14) */
+.admin-step-tabs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.admin-step-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-step-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(194, 199, 207, 0.38);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ledger-secondary);
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-step-tab:hover {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(0, 72, 63, 0.35);
+  transform: translateY(-1px);
+}
+
+.admin-step-tab.active {
+  background: var(--ledger-secondary, #00483f);
+  border-color: var(--ledger-secondary, #00483f);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 72, 63, 0.22);
+}
+
+.admin-step-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(0, 72, 63, 0.12);
+  color: var(--ledger-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  transition: all 0.18s ease;
+}
+
+.admin-step-tab.active .admin-step-tab-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.admin-step-tab-badge.empty {
+  background: rgba(217, 119, 6, 0.18);
+  color: #b45309;
+  border: 1px solid rgba(217, 119, 6, 0.32);
+}
+
+.admin-step-tab.active .admin-step-tab-badge.empty {
+  background: #f59e0b;
+  color: #78350f;
+  border: none;
+}
+
+.admin-builder-toolbar-target-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 72, 63, 0.08);
+  color: var(--ledger-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.admin-step-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 42px 24px;
+  border: 2px dashed rgba(194, 199, 207, 0.45);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.5);
+  margin-top: 12px;
+}
+
+.admin-step-empty-card p {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--ledger-secondary);
+}
+
+.admin-step-empty-card small {
+  color: var(--ledger-muted);
+  font-size: 0.85rem;
+}
+
+/* Dark mode overrides for Step Tabs */
+html[data-theme='dark'] .admin-step-tab {
+  background: rgba(21, 35, 48, 0.7);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+html[data-theme='dark'] .admin-step-tab:hover {
+  background: rgba(30, 48, 64, 0.9);
+  border-color: rgba(77, 182, 172, 0.4);
+}
+
+html[data-theme='dark'] .admin-step-tab.active {
+  background: #00796b;
+  border-color: #00796b;
+  color: #ffffff;
+}
+
+html[data-theme='dark'] .admin-step-tab-badge {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+html[data-theme='dark'] .admin-step-tab-badge.empty {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+html[data-theme='dark'] .admin-builder-toolbar-target-pill {
+  background: rgba(0, 121, 107, 0.2);
+  color: #80cbc4;
+}
+
+html[data-theme='dark'] .admin-step-empty-card {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(18, 30, 42, 0.5);
+}
+
+html[data-theme='dark'] .admin-step-empty-card p {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Collapsible Field Cards & Header Summaries (v1.5 Phase 15) */
+.editorial-form-editor-shell .admin-builder-card {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.editorial-form-editor-shell .admin-builder-card.collapsed {
+  padding: 14px 18px;
+  background: rgba(246, 248, 250, 0.88);
+}
+
+.editorial-form-editor-shell .admin-builder-card-head.clickable {
+  cursor: pointer;
+  user-select: none;
+  border-radius: 12px;
+  padding: 4px 6px;
+  margin: -4px -6px 12px;
+  transition: background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.editorial-form-editor-shell .admin-builder-card.collapsed .admin-builder-card-head.clickable {
+  margin-bottom: -4px;
+}
+
+.editorial-form-editor-shell .admin-builder-card-head.clickable:hover {
+  background: rgba(0, 72, 63, 0.04);
+}
+
+.admin-builder-card-head-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-builder-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--ledger-muted);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.admin-builder-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.admin-builder-card-index-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ledger-muted);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 7px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.admin-builder-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.admin-builder-card-title-text {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ledger-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+
+.admin-builder-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-builder-pill.type {
+  background: rgba(0, 72, 63, 0.09);
+  color: var(--ledger-secondary);
+}
+
+.admin-builder-pill.required {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.admin-builder-pill.meta {
+  background: rgba(100, 116, 139, 0.1);
+  color: #475569;
+}
+
+.admin-builder-pill.score {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.admin-builder-mass-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+}
+
+.admin-builder-mass-btn {
+  background: none;
+  border: none;
+  color: var(--ledger-secondary);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.admin-builder-mass-btn:hover {
+  background: rgba(0, 72, 63, 0.08);
+}
+
+/* Dark mode for Collapsible Cards */
+html[data-theme='dark'] .editorial-form-editor-shell .admin-builder-card.collapsed {
+  background: rgba(18, 30, 42, 0.65);
+}
+
+html[data-theme='dark'] .editorial-form-editor-shell .admin-builder-card-head.clickable:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme='dark'] .admin-builder-card-index-pill {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+html[data-theme='dark'] .admin-builder-card-title-text {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+html[data-theme='dark'] .admin-builder-pill.type {
+  background: rgba(0, 121, 107, 0.22);
+  color: #80cbc4;
+}
+
+html[data-theme='dark'] .admin-builder-pill.required {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+html[data-theme='dark'] .admin-builder-pill.meta {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+}
+
+html[data-theme='dark'] .admin-builder-pill.score {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+
+html[data-theme='dark'] .admin-builder-mass-btn {
+  color: #80cbc4;
+}
+
+html[data-theme='dark'] .admin-builder-mass-btn:hover {
+  background: rgba(0, 121, 107, 0.2);
+}
+
+/* Outline Navigation, 1-Click Duplicate & Sticky Toolbar (v1.5 Phase 16) */
+.editorial-form-editor-shell .admin-builder-toolbar {
+  position: sticky;
+  top: 80px;
+  z-index: 15;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(194, 199, 207, 0.35);
+  box-shadow: 0 10px 28px rgba(25, 28, 30, 0.06);
+  transition: all 0.2s ease;
+}
+
+@keyframes pulseTargetCard {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 72, 63, 0.5);
+    transform: scale(1);
+  }
+  30% {
+    box-shadow: 0 0 0 8px rgba(0, 72, 63, 0.28);
+    transform: scale(1.008);
+  }
+  100% {
+    box-shadow: inset 0 0 0 1px rgba(194, 199, 207, 0.14);
+    transform: scale(1);
+  }
+}
+
+.admin-builder-card-highlight {
+  animation: pulseTargetCard 1.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-outline-panel {
+  border-radius: 20px;
+  border: 1px solid rgba(194, 199, 207, 0.28);
+  background: rgba(255, 255, 255, 0.76);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.admin-outline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-outline-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-outline-header strong {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ledger-secondary);
+}
+
+.admin-outline-header small {
+  font-size: 0.75rem;
+  color: var(--ledger-muted);
+}
+
+.admin-outline-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(194, 199, 207, 0.18);
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.admin-outline-step-group {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-outline-step-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ledger-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-outline-list {
+  display: grid;
+  gap: 4px;
+  padding-left: 8px;
+}
+
+.admin-outline-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--ledger-ink);
+  font-family: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.admin-outline-item:hover {
+  background: rgba(0, 72, 63, 0.08);
+  color: var(--ledger-secondary);
+}
+
+.admin-outline-item-index {
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ledger-muted);
+  min-width: 22px;
+}
+
+.admin-outline-item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-outline-item-type {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ledger-muted);
+}
+
+.admin-builder-icon-btn.duplicate {
+  color: var(--ledger-secondary);
+}
+
+.admin-builder-icon-btn.duplicate:hover {
+  background: rgba(0, 72, 63, 0.12);
+}
+
+/* Dark mode for Phase 16 */
+html[data-theme='dark'] .editorial-form-editor-shell .admin-builder-toolbar {
+  background: rgba(15, 26, 36, 0.94);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme='dark'] .admin-outline-panel {
+  background: rgba(18, 30, 42, 0.7);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme='dark'] .admin-outline-header strong {
+  color: #80cbc4;
+}
+
+html[data-theme='dark'] .admin-outline-body {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme='dark'] .admin-outline-item {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+html[data-theme='dark'] .admin-outline-item:hover {
+  background: rgba(0, 121, 107, 0.2);
+  color: #ffffff;
+}
+
+html[data-theme='dark'] .admin-outline-item-type {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+html[data-theme='dark'] .admin-builder-icon-btn.duplicate {
+  color: #80cbc4;
+}
+
 .editorial-form-editor-preview-actions {
   display: flex;
   justify-content: flex-end;
