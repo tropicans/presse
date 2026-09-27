@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Overview
-- `isian`: Next.js 16 App Router app for public form submission and admin form management.
+- `HIMPUN` (formerly `isian`): Next.js 16 App Router app for public form submission and admin form management.
 - Root `/` redirects by admin session to `/admin/forms` or `/admin/login`.
 - Public users submit at `/f/[slug]`, then land on `/success?slug=<slug>&submissionId=<id>`.
 - UI copy is mostly Indonesian; keep new user-facing strings consistent unless task says otherwise.

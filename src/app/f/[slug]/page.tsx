@@ -16,14 +16,14 @@ export async function generateMetadata({ params }: PublicFormPageProps): Promise
 
   if (!form) {
     return {
-      title: 'Form Tidak Ditemukan | isian',
+      title: 'Form Tidak Ditemukan | HIMPUN',
       description: 'Form yang Anda cari tidak tersedia atau belum dipublikasikan.',
     }
   }
 
   return {
-    title: `${form.title} | isian`,
-    description: form.description || 'Isi form isian dengan data yang benar sebelum dikirim.',
+    title: `${form.title} | HIMPUN`,
+    description: form.description || 'Isi formulir HIMPUN dengan data yang benar sebelum dikirim.',
   }
 }
 

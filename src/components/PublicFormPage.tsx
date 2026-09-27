@@ -17,7 +17,7 @@ export default function PublicFormPage({ form }: PublicFormPageProps) {
         <Link href="/f/attendance-template" className="public-ledger-brand">
           <div className="public-ledger-brand-mark" aria-hidden="true" />
           <div>
-            <strong>isian</strong>
+            <strong>HIMPUN</strong>
             <span>Portal pengisian</span>
           </div>
         </Link>

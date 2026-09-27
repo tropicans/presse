@@ -285,7 +285,7 @@ export default function AdminFormsList() {
         <div className="forms-dashboard-brand">
           <div className="forms-dashboard-brand-mark" aria-hidden="true" />
           <div>
-            <strong>isian</strong>
+            <strong>HIMPUN</strong>
             <span>Dashboard admin formulir</span>
           </div>
         </div>

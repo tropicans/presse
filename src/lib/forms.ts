@@ -3083,7 +3083,7 @@ export async function exportAdminFormSubmissionsWorkbook(
   ]
   const headersWithMeta = ['Waktu Submit', ...metaHeaders, ...exportableColumns.map((column) => column.label)]
   const workbook = new ExcelJS.Workbook()
-  workbook.creator = 'isian'
+  workbook.creator = 'HIMPUN'
   workbook.created = new Date()
 
   const sheet = workbook.addWorksheet('Kiriman')

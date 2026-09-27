@@ -17,7 +17,7 @@ export async function generateMetadata({ searchParams }: SuccessPageProps): Prom
 
   if (!form) {
     return {
-      title: 'Pengiriman Berhasil | isian',
+      title: 'Pengiriman Berhasil | HIMPUN',
       description: 'Terima kasih, data Anda telah berhasil dikirim.',
     }
   }

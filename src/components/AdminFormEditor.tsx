@@ -862,7 +862,7 @@ export default function AdminFormEditor({ formId }: Props) {
           <div className="forms-dashboard-brand">
             <div className="forms-dashboard-brand-mark" aria-hidden="true" />
             <div>
-              <strong>isian</strong>
+              <strong>HIMPUN</strong>
               <span>Ruang kerja penyusunan formulir</span>
             </div>
           </div>

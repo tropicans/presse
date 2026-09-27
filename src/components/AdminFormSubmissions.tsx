@@ -597,7 +597,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
             <div className="forms-dashboard-brand">
               <div className="forms-dashboard-brand-mark" aria-hidden="true" />
               <div>
-                <strong>isian</strong>
+                <strong>HIMPUN</strong>
                 <span>Hasil Form</span>
               </div>
             </div>
@@ -696,7 +696,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
             <div className="forms-dashboard-brand">
               <div className="forms-dashboard-brand-mark" aria-hidden="true" />
               <div>
-                <strong>isian</strong>
+                <strong>HIMPUN</strong>
                 <span>Hasil Form</span>
               </div>
             </div>
@@ -812,7 +812,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
           <div className="forms-dashboard-brand">
             <div className="forms-dashboard-brand-mark" aria-hidden="true" />
             <div>
-              <strong>isian</strong>
+              <strong>HIMPUN</strong>
               <span>Hasil Form</span>
             </div>
           </div>

@@ -4,8 +4,8 @@ import Providers from '@/components/Providers'
 import ThemeToggle from '@/components/ThemeToggle'
 
 export const metadata: Metadata = {
-  title: 'isian',
-  description: 'Platform pengelolaan formulir publik, kiriman, dan dashboard admin isian.',
+  title: 'HIMPUN',
+  description: 'Platform pengelolaan formulir publik, kiriman, dan dashboard admin HIMPUN.',
 }
 
 const themeScript = `(() => {

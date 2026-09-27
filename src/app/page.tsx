@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation'
 import { getAdminSession } from '@/lib/auth'
 
 export const metadata: Metadata = {
-  title: 'Masuk Admin | isian',
-  description: 'Akses cepat ke dashboard admin isian menggunakan akun Google yang sudah diizinkan.',
+  title: 'Masuk Admin | HIMPUN',
+  description: 'Akses cepat ke dashboard admin HIMPUN menggunakan akun Google yang sudah diizinkan.',
 }
 
 export default async function HomePage() {
