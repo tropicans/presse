@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import SearchableSelect from './SearchableSelect'
 import type { AdminPreviewField, AdminPreviewForm, AdminPreviewPage } from '@/lib/admin-form-preview'
+import { sanitizeNipNrp, isNipNrpField } from '@/lib/form-validation'
 
 interface PreviewStep {
   id: string
@@ -220,9 +221,10 @@ function PreviewSession({ form }: Props) {
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = event.target
+    const nextValue = name === 'nipNrp' ? sanitizeNipNrp(value) : value
     setFormData((current) => ({
       ...current,
-      [name]: value,
+      [name]: nextValue,
     }))
   }
 
@@ -444,19 +446,26 @@ function PreviewSession({ form }: Props) {
             }
 
             if (field.type === 'text') {
+              const isNip = isNipNrpField(field)
               return (
                 <div key={field.id} className="form-group">
                   <label className="form-label" htmlFor={field.name}>
                     {label}
                     {field.required ? ' *' : ''}
                   </label>
+                  {isNip && (
+                    <p className="field-help">
+                      18 digit angka untuk NIP ASN atau 5–8 digit untuk NRP TNI/Polri (tanpa spasi).
+                    </p>
+                  )}
                   <input
                     type="text"
+                    inputMode={isNip ? 'numeric' : undefined}
                     id={field.name}
                     name={field.name}
                     value={formData[field.name] ?? ''}
                     onChange={handleChange}
-                    placeholder={field.placeholder || undefined}
+                    placeholder={field.placeholder || (isNip ? 'Contoh: 198501012010011001' : undefined)}
                     className="form-input"
                   />
                 </div>

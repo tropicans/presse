@@ -395,6 +395,8 @@ const fieldNameByLabel: Record<string, string> = {
   'tipe peserta': 'participantType',
   'nama lengkap': 'namaLengkap',
   'nip/nrp': 'nipNrp',
+  nip: 'nipNrp',
+  nrp: 'nipNrp',
   jabatan: 'jabatan',
   'unit kerja': 'unitKerja',
   sebagai: 'sebagai',
@@ -416,6 +418,9 @@ export class FormSubmissionError extends Error {
     this.status = status
   }
 }
+
+import { sanitizeNipNrp, isNipNrpField, validateNipNrp } from './form-validation'
+export { sanitizeNipNrp, isNipNrpField, validateNipNrp }
 
 function normalizeLabel(label: string) {
   return label.trim().toLowerCase()
@@ -1589,6 +1594,15 @@ export function validateFormSubmission(form: PublicFormDefinition, payload: Reco
       const maxLength = field.maxLength ?? MAX_TEXT_LENGTH
       if (value.length > maxLength) {
         throw new FormSubmissionError(`Field "${field.label}" melebihi batas panjang`, 400)
+      }
+
+      if (isNipNrpField(field)) {
+        const nipError = validateNipNrp(value)
+        if (nipError) {
+          throw new FormSubmissionError(nipError, 400)
+        }
+        values[field.name] = sanitizeNipNrp(value)
+        continue
       }
 
       values[field.name] = value

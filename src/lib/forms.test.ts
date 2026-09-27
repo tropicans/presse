@@ -6,6 +6,9 @@ import {
   type PublicFormDefinition,
   validateFormSubmission,
   updateAdminForm,
+  sanitizeNipNrp,
+  validateNipNrp,
+  isNipNrpField,
 } from './forms'
 
 vi.mock('next/cache', () => ({
@@ -246,5 +249,64 @@ describe('updateAdminForm', () => {
         ],
       })
     ).resolves.not.toThrow()
+  })
+})
+
+describe('NIP/NRP validation and sanitization', () => {
+  it('identifies NIP/NRP fields correctly', () => {
+    expect(isNipNrpField({ name: 'nipNrp' })).toBe(true)
+    expect(isNipNrpField({ name: 'field_123', label: 'NIP' })).toBe(true)
+    expect(isNipNrpField({ name: 'field_123', label: 'NRP' })).toBe(true)
+    expect(isNipNrpField({ name: 'field_123', label: 'NIP/NRP' })).toBe(true)
+    expect(isNipNrpField({ name: 'nama', label: 'Nama Lengkap' })).toBe(false)
+  })
+
+  it('sanitizes spaces, dots, and hyphens', () => {
+    expect(sanitizeNipNrp(' 19850101 201001 1 001 ')).toBe('198501012010011001')
+    expect(sanitizeNipNrp('19850101-201001-1-001')).toBe('198501012010011001')
+    expect(sanitizeNipNrp('19850101.201001.1.001')).toBe('198501012010011001')
+  })
+
+  it('validates correct NIP (18 digits) and NRP (5-8 digits)', () => {
+    expect(validateNipNrp('198501012010011001')).toBeNull()
+    expect(validateNipNrp(' 19850101 201001 1 001 ')).toBeNull()
+    expect(validateNipNrp('12345678')).toBeNull() // NRP Polri 8 digits
+    expect(validateNipNrp('12345')).toBeNull() // NRP TNI 5 digits
+    expect(validateNipNrp('123456')).toBeNull() // NRP TNI 6 digits
+  })
+
+  it('rejects invalid format, too short, too long, or incomplete NIP', () => {
+    expect(validateNipNrp('1234')).toBe('NIP/NRP terlalu pendek (minimal 5 digit)')
+    expect(validateNipNrp('19850101201001')).toBe('NIP harus 18 digit angka, atau NRP 5-8 digit angka')
+    expect(validateNipNrp('19850101201001100100')).toBe('NIP/NRP maksimal 18 digit angka')
+    expect(validateNipNrp('19850101ABCD011001')).toBe('NIP/NRP hanya boleh berisi angka')
+  })
+
+  it('validates and auto-sanitizes NIP/NRP in validateFormSubmission', () => {
+    const formDef: PublicFormDefinition = {
+      id: 'form-nip',
+      slug: 'form-nip-test',
+      title: 'Form NIP',
+      description: null,
+      successMessage: null,
+      submitLabel: 'Kirim',
+      fields: [
+        { id: 'nipField', name: 'nipNrp', label: 'NIP/NRP', type: 'text', required: true },
+      ],
+      settings: { workflow: 'STANDARD' },
+    }
+
+    // Valid submission with formatted NIP is sanitized to 18 clean digits
+    const result = validateFormSubmission(formDef, {
+      nipNrp: '19850101 201001 1 001',
+    })
+    expect(result.nipNrp).toBe('198501012010011001')
+
+    // Invalid length throws FormSubmissionError
+    expect(() => {
+      validateFormSubmission(formDef, {
+        nipNrp: '198501012010',
+      })
+    }).toThrow(FormSubmissionError)
   })
 })

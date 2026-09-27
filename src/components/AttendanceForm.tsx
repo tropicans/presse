@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import SignaturePad from './SignaturePad'
 import SearchableSelect from './SearchableSelect'
 import type { PublicFormDefinition, FormField, FormStepDefinition } from '@/lib/forms'
+import { sanitizeNipNrp, validateNipNrp, isNipNrpField } from '@/lib/form-validation'
 
 interface AttendanceFormProps {
   form: PublicFormDefinition
@@ -297,10 +298,19 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     const nextErrors: Record<string, string> = {}
 
     for (const field of fieldsToValidate) {
-      const value = (formData[field.name] ?? '').trim()
+      const rawValue = (formData[field.name] ?? '').trim()
 
-      if (field.required && !value) {
+      if (field.required && !rawValue) {
         nextErrors[field.name] = `${getDisplayLabel(field, formData, form)} wajib diisi`
+        continue
+      }
+
+      if (rawValue && isNipNrpField(field)) {
+        const nipError = validateNipNrp(rawValue)
+        if (nipError) {
+          nextErrors[field.name] = nipError
+          continue
+        }
       }
     }
 
@@ -311,7 +321,8 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    const nextValue = name === 'nipNrp' ? sanitizeNipNrp(value) : value
+    setFormData((prev) => ({ ...prev, [name]: nextValue }))
     setFieldErrors((prev) => {
       if (!prev[name]) {
         return prev
@@ -344,7 +355,7 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
 
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors)
-      setError('Periksa kembali field yang wajib diisi.')
+      setError('Periksa kembali data yang belum sesuai.')
       const firstInvalidField = allVisibleFields.find((field) => nextErrors[field.name])
       if (firstInvalidField) {
         scrollToField(firstInvalidField.name)
@@ -388,7 +399,7 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
 
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors((current) => ({ ...current, ...nextErrors }))
-      setError('Periksa kembali field pada langkah ini.')
+      setError('Periksa kembali data pada langkah ini.')
       const firstInvalidField = currentStep.fields.find((field) => nextErrors[field.name])
       if (firstInvalidField) {
         scrollToField(firstInvalidField.name)
@@ -693,21 +704,36 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
         }
 
         if (field.type === 'text') {
+          const isNip = isNipNrpField(field)
+          const textDescribedBy = [
+            isNip ? hintId : null,
+            fieldErrors[field.name] ? errorId : null,
+          ].filter(Boolean).join(' ') || undefined
+
           return (
             <div key={field.id} className="form-group">
-              <label className="form-label" htmlFor={field.name}>{label}</label>
+              <label className="form-label" htmlFor={field.name}>
+                {label}
+                {field.required ? ' *' : ''}
+              </label>
+              {isNip && (
+                <p id={hintId} className="field-help">
+                  18 digit angka untuk NIP ASN atau 5–8 digit untuk NRP TNI/Polri (tanpa spasi).
+                </p>
+              )}
               <input
                 type="text"
+                inputMode={isNip ? 'numeric' : undefined}
                 id={field.name}
                 name={field.name}
                 value={formData[field.name] ?? ''}
                 onChange={handleChange}
                 required={field.required}
                 maxLength={field.maxLength}
-                placeholder={field.placeholder ?? undefined}
+                placeholder={field.placeholder ?? (isNip ? 'Contoh: 198501012010011001' : undefined)}
                 className="form-input"
                 aria-invalid={fieldErrors[field.name] ? 'true' : 'false'}
-                aria-describedby={describedBy}
+                aria-describedby={textDescribedBy}
               />
               {fieldErrors[field.name] && (
                 <p id={errorId} className="field-error">
