@@ -2163,6 +2163,42 @@ body {
   line-height: 1.5;
 }
 
+.admin-builder-pages-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-auto-step-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  background: var(--bg-surface);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  transition: all 0.15s ease;
+}
+
+.admin-auto-step-toggle:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.admin-auto-step-toggle input[type="checkbox"] {
+  accent-color: var(--text-primary);
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
 .admin-builder-page-list {
   display: grid;
   gap: 12px;

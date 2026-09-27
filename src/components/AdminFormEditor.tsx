@@ -145,6 +145,7 @@ export default function AdminFormEditor({ formId }: Props) {
   const [collapsedFieldIds, setCollapsedFieldIds] = useState<Set<string>>(new Set())
   const [showOutline, setShowOutline] = useState(false)
   const [highlightedFieldId, setHighlightedFieldId] = useState<string | null>(null)
+  const [autoNewStepOnAdd, setAutoNewStepOnAdd] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -413,13 +414,72 @@ export default function AdminFormEditor({ formId }: Props) {
     })
   }
 
+  const autoSplitOneQuestionPerStep = () => {
+    setForm((current) => {
+      if (!current || current.fields.length === 0) return current
+
+      const newPages: EditablePage[] = current.fields.map((_, index) => ({
+        id: `page-${index + 1}`,
+      }))
+
+      const nextFields = current.fields.map((field, index) => ({
+        ...field,
+        pageId: newPages[index].id,
+      }))
+
+      return {
+        ...current,
+        pages: newPages,
+        fields: nextFields,
+      }
+    })
+    setActiveStepTab('all')
+    setMessage('Berhasil memecah setiap pertanyaan menjadi 1 langkah tersendiri.')
+  }
+
+  const combineAllToOneStep = () => {
+    setForm((current) => {
+      if (!current || current.pages.length <= 1) return current
+
+      const firstPageId = current.pages[0]?.id || 'page-1'
+      const singlePage: EditablePage = { id: firstPageId }
+
+      const nextFields = current.fields.map((field) => ({
+        ...field,
+        pageId: firstPageId,
+        options: field.options.map((opt) => ({
+          ...opt,
+          nextPageId: undefined,
+        })),
+      }))
+
+      return {
+        ...current,
+        pages: [singlePage],
+        fields: nextFields,
+      }
+    })
+    setActiveStepTab('all')
+    setMessage('Semua pertanyaan berhasil digabungkan ke dalam 1 langkah.')
+  }
+
   const addField = (type: EditableField['type']) => {
     setForm((current) => {
       if (!current) return current
-      const targetPageId =
-        activeStepTab !== 'all' && current.pages.some((page) => page.id === activeStepTab)
-          ? activeStepTab
-          : current.pages[current.pages.length - 1]?.id ?? 'page-1'
+
+      let targetPageId: string
+      let nextPages = current.pages
+
+      if (autoNewStepOnAdd) {
+        const newPage = createPage()
+        nextPages = [...current.pages, newPage]
+        targetPageId = newPage.id
+      } else {
+        targetPageId =
+          activeStepTab !== 'all' && current.pages.some((page) => page.id === activeStepTab)
+            ? activeStepTab
+            : current.pages[current.pages.length - 1]?.id ?? 'page-1'
+      }
 
       const newField = createField(type, targetPageId)
       setCollapsedFieldIds((prev) => {
@@ -441,9 +501,14 @@ export default function AdminFormEditor({ formId }: Props) {
 
       return {
         ...current,
+        pages: nextPages,
         fields: nextFields,
       }
     })
+
+    if (autoNewStepOnAdd) {
+      setActiveStepTab('all')
+    }
   }
 
   const addPage = () => {
@@ -1047,13 +1112,33 @@ export default function AdminFormEditor({ formId }: Props) {
                 <h3>Langkah Form</h3>
                 <p>Kelompokkan pertanyaan per langkah. Setiap langkah harus memiliki minimal satu field.</p>
               </div>
-              <button
-                type="button"
-                onClick={addPage}
-                className="admin-secondary-btn admin-builder-add-btn"
-              >
-                + Tambah Langkah
-              </button>
+              <div className="admin-builder-pages-actions">
+                <button
+                  type="button"
+                  onClick={autoSplitOneQuestionPerStep}
+                  className="admin-secondary-btn"
+                  title="Pecah setiap pertanyaan ke langkahnya masing-masing secara berurutan"
+                  disabled={!form.fields || form.fields.length === 0}
+                >
+                  ⚡ Pecah 1 Pertanyaan / Langkah
+                </button>
+                <button
+                  type="button"
+                  onClick={combineAllToOneStep}
+                  className="admin-secondary-btn"
+                  title="Gabungkan semua pertanyaan ke dalam 1 langkah tunggal"
+                  disabled={form.pages.length <= 1}
+                >
+                  Gabungkan ke 1 Langkah
+                </button>
+                <button
+                  type="button"
+                  onClick={addPage}
+                  className="admin-secondary-btn admin-builder-add-btn"
+                >
+                  + Tambah Langkah
+                </button>
+              </div>
             </div>
             <div className="admin-builder-page-list">
               {form.pages.map((page, index) => (
@@ -1187,12 +1272,22 @@ export default function AdminFormEditor({ formId }: Props) {
             </div>
           </div>
           <div className="admin-builder-toolbar">
-            <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '4px' }}>
               <span className="admin-builder-toolbar-target-pill">
-                {activeStepTab === 'all'
-                  ? `Menambahkan ke: ${getStepLabel(form.pages[form.pages.length - 1]?.id ?? '')}`
-                  : `Menambahkan ke: ${getStepLabel(activeStepTab)}`}
+                {autoNewStepOnAdd
+                  ? '⚡ Mode 1 Pertanyaan 1 Langkah Aktif (Pertanyaan baru otomatis dibuatkan langkah baru)'
+                  : activeStepTab === 'all'
+                    ? `Menambahkan ke: ${getStepLabel(form.pages[form.pages.length - 1]?.id ?? '')}`
+                    : `Menambahkan ke: ${getStepLabel(activeStepTab)}`}
               </span>
+              <label className="admin-auto-step-toggle" title="Jika aktif, setiap pertanyaan baru yang Anda tambahkan otomatis dibuatkan langkah baru">
+                <input
+                  type="checkbox"
+                  checked={autoNewStepOnAdd}
+                  onChange={(e) => setAutoNewStepOnAdd(e.target.checked)}
+                />
+                <span>Otomatis langkah baru untuk tiap pertanyaan baru</span>
+              </label>
             </div>
             {fieldTypeOptions.map((type) => (
               <button
