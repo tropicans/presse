@@ -8177,10 +8177,21 @@ html[data-theme='dark'] .searchable-select-option.selected {
 
 /* Sidebar Sub-Navigation */
 .forms-dashboard-sidebar-nav a.sidebar-sub-nav {
-  padding-left: 48px;
-  font-size: 0.875rem;
+  padding-left: 24px;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-muted);
+}
+
+.forms-dashboard-sidebar-nav a.sidebar-sub-nav svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.75;
+}
+
+.forms-dashboard-sidebar-nav a.sidebar-sub-nav:hover svg,
+.forms-dashboard-sidebar-nav a.sidebar-sub-nav.active svg {
+  opacity: 1;
 }
 
 .forms-dashboard-sidebar-nav a.sidebar-sub-nav:hover,
