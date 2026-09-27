@@ -1,47 +1,45 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Admin Form Builder UX & Scalability Enhancement
-status: completed
-last_updated: "2026-09-25T14:22:00.000Z"
-last_activity: 2026-09-25
+milestone: v1.6
+milestone_name: Form Input Validation & Submission Integrity
+status: in_progress
+last_updated: "2026-09-27T08:05:00.000Z"
+last_activity: 2026-09-27
 progress:
   total_phases: 3
-  completed_phases: 3
+  completed_phases: 0
   total_plans: 3
-  completed_plans: 3
-  percent: 100
-current_phase: 16
-current_phase_name: Outline Navigation Panel, 1-Click Duplicate & Sticky Toolbar Polish
+  completed_plans: 0
+  percent: 0
+current_phase: 17
+current_phase_name: Core Format Validators & Server-Side Enforcement
 ---
 
-# Project State: Admin Form Builder UX & Scalability Enhancement
+# Project State: Form Input Validation & Submission Integrity
 
 ## Project Reference
 
-See: [.planning/PROJECT.md](file:///c:/Users/yudhiar\Downloads\oprek\Dev\jott\.planning\PROJECT.md) (updated 2026-09-25)
+See: [.planning/PROJECT.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/PROJECT.md) (updated 2026-09-27)
 
 **Core value:** Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
-**Current focus:** Milestone v1.5 Shipped — Ready for Milestone v1.6
+**Current focus:** Milestone v1.6 Started — Phase 17: Core Format Validators & Server-Side Enforcement
 
 ## Current Position
 
-Milestone: v1.5 — Admin Form Builder UX & Scalability Enhancement (Shipped: 2026-09-25)
-Status: Completed
-Phases completed: Phase 14, 15, 16 (3/3 plans finished)
-Milestone audit: Passed (10/10 requirements satisfied, zero gaps)
+Milestone: v1.6 — Form Input Validation & Submission Integrity (Active: 2026-09-27)
+Status: In Progress
+Phases: Phase 17, 18, 19 (0/3 plans finished)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Pure CSS Animations | Menjaga performa render 60fps tanpa membebani bundle JS runtime | Selesai |
-| Adaptive Sticky Table Header | Menjaga keterbacaan kolom data submissions saat scroll panjang di light/dark theme | Selesai |
-| Skeleton Shimmer Cards | Mengganti spinner statis dengan placeholder animasi untuk persepsi performa instan | Selesai |
-| Minimalist SVG Illustrations | Menghadirkan identitas visual yang bersih dan panduan kontekstual tanpa dependensi eksternal | Selesai |
-| Step-Centric Builder Architecture (v1.5) | Memecah tumpukan kartu field menjadi per langkah dan mode ringkas agar form besar tetap ringan dan mudah dikelola | Selesai |
-| Zero External DND/Animation Libs | Menghindari beban bundle JS dan konflik sentuh di tablet/mobile dengan mengandalkan tombol aksi instan & native CSS | Selesai |
+| Isolated Validation Module | Memisahkan fungsi validasi/sanitasi murni di `src/lib/form-validation.ts` agar aman digunakan di Client Components tanpa menarik driver DB | Selesai |
+| Flexible NIP/NRP Range (5-8 & 18 digits) | Mendukung variasi ASN (18 digit) dan TNI/Polri (5-8 digit) sambil menolak NIP tak lengkap (9-17 digit) | Selesai |
+| Realtime Input Sanitization | Otomatis membersihkan spasi, titik, strip pada format NIP, nomor HP, email saat user mengetik atau paste | Diputuskan |
+| Hybrid Error Clearance UX | Menampilkan error pada aksi langkah selanjutnya/submit, dan auto-clear begitu user mulai mengetik memperbaiki isian | Diputuskan |
 
 ## Next Steps
 
-Run `/gsd-new-milestone` to start the next milestone cycle (v1.6).
+Run `/gsd-plan-phase 17` to plan the first phase (Core Format Validators & Server-Side Enforcement).
+
