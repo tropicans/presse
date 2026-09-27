@@ -116,6 +116,8 @@
   --bg-surface: #ffffff;
   --bg-surface-elevated: #ffffff;
   --bg-input: #ffffff;
+  --bg-primary: #ffffff;
+  --text-inverse: #ffffff;
   --border-default: #e2e8f0;
   --border-subtle: #f1f5f9;
   --border-focus: #0f172a;
@@ -242,6 +244,8 @@ html[data-theme='dark'] {
   --bg-surface: #13161a;
   --bg-surface-elevated: #1c2026;
   --bg-input: #13161a;
+  --bg-primary: #0b0d0e;
+  --text-inverse: #0b0d0e;
   --border-default: #272c35;
   --border-subtle: #1c2026;
   --border-focus: #f4f4f6;
@@ -4400,8 +4404,9 @@ html[data-theme='dark'] .editorial-form-editor-primary-btn {
 
 .editorial-form-editor-shell .admin-secondary-btn:hover,
 .editorial-form-editor-shell .admin-link-btn:hover {
-  background: var(--text-primary);
-  color: var(--bg-primary);
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
 }
 
 .editorial-form-editor-shell .admin-builder-fields,
@@ -4558,14 +4563,7 @@ html[data-theme='dark'] .editorial-form-editor-primary-btn {
 .admin-step-tab.active {
   background: var(--text-primary);
   border-color: var(--text-primary);
-  color: var(--bg-primary);
-  box-shadow: none;
-}
-
-html[data-theme='dark'] .admin-step-tab.active {
-  background: var(--text-primary);
-  border-color: var(--text-primary);
-  color: var(--bg-primary);
+  color: #ffffff;
   box-shadow: none;
 }
 
@@ -4586,20 +4584,10 @@ html[data-theme='dark'] .admin-step-tab.active {
   transition: all 0.15s ease;
 }
 
-html[data-theme='dark'] .admin-step-tab-badge {
-  background: var(--bg-surface-elevated);
-  color: var(--text-primary);
-}
-
 .admin-step-tab.active .admin-step-tab-badge {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border-color: var(--bg-primary);
-}
-
-html[data-theme='dark'] .admin-step-tab.active .admin-step-tab-badge {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .admin-step-tab-badge.empty {
@@ -4609,9 +4597,9 @@ html[data-theme='dark'] .admin-step-tab.active .admin-step-tab-badge {
 }
 
 .admin-step-tab.active .admin-step-tab-badge.empty {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border: 1px solid var(--bg-primary);
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px dashed rgba(255, 255, 255, 0.4);
 }
 
 .admin-builder-toolbar-target-pill {
@@ -4674,23 +4662,30 @@ html[data-theme='dark'] .admin-step-tab:hover {
 html[data-theme='dark'] .admin-step-tab.active {
   background: var(--text-primary);
   border-color: var(--text-primary);
-  color: var(--bg-primary);
+  color: #0b0d0e;
 }
 
 html[data-theme='dark'] .admin-step-tab-badge {
-  background: var(--bg-surface);
+  background: var(--bg-surface-elevated);
   color: var(--text-primary);
 }
 
 html[data-theme='dark'] .admin-step-tab.active .admin-step-tab-badge {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.18);
+  color: #0b0d0e;
+  border: 1px solid rgba(0, 0, 0, 0.25);
 }
 
 html[data-theme='dark'] .admin-step-tab-badge.empty {
   background: transparent;
   color: var(--text-muted);
   border-color: var(--border-default);
+}
+
+html[data-theme='dark'] .admin-step-tab.active .admin-step-tab-badge.empty {
+  background: rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.6);
+  border: 1px dashed rgba(0, 0, 0, 0.25);
 }
 
 html[data-theme='dark'] .admin-builder-toolbar-target-pill {
@@ -5563,7 +5558,13 @@ html[data-theme='dark'] .editorial-preview-device-btn.active {
 .editorial-form-editor-preview-panel .submit-btn,
 .editorial-form-editor-preview-panel .admin-preview-submit {
   background: var(--text-primary);
-  color: var(--bg-primary);
+  color: var(--bg-surface);
+}
+
+html[data-theme='dark'] .editorial-form-editor-preview-panel .submit-btn,
+html[data-theme='dark'] .editorial-form-editor-preview-panel .admin-preview-submit {
+  background: var(--text-primary);
+  color: var(--bg-app);
 }
 
 .editorial-form-editor-preview-panel .submit-btn-secondary {
@@ -5688,7 +5689,12 @@ html[data-theme='dark'] .editorial-preview-device-btn.active {
 
 .submissions-dashboard-participant-chip.internal {
   background: var(--text-primary);
-  color: var(--bg-primary);
+  color: var(--bg-surface);
+}
+
+html[data-theme='dark'] .submissions-dashboard-participant-chip.internal {
+  background: var(--text-primary);
+  color: var(--bg-app);
 }
 
 .submissions-dashboard-participant-chip.external {
@@ -8711,11 +8717,18 @@ textarea:focus-visible {
   font-family: var(--font-family-mono);
   font-size: 0.68rem;
   font-weight: 800;
-  background: var(--text-primary);
-  color: var(--bg-primary);
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.3);
   padding: 1px 6px;
   margin-left: 8px;
-  border-radius: 0px !important;
+  border-radius: var(--radius-sm);
+}
+
+html[data-theme='dark'] .analytics-correct-badge {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.35);
 }
 
 
