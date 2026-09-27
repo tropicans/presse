@@ -102,4 +102,16 @@ describe('CSS layout constraints', () => {
     expect(cssContent).toContain('.analytics-question-card {')
     expect(cssContent).toContain('.analytics-option-meter {')
   })
+
+  it('verifies standalone form preview and device stage dark mode parity', () => {
+    const cssPath = path.resolve(process.cwd(), 'src/app/globals.css')
+    const cssContent = fs.readFileSync(cssPath, 'utf8')
+
+    expect(cssContent).toContain("html[data-theme='dark'] .editorial-preview-page-topbar {")
+    expect(cssContent).toContain('.editorial-preview-device-stage .admin-preview-shell')
+    expect(cssContent).toContain('.editorial-preview-device-stage .admin-preview-submit')
+    expect(cssContent).toContain("html[data-theme='dark'] .editorial-preview-device-stage .admin-preview-submit")
+    expect(cssContent).toContain('.admin-preview-note {')
+    expect(cssContent).not.toContain('background: linear-gradient(180deg, #eef2ff')
+  })
 })
