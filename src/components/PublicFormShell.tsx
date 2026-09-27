@@ -32,7 +32,7 @@ export default function PublicFormShell({ form }: PublicFormShellProps) {
         </div>
         <div style={{ padding: '14px 24px 20px', textAlign: 'center', opacity: 0.65, fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
           <HimpunLogo size={16} />
-          <span>Didukung oleh <strong style={{ color: 'var(--text-primary)' }}>HIMPUN</strong></span>
+          <span>Powered by <strong style={{ color: 'var(--text-primary)' }}>HIMPUN</strong></span>
         </div>
       </div>
     </div>
