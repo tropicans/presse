@@ -16,10 +16,10 @@
 
 ### Client-Side Form UX & Inline Feedback
 
-- [ ] **VALID-06**: **Hybrid Error Clearance & Inline Feedback** — Pesan error validasi muncul saat pengguna menekan tombol langkah berikutnya ("Langkah Selanjutnya") atau tombol kirim ("Kirim Formulir"), dan otomatis hilang (clear) secara instan begitu pengguna mulai memperbaiki isian pada field tersebut.
-- [ ] **VALID-07**: **Smooth Focus & Auto-Scroll to First Error** — Jika terdapat field yang tidak valid pada langkah aktif atau saat submit, form secara otomatis mengarahkan fokus kursor dan menggulirkan viewport (`scrollIntoView`) ke field pertama yang bermasalah.
-- [ ] **VALID-08**: **Consistent Field Hints & Mobile Input Modes** — Setiap field dengan aturan format khusus menyajikan teks bantuan (hint) yang ringkas di bawah label serta atribut `inputMode` yang tepat (`numeric`, `email`, `tel`) untuk kenyamanan pengisian di ponsel.
-- [ ] **VALID-09**: **Admin Form Preview Alignment** — Pratinjau form di panel admin (`AdminFormPreview`) diselaraskan secara identik dengan aturan sanitasi, input mode, dan hint yang berlaku di form publik.
+- [x] **VALID-06**: **Hybrid Error Clearance & Inline Feedback** — Pesan error validasi muncul saat pengguna menekan tombol langkah berikutnya ("Langkah Selanjutnya") atau tombol kirim ("Kirim Formulir"), dan otomatis hilang (clear) secara instan begitu pengguna mulai memperbaiki isian pada field tersebut.
+- [x] **VALID-07**: **Smooth Focus & Auto-Scroll to First Error** — Jika terdapat field yang tidak valid pada langkah aktif atau saat submit, form secara otomatis mengarahkan fokus kursor dan menggulirkan viewport (`scrollIntoView`) ke field pertama yang bermasalah.
+- [x] **VALID-08**: **Consistent Field Hints & Mobile Input Modes** — Setiap field dengan aturan format khusus menyajikan teks bantuan (hint) yang ringkas di bawah label serta atribut `inputMode` yang tepat (`numeric`, `email`, `tel`) untuk kenyamanan pengisian di ponsel.
+- [x] **VALID-09**: **Admin Form Preview Alignment** — Pratinjau form di panel admin (`AdminFormPreview`) diselaraskan secara identik dengan aturan sanitasi, input mode, dan hint yang berlaku di form publik.
 
 ### Server-Side Integrity & Verification
 
@@ -35,10 +35,10 @@
 | VALID-03 | Phase 17 | Complete |
 | VALID-04 | Phase 17 | Complete |
 | VALID-05 | Phase 17 | Complete |
-| VALID-06 | Phase 18 | Pending |
-| VALID-07 | Phase 18 | Pending |
-| VALID-08 | Phase 18 | Pending |
-| VALID-09 | Phase 18 | Pending |
+| VALID-06 | Phase 18 | Complete |
+| VALID-07 | Phase 18 | Complete |
+| VALID-08 | Phase 18 | Complete |
+| VALID-09 | Phase 18 | Complete |
 | VALID-10 | Phase 17 | Complete |
 | VALID-11 | Phase 19 | Pending |
 

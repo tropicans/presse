@@ -3,7 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import SearchableSelect from './SearchableSelect'
 import type { AdminPreviewField, AdminPreviewForm, AdminPreviewPage } from '@/lib/admin-form-preview'
-import { sanitizeNipNrp, isNipNrpField } from '@/lib/form-validation'
+import {
+  sanitizeNipNrp,
+  isNipNrpField,
+  isEmailField,
+  isPhoneField,
+  isNameField,
+  sanitizePhoneNumber,
+} from '@/lib/form-validation'
 
 interface PreviewStep {
   id: string
@@ -221,7 +228,18 @@ function PreviewSession({ form }: Props) {
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = event.target
-    const nextValue = name === 'nipNrp' ? sanitizeNipNrp(value) : value
+    let nextValue = value
+    if (name === 'nipNrp') {
+      nextValue = sanitizeNipNrp(value)
+    } else if (
+      name.toLowerCase().includes('telepon') ||
+      name.toLowerCase().includes('phone') ||
+      name.toLowerCase().includes('whatsapp') ||
+      name.toLowerCase().includes('hp')
+    ) {
+      nextValue = sanitizePhoneNumber(value)
+    }
+
     setFormData((current) => ({
       ...current,
       [name]: nextValue,
@@ -447,25 +465,49 @@ function PreviewSession({ form }: Props) {
 
             if (field.type === 'text') {
               const isNip = isNipNrpField(field)
+              const isEmail = isEmailField(field)
+              const isPhone = isPhoneField(field)
+              const isName = isNameField(field)
+
+              let fieldHint: string | null = null
+              let fieldInputMode: 'numeric' | 'email' | 'tel' | undefined = undefined
+              let fieldPlaceholder = field.placeholder || undefined
+
+              if (isNip) {
+                fieldHint = '18 digit angka untuk NIP ASN atau 5–8 digit untuk NRP TNI/Polri (tanpa spasi).'
+                fieldInputMode = 'numeric'
+                fieldPlaceholder = field.placeholder || 'Contoh: 198501012010011001'
+              } else if (isEmail) {
+                fieldHint = 'Masukkan alamat email aktif (contoh: nama@domain.com).'
+                fieldInputMode = 'email'
+                fieldPlaceholder = field.placeholder || 'nama@instansi.go.id'
+              } else if (isPhone) {
+                fieldHint = 'Nomor WhatsApp/telepon aktif (10-15 digit angka).'
+                fieldInputMode = 'tel'
+                fieldPlaceholder = field.placeholder || 'Contoh: 081234567890'
+              } else if (isName) {
+                fieldPlaceholder = field.placeholder || 'Nama lengkap sesuai identitas'
+              }
+
               return (
                 <div key={field.id} className="form-group">
                   <label className="form-label" htmlFor={field.name}>
                     {label}
                     {field.required ? ' *' : ''}
                   </label>
-                  {isNip && (
+                  {fieldHint && (
                     <p className="field-help">
-                      18 digit angka untuk NIP ASN atau 5–8 digit untuk NRP TNI/Polri (tanpa spasi).
+                      {fieldHint}
                     </p>
                   )}
                   <input
-                    type="text"
-                    inputMode={isNip ? 'numeric' : undefined}
+                    type={isEmail ? 'email' : 'text'}
+                    inputMode={fieldInputMode}
                     id={field.name}
                     name={field.name}
                     value={formData[field.name] ?? ''}
                     onChange={handleChange}
-                    placeholder={field.placeholder || (isNip ? 'Contoh: 198501012010011001' : undefined)}
+                    placeholder={fieldPlaceholder}
                     className="form-input"
                   />
                 </div>

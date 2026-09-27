@@ -5,7 +5,19 @@ import { useRouter } from 'next/navigation'
 import SignaturePad from './SignaturePad'
 import SearchableSelect from './SearchableSelect'
 import type { PublicFormDefinition, FormField, FormStepDefinition } from '@/lib/forms'
-import { sanitizeNipNrp, validateNipNrp, isNipNrpField } from '@/lib/form-validation'
+import {
+  sanitizeNipNrp,
+  validateNipNrp,
+  isNipNrpField,
+  isEmailField,
+  validateEmail,
+  isPhoneField,
+  sanitizePhoneNumber,
+  validatePhoneNumber,
+  isNameField,
+  validateName,
+  validateSignatureValue,
+} from '@/lib/form-validation'
 
 interface AttendanceFormProps {
   form: PublicFormDefinition
@@ -305,11 +317,45 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
         continue
       }
 
-      if (rawValue && isNipNrpField(field)) {
-        const nipError = validateNipNrp(rawValue)
-        if (nipError) {
-          nextErrors[field.name] = nipError
-          continue
+      if (rawValue) {
+        if (isNipNrpField(field)) {
+          const nipError = validateNipNrp(rawValue)
+          if (nipError) {
+            nextErrors[field.name] = nipError
+            continue
+          }
+        }
+
+        if (isEmailField(field)) {
+          const emailError = validateEmail(rawValue)
+          if (emailError) {
+            nextErrors[field.name] = emailError
+            continue
+          }
+        }
+
+        if (isPhoneField(field)) {
+          const phoneError = validatePhoneNumber(rawValue)
+          if (phoneError) {
+            nextErrors[field.name] = phoneError
+            continue
+          }
+        }
+
+        if (isNameField(field)) {
+          const nameError = validateName(rawValue)
+          if (nameError) {
+            nextErrors[field.name] = nameError
+            continue
+          }
+        }
+
+        if (field.type === 'signature') {
+          const sigError = validateSignatureValue(rawValue)
+          if (sigError) {
+            nextErrors[field.name] = sigError
+            continue
+          }
         }
       }
     }
@@ -321,7 +367,18 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
-    const nextValue = name === 'nipNrp' ? sanitizeNipNrp(value) : value
+    let nextValue = value
+    if (name === 'nipNrp') {
+      nextValue = sanitizeNipNrp(value)
+    } else if (
+      name.toLowerCase().includes('telepon') ||
+      name.toLowerCase().includes('phone') ||
+      name.toLowerCase().includes('whatsapp') ||
+      name.toLowerCase().includes('hp')
+    ) {
+      nextValue = sanitizePhoneNumber(value)
+    }
+
     setFormData((prev) => ({ ...prev, [name]: nextValue }))
     setFieldErrors((prev) => {
       if (!prev[name]) {
@@ -705,8 +762,33 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
 
         if (field.type === 'text') {
           const isNip = isNipNrpField(field)
+          const isEmail = isEmailField(field)
+          const isPhone = isPhoneField(field)
+          const isName = isNameField(field)
+
+          let fieldHint: string | null = null
+          let fieldInputMode: 'numeric' | 'email' | 'tel' | undefined = undefined
+          let fieldPlaceholder = field.placeholder ?? undefined
+
+          if (isNip) {
+            fieldHint = '18 digit angka untuk NIP ASN atau 5–8 digit untuk NRP TNI/Polri (tanpa spasi).'
+            fieldInputMode = 'numeric'
+            fieldPlaceholder = field.placeholder ?? 'Contoh: 198501012010011001'
+          } else if (isEmail) {
+            fieldHint = 'Masukkan alamat email aktif (contoh: nama@domain.com).'
+            fieldInputMode = 'email'
+            fieldPlaceholder = field.placeholder ?? 'nama@instansi.go.id'
+          } else if (isPhone) {
+            fieldHint = 'Nomor WhatsApp/telepon aktif (10-15 digit angka).'
+            fieldInputMode = 'tel'
+            fieldPlaceholder = field.placeholder ?? 'Contoh: 081234567890'
+          } else if (isName) {
+            fieldPlaceholder = field.placeholder ?? 'Nama lengkap sesuai identitas'
+          }
+
+          const hasHint = Boolean(fieldHint)
           const textDescribedBy = [
-            isNip ? hintId : null,
+            hasHint ? hintId : null,
             fieldErrors[field.name] ? errorId : null,
           ].filter(Boolean).join(' ') || undefined
 
@@ -716,21 +798,21 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
                 {label}
                 {field.required ? ' *' : ''}
               </label>
-              {isNip && (
+              {fieldHint && (
                 <p id={hintId} className="field-help">
-                  18 digit angka untuk NIP ASN atau 5–8 digit untuk NRP TNI/Polri (tanpa spasi).
+                  {fieldHint}
                 </p>
               )}
               <input
-                type="text"
-                inputMode={isNip ? 'numeric' : undefined}
+                type={isEmail ? 'email' : 'text'}
+                inputMode={fieldInputMode}
                 id={field.name}
                 name={field.name}
                 value={formData[field.name] ?? ''}
                 onChange={handleChange}
                 required={field.required}
                 maxLength={field.maxLength}
-                placeholder={field.placeholder ?? (isNip ? 'Contoh: 198501012010011001' : undefined)}
+                placeholder={fieldPlaceholder}
                 className="form-input"
                 aria-invalid={fieldErrors[field.name] ? 'true' : 'false'}
                 aria-describedby={textDescribedBy}
