@@ -789,18 +789,91 @@ export function shouldUseLegacyAttendanceSubmission(form: PublicFormDefinition) 
 }
 
 function getVisibleFieldNames(form: PublicFormDefinition, payload: Record<string, unknown>) {
-  const visible = new Set(form.fields.map((field) => field.name))
-  const branching = form.settings.branching
+  const pages = form.settings.pages
+  const conditionalRoutes = form.settings.conditionalRoutes ?? []
 
-  if (!branching) {
-    return visible
+  let visible: Set<string>
+
+  if (pages && pages.length > 0) {
+    const fieldsById = new Map(form.fields.map((field) => [field.id, field]))
+    const pageIndexById = new Map(pages.map((page, index) => [page.id, index]))
+    const nextPageIdByRouteKey = new Map(
+      conditionalRoutes.map((route) => [
+        createConditionalRouteKey(route.fieldId, route.optionLabel),
+        route.nextPageId,
+      ])
+    )
+
+    visible = new Set<string>()
+    const visitedPageIds = new Set<string>()
+    let currentPageId: string | null = pages[0]?.id ?? null
+
+    while (currentPageId !== null) {
+      if (visitedPageIds.has(currentPageId)) {
+        break
+      }
+
+      visitedPageIds.add(currentPageId)
+
+      const currentPageIndex = pageIndexById.get(currentPageId)
+      if (currentPageIndex === undefined) {
+        break
+      }
+
+      const page = pages[currentPageIndex]
+      const fields = page.fieldIds
+        .map((fieldId) => fieldsById.get(fieldId))
+        .filter((field): field is FormField => Boolean(field))
+
+      for (const field of fields) {
+        visible.add(field.name)
+      }
+
+      let nextPageId: string | null = pages[currentPageIndex + 1]?.id ?? null
+
+      for (const field of fields) {
+        if (field.type !== 'radio' && field.type !== 'select') {
+          continue
+        }
+
+        const selectedValue = getStringValue(payload[field.name])
+        if (!selectedValue) {
+          continue
+        }
+
+        const conditionalNextPageId = nextPageIdByRouteKey.get(
+          createConditionalRouteKey(field.id, selectedValue)
+        )
+
+        if (!conditionalNextPageId) {
+          continue
+        }
+
+        if (conditionalNextPageId === CONDITIONAL_ROUTE_SUBMIT) {
+          nextPageId = null
+          break
+        }
+
+        const conditionalNextPageIndex = pageIndexById.get(conditionalNextPageId) ?? -1
+        if (conditionalNextPageIndex > currentPageIndex) {
+          nextPageId = conditionalNextPageId
+          break
+        }
+      }
+
+      currentPageId = nextPageId
+    }
+  } else {
+    visible = new Set(form.fields.map((field) => field.name))
   }
 
-  const participantType = getStringValue(payload[branching.participantTypeFieldName])
-
-  if (sameChoice(participantType, branching.externalValue)) {
-    for (const fieldName of branching.internalOnlyFieldNames) {
-      visible.delete(fieldName)
+  const branching = form.settings.branching
+  if (branching) {
+    const participantType = getStringValue(payload[branching.participantTypeFieldName])
+    if (sameChoice(participantType, branching.externalValue)) {
+      for (const fieldName of branching.internalOnlyFieldNames) {
+        visible.delete(fieldName)
+      }
     }
   }
 
@@ -808,6 +881,82 @@ function getVisibleFieldNames(form: PublicFormDefinition, payload: Record<string
 }
 
 function buildSubmissionPath(form: PublicFormDefinition, values: Record<string, string>) {
+  const pages = form.settings.pages
+  const conditionalRoutes = form.settings.conditionalRoutes ?? []
+
+  if (pages && pages.length > 0) {
+    const fieldsById = new Map(form.fields.map((field) => [field.id, field]))
+    const pageIndexById = new Map(pages.map((page, index) => [page.id, index]))
+    const nextPageIdByRouteKey = new Map(
+      conditionalRoutes.map((route) => [
+        createConditionalRouteKey(route.fieldId, route.optionLabel),
+        route.nextPageId,
+      ])
+    )
+
+    const completedStepIds: string[] = []
+    const visitedPageIds = new Set<string>()
+    let currentPageId: string | null = pages[0]?.id ?? null
+
+    while (currentPageId !== null) {
+      if (visitedPageIds.has(currentPageId)) {
+        break
+      }
+
+      visitedPageIds.add(currentPageId)
+      completedStepIds.push(currentPageId)
+
+      const currentPageIndex = pageIndexById.get(currentPageId)
+      if (currentPageIndex === undefined) {
+        break
+      }
+
+      const page = pages[currentPageIndex]
+      const fields = page.fieldIds
+        .map((fieldId) => fieldsById.get(fieldId))
+        .filter((field): field is FormField => Boolean(field))
+
+      let nextPageId: string | null = pages[currentPageIndex + 1]?.id ?? null
+
+      for (const field of fields) {
+        if (field.type !== 'radio' && field.type !== 'select') {
+          continue
+        }
+
+        const selectedValue = values[field.name] ?? ''
+        if (!selectedValue) {
+          continue
+        }
+
+        const conditionalNextPageId = nextPageIdByRouteKey.get(
+          createConditionalRouteKey(field.id, selectedValue)
+        )
+
+        if (!conditionalNextPageId) {
+          continue
+        }
+
+        if (conditionalNextPageId === CONDITIONAL_ROUTE_SUBMIT) {
+          nextPageId = null
+          break
+        }
+
+        const conditionalNextPageIndex = pageIndexById.get(conditionalNextPageId) ?? -1
+        if (conditionalNextPageIndex > currentPageIndex) {
+          nextPageId = conditionalNextPageId
+          break
+        }
+      }
+
+      currentPageId = nextPageId
+    }
+
+    return {
+      workflow: 'standard-multistep',
+      completedStepIds,
+    }
+  }
+
   const branching = form.settings.branching
 
   if (!branching) {

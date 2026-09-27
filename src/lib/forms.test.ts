@@ -173,6 +173,69 @@ describe('validateFormSubmission', () => {
       signature: 'data:image/png;base64,abc',
     })
   })
+
+  it('allows submission when early submit conditional route skips later required fields', () => {
+    const multiStepForm: PublicFormDefinition = {
+      id: 'form_multistep',
+      slug: 'multistep-form',
+      title: 'Multistep Form',
+      description: null,
+      successMessage: null,
+      submitLabel: 'Kirim',
+      settings: {
+        workflow: 'STANDARD',
+        pages: [
+          { id: 'page-1', fieldIds: ['is_employee'] },
+          { id: 'page-2', fieldIds: ['esport_branch'] },
+        ],
+        conditionalRoutes: [
+          { fieldId: 'is_employee', optionLabel: 'Tidak', nextPageId: '__SUBMIT__' },
+        ],
+      },
+      fields: [
+        {
+          id: 'is_employee',
+          name: 'is_employee',
+          label: 'Apakah Anda pegawai?',
+          type: 'radio',
+          required: true,
+          options: ['Ya', 'Tidak'],
+        },
+        {
+          id: 'esport_branch',
+          name: 'esport_branch',
+          label: 'Cabang e-sport yang akan diikuti',
+          type: 'radio',
+          required: true,
+          options: ['MLBB', 'PUBG'],
+        },
+      ],
+    }
+
+    // When choosing 'Tidak', it routes to __SUBMIT__, skipping page 2 (esport_branch)
+    const result = validateFormSubmission(multiStepForm, {
+      is_employee: 'Tidak',
+    })
+
+    expect(result).toEqual({
+      is_employee: 'Tidak',
+      esport_branch: '',
+    })
+
+    // When choosing 'Ya', page 2 is required and missing it throws
+    expect(() => validateFormSubmission(multiStepForm, {
+      is_employee: 'Ya',
+    })).toThrow('Field "Cabang e-sport yang akan diikuti" wajib diisi')
+
+    // When choosing 'Ya' with page 2 filled, submission succeeds
+    expect(validateFormSubmission(multiStepForm, {
+      is_employee: 'Ya',
+      esport_branch: 'MLBB',
+    })).toEqual({
+      is_employee: 'Ya',
+      esport_branch: 'MLBB',
+    })
+  })
 })
 
 describe('normalizeAdminSubmissionPagination', () => {
