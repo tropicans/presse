@@ -23,5 +23,16 @@ describe('CSS layout constraints', () => {
     expect(cssContent).toContain('--primary-900: #09090b')
     expect(cssContent).toContain('--ledger-bg: #fafafa')
     expect(cssContent).toContain('--ledger-primary-fixed: #27272a')
+    expect(cssContent).toContain('--font-family-mono:')
+    expect(cssContent).toContain('--font-size-display-lg:')
+  })
+
+  it('guarantees zero residual teal or cyan color remnants in globals.css', () => {
+    const cssPath = path.resolve(process.cwd(), 'src/app/globals.css')
+    const cssContent = fs.readFileSync(cssPath, 'utf8')
+
+    expect(cssContent).not.toContain('#00796b')
+    expect(cssContent).not.toContain('#80cbc4')
+    expect(cssContent).not.toContain('rgba(0, 121, 107')
   })
 })

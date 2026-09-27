@@ -7,6 +7,7 @@
 - ✅ **v1.5 Admin Form Builder UX & Scalability Enhancement** — Phases 14-16 (shipped 2026-09-25)
 - ✅ **v1.6 Form Input Validation & Submission Integrity** — Phases 17-19 (shipped 2026-09-27)
 - ✅ **v1.7 Monochrome Design System Overhaul** — Phases 20-23 (shipped 2026-09-27)
+- 🟡 **v1.8 Editorial Minimalist Monochrome Transformation** — Phases 24-27 (in progress)
 
 ## Phases
 
@@ -64,6 +65,13 @@ See: [.planning/milestones/v1.7-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 
 </details>
 
+### 🟡 v1.8 Editorial Minimalist Monochrome Transformation (Phases 24-27) — IN PROGRESS
+
+- [ ] **Phase 24: Editorial Serif Typography & Global Zero-Radius Tokens Foundation** (1 plan) — in progress
+- [ ] **Phase 25: Public Form & Confirmation Experience Editorial Overhaul** (1 plan) — planned
+- [ ] **Phase 26: Admin Suite & Form Builder Editorial Minimalist Transformation** (1 plan) — planned
+- [ ] **Phase 27: Multi-Tier Verification, Visual Regression & Docker Container Up** (1 plan) — planned
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -82,6 +90,10 @@ See: [.planning/milestones/v1.7-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 | 21. Public Form & Confirmation Experience Monochrome Transformation | v1.7 | 1/1 | Complete | 2026-09-27 |
 | 22. Admin Dashboard & Form Builder Monochrome Overhaul | v1.7 | 1/1 | Complete | 2026-09-27 |
 | 23. Quality Assurance, Visual Regression & Build Verification | v1.7 | 1/1 | Complete | 2026-09-27 |
+| 24. Editorial Serif Typography & Global Zero-Radius Tokens Foundation | v1.8 | 0/1 | In Progress | - |
+| 25. Public Form & Confirmation Experience Editorial Overhaul | v1.8 | 0/1 | Planned | - |
+| 26. Admin Suite & Form Builder Editorial Minimalist Transformation | v1.8 | 0/1 | Planned | - |
+| 27. Multi-Tier Verification, Visual Regression & Docker Container Up | v1.8 | 0/1 | Planned | - |
 
 ---
 

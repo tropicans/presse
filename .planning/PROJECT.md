@@ -7,8 +7,18 @@ Platform pengelolaan formulir publik, kiriman (submissions), dan dashboard admin
 Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
 
 ## Current State
-Milestone **v1.7 Monochrome Design System Overhaul** completed and shipped (2026-09-27).
-Phases 1-23 completed across milestones v1.1 - v1.7. Ready for next milestone.
+Milestone **v1.8 Editorial Minimalist Monochrome Transformation** in progress (initiated 2026-09-27).
+Phases 1-23 completed across milestones v1.1 - v1.7. Active development in Phase 24.
+
+## Milestone v1.8 Goals: Editorial Minimalist Monochrome Transformation
+Transformasi visual radikal ke gaya **Minimalist Monochrome (Editorial Luxury & Architectural Precision)**:
+- **Serif Typography as Hero:** Mengadopsi `Playfair Display` (Headlines/Display), `Source Serif 4` (Body/Questions), dan `JetBrains Mono` (Metadata/Labels/Code) dengan skala editorial dramatis.
+- **Pure Black & White Palette:** Menghilangkan palet abu-abu lunak; menerapkan kontras murni `#000000` dan `#FFFFFF`, dengan abu-abu gelap `#525252` hanya untuk teks sekunder dan `#E5E5E5` untuk divider hairline.
+- **Strict Zero Border-Radius (0px Everywhere):** Seluruh sudut kartu, tombol, pill, modal, input, dan badge menggunakan sudut siku 90 derajat tajam tanpa radius.
+- **Zero Drop Shadows & Line-Based Architecture:** Menghilangkan seluruh ambient shadows, membangun kedalaman melalui variasi ketebalan garis (1px, 2px, 4px, 8px) dan inversi warna (black/white swap).
+- **Subtle Layered Textures:** Menerapkan repeating horizontal line gradient (4px) dan noise texture halus untuk memberikan sensasi cetak majalah editorial/katalog museum.
+- **Instant Binary Interactions:** Transisi instan (0-100ms) dengan efek inversi hover pada tombol, kartu, dan item formulir.
+- **Light & Dark Mode Parity:** Menjaga sinkronisasi penuh pada Mode Terang (kanvas #FFFFFF) dan Mode Gelap (kanvas #000000 dengan garis dan teks #FFFFFF).
 
 <details>
 <summary>Archived Milestone v1.7: Monochrome Design System Overhaul (Shipped: 2026-09-27)</summary>
