@@ -1,5 +1,23 @@
 # Milestones
 
+## v2.0 UI/UX Density & Information Hierarchy Refactor (Shipped: 2026-09-27)
+
+**Phases completed:** 6 phases, 6 plans, 18 tasks
+
+**Key accomplishments:**
+
+- Executed end-to-end UI/UX density and hierarchy refactor across ISIAN, eliminating oversized elements while retaining the signature editorial dark mode aesthetic and brand identity.
+- Refactored design tokens in `src/app/globals.css`: integrated Google Font `Inter` for all UI controls, labels, buttons, inputs, tables, and body copy; preserved `Playfair Display` for display titles with a calibrated, less aggressive scale (`--font-size-display-lg: 2.125rem`).
+- Replaced the rigid `border-radius: 0px !important` constraint with ergonomic subtle architectural radius tokens (`--radius-sm: 4px`, `--radius-md: 6px`, `--radius-lg: 8px`, `--radius-pill: 9999px`) matching the `new_design/` visual reference screenshots.
+- Established a 4/8/12/16/20/24/32/40/48px disciplined spacing scale and standardized control heights (`--control-height-sm: 32px`, `--control-height-md: 36px`, `--control-height-lg: 40px`).
+- Configured Dark Theme as the default with rich multi-level tonal surfaces (Canvas `#0B0D0E`, Surface `#13161A`, Elevated `#1C2026`, Border `#272C35`) and universal `:focus-visible` accessibility indicators.
+- Overhauled topbar header to a compact 56px height and refined sidebar to 230px width with 36px navigation links and clear active states.
+- Overhauled Formulir Dashboard: compacted KPI statistic cards with 1.6rem monospace counters, standardized filter/search inputs to 36px, and reduced table row height to 72–96px with single-line truncated subtitles and compact 28px action buttons.
+- Refactored Form Editor and Question Cards: eliminated nested containers and heavy 2px borders, flattened card headers into a single-line summary (`#1 Label | Teks Singkat | Wajib | ↑ ↓ duplicate delete`), reduced card padding to 16px (collapsed 10px 14px), and streamlined step tabs.
+- Full verification: 68/68 Vitest tests passing, 0 TypeScript errors, 0 ESLint errors, clean Next.js standalone build with Turbopack, and Docker containers rebuilt and verified healthy on port 3456 (`/api/health` -> `ok`).
+
+---
+
 ## v1.9 Interactive Analytics & Submission Data Visualization (Shipped: 2026-09-27)
 
 **Phases completed:** 3 phases, 3 plans, 9 tasks

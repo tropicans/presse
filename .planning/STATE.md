@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.9
-milestone_name: Interactive Analytics & Submission Data Visualization
-status: complete
-last_updated: "2026-09-27T13:35:00.000Z"
+milestone: v2.0
+milestone_name: UI/UX Density & Information Hierarchy Refactor
+status: completed
+last_updated: "2026-09-27T14:18:00.000Z"
 last_activity: 2026-09-27
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 6
+  completed_phases: 6
+  total_plans: 6
+  completed_plans: 6
   percent: 100
-current_phase: 30
-current_phase_name: Analytics Verification, Export Integration & Docker Up
+current_phase: 36
+current_phase_name: Multi-Tier Verification, Visual Regression & Docker Container Up
 ---
 
-# Project State: Interactive Analytics & Submission Data Visualization (Completed)
+# Project State: UI/UX Density & Information Hierarchy Refactor (Completed)
 
 ## Project Reference
 
@@ -23,32 +23,35 @@ See: [.planning/PROJECT.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self
 Requirements: [.planning/REQUIREMENTS.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/REQUIREMENTS.md)
 Roadmap: [.planning/ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/ROADMAP.md)
 
-**Core value:** Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
-**Current focus:** Milestone v1.9 audit and milestone completion.
+**Core value:** Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang compact, modern, dan bernilai guna tinggi.
+**Current focus:** Milestone v2.0 Completed.
 
 ## Current Position
 
-Milestone: v1.9 — Interactive Analytics & Submission Data Visualization (Completed: 2026-09-27)
-Status: Complete
+Milestone: v2.0 — UI/UX Density & Information Hierarchy Refactor
+Status: Completed
 Phases:
-- Phase 28: Submission Analytics Dashboard & Distribution Visualization UI (Completed)
-- Phase 29: Dynamic Aggregation API & Advanced Range Filter Engine (Completed)
-- Phase 30: Analytics Verification, Export Integration & Docker Up (Completed)
+- Phase 31: Design Tokens, Typography & Spacing Scale Alignment (Completed)
+- Phase 32: Shared Components & Global Container Density Refactor (Completed)
+- Phase 33: Admin Dashboard & Formulir List Density Overhaul (Completed)
+- Phase 34: Form Editor & Question Card Structure Refactor (Completed)
+- Phase 35: Responsive, Accessibility & Cross-Screen Refinements (Completed)
+- Phase 36: Multi-Tier Verification, Visual Regression & Docker Container Up (Completed)
 
-## Key Decisions
+## Key Decisions (Phase 31 Discussed & Approved)
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Classical Serif & Mono Typography Stack | Mengadopsi Playfair Display (Headlines), Source Serif 4 (Body/Questions), dan JetBrains Mono (Metadata/Badges) untuk estetika majalah editorial & monograf arsitektural | Disepakati |
-| Pure #000000 & #FFFFFF Palette | Menghapus warna aksen & abu-abu lunak; hitam dan putih murni mendominasi seluruh kanvas dan surface | Disepakati |
-| Strict Zero Border Radius (0px) | Sudut siku 90 derajat sempurna pada seluruh tombol, kartu, input, pill, dan modal tanpa rounded corners | Disepakati |
-| Zero Drop Shadows & Line-Based Hierarchy | Menghapus ambient shadow; hierarki dibangun lewat ketebalan garis (1px, 2px, 4px, 8px) dan inversi warna | Disepakati |
-| Dual-Theme Full Parity | Mode Terang (kanvas #FFFFFF dengan teks/garis #000000) dan Mode Gelap (kanvas #000000 dengan teks/garis #FFFFFF) | Disepakati |
-| Repeating Textures & Noise | Menambahkan pola garis horizontal tipis (4px) dan subtle noise untuk memberikan tekstur kertas cetak mewah | Disepakati |
+| Hybrid Typography Stack (Inter + Playfair Display + JetBrains Mono) | Membatasi serif hanya untuk page title/brand display (~32-36px); menggunakan Inter untuk seluruh UI control, label, button, input, dan tabel untuk densitas & keterbacaan tinggi | Disepakati |
+| Subtle Modern Architectural Radius (4px/6px/8px) | Menghapus rule keras `border-radius: 0px !important`; menerapkan radius ergonomis seperti pada visual reference screenshot `new_design/` | Disepakati |
+| Dark Mode Default with Tonal Surface Hierarchy | Menjadikan dark mode sebagai default dengan layer bertingkat (Canvas #0B0D0E, Surface #13161A, Elevated #1C2026, Border #272C35) sambil mempertahankan dukungan light mode | Disepakati |
+| Strict Spacing Scale (4/8/12/16/20/24/32/40/48px) | Menghilangkan arbitrary padding/margin, menurunkan tinggi kontrol ke 36-40px (compact 32px), dan mempercepat scanning informasi | Disepakati |
 
 ## Next Steps
 
-1. Jalankan **/gsd-plan-phase 24** untuk merancang implementasi token CSS, font stack Google Fonts, aturan radius 0px, dan penghapusan shadows di `src/app/globals.css`.
-2. Lanjutkan ke Phase 25 untuk merombak form publik (`AttendanceForm.tsx`, `/f/[slug]`, dan `/success`).
-3. Lanjutkan ke Phase 26 untuk merombak suite admin (`/admin/forms`, builder editor, dan tabel submissions).
-4. Selesaikan dengan Phase 27 untuk pengujian multi-tier, build container, dan verifikasi akhir.
+1. Jalankan **/gsd-plan-phase 31** untuk merancang implementasi token CSS, font stack, dan scale di `src/app/globals.css`.
+2. Lanjutkan ke Phase 32 untuk shared components dan de-escalation container border.
+3. Lanjutkan ke Phase 33 untuk perombakan dashboard Formulir dan pemadatan baris tabel.
+4. Lanjutkan ke Phase 34 untuk form editor dan kartu pertanyaan yang lebih compact.
+5. Selesaikan dengan Phase 35-36 untuk uji responsif, regression test, build standalone, dan Docker up.
+

@@ -16,33 +16,27 @@ describe('CSS layout constraints', () => {
     expect(formCardBody).not.toContain('overflow: hidden')
   })
 
-  it('defines editorial monochrome design tokens in :root', () => {
+  it('defines hybrid typography and spacing design tokens in :root', () => {
     const cssPath = path.resolve(process.cwd(), 'src/app/globals.css')
     const cssContent = fs.readFileSync(cssPath, 'utf8')
 
     expect(cssContent).toContain('--primary-900: #000000')
-    expect(cssContent).toContain('--ledger-bg: #ffffff')
-    expect(cssContent).toContain('--ledger-primary-fixed: #1e1e1e')
-    expect(cssContent).toContain('--font-family: \'Source Serif 4\'')
+    expect(cssContent).toContain('--font-family: \'Inter\'')
     expect(cssContent).toContain('--font-family-display: \'Playfair Display\'')
     expect(cssContent).toContain('--font-family-mono: \'JetBrains Mono\'')
-    expect(cssContent).toContain('--radius-sm: 0px')
-    expect(cssContent).toContain('--radius-md: 0px')
-    expect(cssContent).toContain('--radius-lg: 0px')
-    expect(cssContent).toContain('--radius-xl: 0px')
-    expect(cssContent).toContain('--shadow-sm: none')
-    expect(cssContent).toContain('--shadow-md: none')
-    expect(cssContent).toContain('--line-hairline: 1px')
-    expect(cssContent).toContain('--line-medium: 2px')
-    expect(cssContent).toContain('--line-heavy: 4px')
-    expect(cssContent).toContain('--line-ultra: 8px')
-  })
-
-  it('enforces global zero-radius rule', () => {
-    const cssPath = path.resolve(process.cwd(), 'src/app/globals.css')
-    const cssContent = fs.readFileSync(cssPath, 'utf8')
-
-    expect(cssContent).toContain('border-radius: 0px !important')
+    expect(cssContent).toContain('--radius-sm: 4px')
+    expect(cssContent).toContain('--radius-md: 6px')
+    expect(cssContent).toContain('--radius-lg: 8px')
+    expect(cssContent).toContain('--radius-pill: 9999px')
+    expect(cssContent).toContain('--space-1: 4px')
+    expect(cssContent).toContain('--space-2: 8px')
+    expect(cssContent).toContain('--space-4: 16px')
+    expect(cssContent).toContain('--space-6: 24px')
+    expect(cssContent).toContain('--space-8: 32px')
+    expect(cssContent).toContain('--control-height-sm: 32px')
+    expect(cssContent).toContain('--control-height-md: 36px')
+    expect(cssContent).toContain('--sidebar-width: 230px')
+    expect(cssContent).toContain('--header-height: 56px')
   })
 
   it('guarantees zero residual teal or cyan color remnants in globals.css', () => {
@@ -84,18 +78,18 @@ describe('CSS layout constraints', () => {
     const cssPath = path.resolve(process.cwd(), 'src/app/globals.css')
     const cssContent = fs.readFileSync(cssPath, 'utf8')
 
-    // Dark mode pure monochrome root overrides
+    // Dark mode tonal surface root overrides
     expect(cssContent).toContain("html[data-theme='dark'] {")
-    expect(cssContent).toContain('--ledger-bg: #000000')
-    expect(cssContent).toContain('--ledger-ink: #ffffff')
-    expect(cssContent).toContain('--bg-app: #000000')
-    expect(cssContent).toContain('--bg-surface: #000000')
-    expect(cssContent).toContain('--text-primary: #ffffff')
-    expect(cssContent).toContain('--border-focus: #ffffff')
+    expect(cssContent).toContain('--ledger-bg: #0b0d0e')
+    expect(cssContent).toContain('--ledger-ink: #f4f4f6')
+    expect(cssContent).toContain('--bg-app: #0b0d0e')
+    expect(cssContent).toContain('--bg-surface: #13161a')
+    expect(cssContent).toContain('--text-primary: #f4f4f6')
+    expect(cssContent).toContain('--border-default: #272c35')
 
     // Dark mode body texture
     expect(cssContent).toContain("html[data-theme='dark'] body {")
-    expect(cssContent).toContain('background-color: #000000')
+    expect(cssContent).toContain('background-color: #0b0d0e')
   })
 
   it('verifies analytics dashboard design system classes (ANLY-01 to ANLY-04)', () => {

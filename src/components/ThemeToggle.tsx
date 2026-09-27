@@ -12,7 +12,7 @@ function applyTheme(theme: Theme) {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>('light')
+  const [theme, setTheme] = useState<Theme>('dark')
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem(STORAGE_KEY)
@@ -28,7 +28,7 @@ export default function ThemeToggle() {
       return
     }
 
-    syncTheme(mediaQuery.matches ? 'dark' : 'light')
+    syncTheme('dark')
 
     const handleMediaChange = (event: MediaQueryListEvent) => {
       if (window.localStorage.getItem(STORAGE_KEY)) {

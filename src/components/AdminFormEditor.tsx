@@ -1330,7 +1330,7 @@ export default function AdminFormEditor({ formId }: Props) {
                   </div>
 
                   {!isCollapsed && (
-                  <div className="admin-builder-card-body" style={{ display: 'grid', gap: '16px' }}>
+                  <div className="admin-builder-card-body">
 
                     <div className="admin-builder-field-grid">
                       <label className="admin-builder-field admin-builder-field-main">

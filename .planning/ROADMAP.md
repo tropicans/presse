@@ -9,6 +9,7 @@
 - ✅ **v1.7 Monochrome Design System Overhaul** — Phases 20-23 (shipped 2026-09-27)
 - ✅ **v1.8 Editorial Minimalist Monochrome Transformation** — Phases 24-27 (shipped 2026-09-27)
 - ✅ **v1.9 Interactive Analytics & Submission Data Visualization** — Phases 28-30 (shipped 2026-09-27)
+- 🟡 **v2.0 UI/UX Density & Information Hierarchy Refactor** — Phases 31-36 (in progress)
 
 ## Phases
 
@@ -89,6 +90,15 @@ See: [.planning/milestones/v1.9-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 
 </details>
 
+### ✅ v2.0 UI/UX Density & Information Hierarchy Refactor (Phases 31-36) — SHIPPED 2026-09-27
+
+- [x] **Phase 31: Design Tokens, Typography & Spacing Scale Alignment** (1 plan) — completed 2026-09-27
+- [x] **Phase 32: Shared Components & Global Container Density Refactor** (1 plan) — completed 2026-09-27
+- [x] **Phase 33: Admin Dashboard & Formulir List Density Overhaul** (1 plan) — completed 2026-09-27
+- [x] **Phase 34: Form Editor & Question Card Structure Refactor** (1 plan) — completed 2026-09-27
+- [x] **Phase 35: Responsive, Accessibility & Cross-Screen Refinements** (1 plan) — completed 2026-09-27
+- [x] **Phase 36: Multi-Tier Verification, Visual Regression & Docker Container Up** (1 plan) — completed 2026-09-27
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -114,8 +124,14 @@ See: [.planning/milestones/v1.9-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 | 28. Submission Analytics Dashboard & Distribution Visualization UI | v1.9 | 1/1 | Complete | 2026-09-27 |
 | 29. Dynamic Aggregation API & Advanced Range Filter Engine | v1.9 | 1/1 | Complete | 2026-09-27 |
 | 30. Analytics Verification, Export Integration & Docker Up | v1.9 | 1/1 | Complete | 2026-09-27 |
+| 31. Design Tokens, Typography & Spacing Scale Alignment | v2.0 | 1/1 | Complete | 2026-09-27 |
+| 32. Shared Components & Global Container Density Refactor | v2.0 | 1/1 | Complete | 2026-09-27 |
+| 33. Admin Dashboard & Formulir List Density Overhaul | v2.0 | 1/1 | Complete | 2026-09-27 |
+| 34. Form Editor & Question Card Structure Refactor | v2.0 | 1/1 | Complete | 2026-09-27 |
+| 35. Responsive, Accessibility & Cross-Screen Refinements | v2.0 | 1/1 | Complete | 2026-09-27 |
+| 36. Multi-Tier Verification, Visual Regression & Docker Container Up | v2.0 | 1/1 | Complete | 2026-09-27 |
 
 ---
 
-*Roadmap updated: 2026-09-27 (v1.9 Shipped)*
+*Roadmap updated: 2026-09-27 (v2.0 Shipped)*
 
