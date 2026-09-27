@@ -318,35 +318,37 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
       }
 
       if (rawValue) {
-        if (isNipNrpField(field)) {
-          const nipError = validateNipNrp(rawValue)
-          if (nipError) {
-            nextErrors[field.name] = nipError
-            continue
+        if (field.type === 'text') {
+          if (isNipNrpField(field)) {
+            const nipError = validateNipNrp(rawValue)
+            if (nipError) {
+              nextErrors[field.name] = nipError
+              continue
+            }
           }
-        }
 
-        if (isEmailField(field)) {
-          const emailError = validateEmail(rawValue)
-          if (emailError) {
-            nextErrors[field.name] = emailError
-            continue
+          if (isEmailField(field)) {
+            const emailError = validateEmail(rawValue)
+            if (emailError) {
+              nextErrors[field.name] = emailError
+              continue
+            }
           }
-        }
 
-        if (isPhoneField(field)) {
-          const phoneError = validatePhoneNumber(rawValue)
-          if (phoneError) {
-            nextErrors[field.name] = phoneError
-            continue
+          if (isPhoneField(field)) {
+            const phoneError = validatePhoneNumber(rawValue)
+            if (phoneError) {
+              nextErrors[field.name] = phoneError
+              continue
+            }
           }
-        }
 
-        if (isNameField(field)) {
-          const nameError = validateName(rawValue)
-          if (nameError) {
-            nextErrors[field.name] = nameError
-            continue
+          if (isNameField(field)) {
+            const nameError = validateName(rawValue)
+            if (nameError) {
+              nextErrors[field.name] = nameError
+              continue
+            }
           }
         }
 
@@ -368,14 +370,10 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
   ) => {
     const { name, value } = e.target
     let nextValue = value
-    if (name === 'nipNrp') {
+    const targetField = form.fields.find((f) => f.name === name)
+    if (name === 'nipNrp' || (targetField?.type === 'text' && isNipNrpField(targetField))) {
       nextValue = sanitizeNipNrp(value)
-    } else if (
-      name.toLowerCase().includes('telepon') ||
-      name.toLowerCase().includes('phone') ||
-      name.toLowerCase().includes('whatsapp') ||
-      name.toLowerCase().includes('hp')
-    ) {
+    } else if (targetField?.type === 'text' && isPhoneField(targetField)) {
       nextValue = sanitizePhoneNumber(value)
     }
 

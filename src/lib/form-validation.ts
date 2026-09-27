@@ -2,10 +2,11 @@ export function sanitizeNipNrp(value: string): string {
   return value.replace(/[\s.-]/g, '')
 }
 
-export function isNipNrpField(field: { name: string; label?: string }): boolean {
-  if (field.name === 'nipNrp') return true
+export function isNipNrpField(field: { name: string; label?: string; type?: string }): boolean {
+  if (field.type && field.type !== 'text') return false
+  if (field.name === 'nipNrp' || field.name === 'nip' || field.name === 'nrp') return true
   const normLabel = (field.label ?? '').trim().toLowerCase()
-  return normLabel === 'nip' || normLabel === 'nrp' || normLabel === 'nip/nrp'
+  return normLabel === 'nip' || normLabel === 'nrp' || normLabel === 'nip/nrp' || normLabel === 'nip / nrp'
 }
 
 export function validateNipNrp(value: string): string | null {
@@ -28,10 +29,17 @@ export function validateNipNrp(value: string): string | null {
   return null
 }
 
-export function isEmailField(field: { name: string; label?: string }): boolean {
+export function isEmailField(field: { name: string; label?: string; type?: string }): boolean {
+  if (field.type && field.type !== 'text') return false
   const name = field.name.toLowerCase()
   const label = (field.label ?? '').toLowerCase()
-  return name.includes('email') || name.includes('surel') || label.includes('email') || label.includes('surel')
+  return (
+    name === 'email' ||
+    name.includes('email') ||
+    name.includes('surel') ||
+    label.includes('email') ||
+    label.includes('surel')
+  )
 }
 
 export function sanitizeEmail(value: string): string {
@@ -48,24 +56,43 @@ export function validateEmail(value: string): string | null {
   return null
 }
 
-export function isPhoneField(field: { name: string; label?: string }): boolean {
+export function isPhoneField(field: { name: string; label?: string; type?: string }): boolean {
+  if (field.type && field.type !== 'text') return false
   const name = field.name.toLowerCase()
   const label = (field.label ?? '').toLowerCase()
-  return (
+
+  const nameMatches =
     name.includes('telepon') ||
     name.includes('telp') ||
     name.includes('whatsapp') ||
     name.includes('phone') ||
     name.includes('nohp') ||
     name.includes('no_hp') ||
+    name === 'wa' ||
+    name === 'hp' ||
+    name === 'no_wa' ||
+    name === 'nowa'
+
+  if (nameMatches) return true
+
+  return (
     label.includes('telepon') ||
     label.includes('telp') ||
     label.includes('whatsapp') ||
-    label.includes('wa') ||
+    label.includes('handphone') ||
     label.includes('no hp') ||
     label.includes('no. hp') ||
-    label.includes('handphone') ||
-    label.includes('kontak')
+    label.includes('nomor hp') ||
+    label.includes('no wa') ||
+    label.includes('no. wa') ||
+    label.includes('nomor wa') ||
+    /\bwa\b/i.test(label) ||
+    /\bhp\b/i.test(label) ||
+    label.includes('kontak narahubung') ||
+    label.includes('nomor kontak') ||
+    label.includes('no kontak') ||
+    label.includes('no. kontak') ||
+    label.trim() === 'kontak'
   )
 }
 
@@ -94,7 +121,8 @@ export function validatePhoneNumber(value: string): string | null {
   return null
 }
 
-export function isNameField(field: { name: string; label?: string }): boolean {
+export function isNameField(field: { name: string; label?: string; type?: string }): boolean {
+  if (field.type && field.type !== 'text') return false
   const name = field.name.toLowerCase()
   const label = (field.label ?? '').toLowerCase()
   return (
@@ -134,14 +162,16 @@ export function validateSignatureValue(value: string): string | null {
   return null
 }
 
-export function getFieldInputMode(field: { name: string; label?: string }): 'numeric' | 'email' | 'tel' | undefined {
+export function getFieldInputMode(field: { name: string; label?: string; type?: string }): 'numeric' | 'email' | 'tel' | undefined {
+  if (field.type && field.type !== 'text') return undefined
   if (isNipNrpField(field)) return 'numeric'
   if (isEmailField(field)) return 'email'
   if (isPhoneField(field)) return 'tel'
   return undefined
 }
 
-export function getFieldFormatHint(field: { name: string; label?: string }): string | null {
+export function getFieldFormatHint(field: { name: string; label?: string; type?: string }): string | null {
+  if (field.type && field.type !== 'text') return null
   if (isNipNrpField(field)) {
     return '18 digit angka untuk NIP ASN atau 5–8 digit untuk NRP TNI/Polri (tanpa spasi).'
   }

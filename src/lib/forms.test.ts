@@ -453,7 +453,34 @@ describe('Email, Phone, Name, and Signature format validators', () => {
     expect(isPhoneField({ name: 'custom', label: 'Nomor WhatsApp / WA' })).toBe(true)
     expect(isPhoneField({ name: 'custom', label: 'No. Handphone Aktif' })).toBe(true)
     expect(isPhoneField({ name: 'custom', label: 'Kontak Narahubung' })).toBe(true)
+    expect(isPhoneField({ name: 'custom', label: 'No WA' })).toBe(true)
+    expect(isPhoneField({ name: 'custom', label: 'No. WA' })).toBe(true)
+    expect(isPhoneField({ name: 'custom', label: 'WA' })).toBe(true)
     expect(isPhoneField({ name: 'catatan', label: 'Catatan Khusus' })).toBe(false)
+
+    // False positive prevention for Indonesian words containing 'wa'
+    expect(
+      isPhoneField({
+        name: 'field_1',
+        label: 'Apakah Anda merupakan pegawai di lingkungan Sekretariat Kementerian dan Kedeputian Kementerian Sekretariat Negara?',
+        type: 'radio',
+      })
+    ).toBe(false)
+    expect(
+      isPhoneField({
+        name: 'status_pegawai',
+        label: 'Apakah Anda merupakan pegawai di lingkungan Sekretariat Kementerian dan Kedeputian Kementerian Sekretariat Negara?',
+      })
+    ).toBe(false)
+    expect(isPhoneField({ name: 'mahasiswa', label: 'Data Mahasiswa' })).toBe(false)
+    expect(isPhoneField({ name: 'karyawan', label: 'Status Karyawan' })).toBe(false)
+    expect(isPhoneField({ name: 'tanggung_jawab', label: 'Tanggung Jawab' })).toBe(false)
+    expect(isPhoneField({ name: 'kewarganegaraan', label: 'Kewarganegaraan' })).toBe(false)
+
+    // Choice types must never be treated as phone or email fields
+    expect(isPhoneField({ name: 'noTelepon', label: 'Nomor Telepon', type: 'radio' })).toBe(false)
+    expect(isEmailField({ name: 'email', label: 'Email Konfirmasi', type: 'radio' })).toBe(false)
+    expect(isNipNrpField({ name: 'nipNrp', label: 'NIP', type: 'radio' })).toBe(false)
 
     // Name detection
     expect(isNameField({ name: 'namaLengkap' })).toBe(true)

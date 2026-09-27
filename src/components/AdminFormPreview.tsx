@@ -229,14 +229,10 @@ function PreviewSession({ form }: Props) {
   ) => {
     const { name, value } = event.target
     let nextValue = value
-    if (name === 'nipNrp') {
+    const targetField = form.fields.find((f) => f.name === name)
+    if (name === 'nipNrp' || (targetField?.type === 'text' && isNipNrpField(targetField))) {
       nextValue = sanitizeNipNrp(value)
-    } else if (
-      name.toLowerCase().includes('telepon') ||
-      name.toLowerCase().includes('phone') ||
-      name.toLowerCase().includes('whatsapp') ||
-      name.toLowerCase().includes('hp')
-    ) {
+    } else if (targetField?.type === 'text' && isPhoneField(targetField)) {
       nextValue = sanitizePhoneNumber(value)
     }
 

@@ -1622,6 +1622,14 @@ export function validateFormSubmission(form: PublicFormDefinition, payload: Reco
       continue
     }
 
+    if (field.type === 'yes_no') {
+      if (value !== 'Ya' && value !== 'Tidak') {
+        throw new FormSubmissionError(`Pilihan untuk "${field.label}" harus Ya atau Tidak`, 400)
+      }
+      values[field.name] = value
+      continue
+    }
+
     if (field.type === 'signature') {
       const sigError = validateSignatureValue(value)
       if (sigError) {
@@ -1640,40 +1648,42 @@ export function validateFormSubmission(form: PublicFormDefinition, payload: Reco
         throw new FormSubmissionError(`Field "${field.label}" melebihi batas panjang`, 400)
       }
 
-      if (isNipNrpField(field)) {
-        const nipError = validateNipNrp(value)
-        if (nipError) {
-          throw new FormSubmissionError(nipError, 400)
+      if (field.type === 'text') {
+        if (isNipNrpField(field)) {
+          const nipError = validateNipNrp(value)
+          if (nipError) {
+            throw new FormSubmissionError(nipError, 400)
+          }
+          values[field.name] = sanitizeNipNrp(value)
+          continue
         }
-        values[field.name] = sanitizeNipNrp(value)
-        continue
-      }
 
-      if (isEmailField(field)) {
-        const emailError = validateEmail(value)
-        if (emailError) {
-          throw new FormSubmissionError(emailError, 400)
+        if (isEmailField(field)) {
+          const emailError = validateEmail(value)
+          if (emailError) {
+            throw new FormSubmissionError(emailError, 400)
+          }
+          values[field.name] = sanitizeEmail(value)
+          continue
         }
-        values[field.name] = sanitizeEmail(value)
-        continue
-      }
 
-      if (isPhoneField(field)) {
-        const phoneError = validatePhoneNumber(value)
-        if (phoneError) {
-          throw new FormSubmissionError(phoneError, 400)
+        if (isPhoneField(field)) {
+          const phoneError = validatePhoneNumber(value)
+          if (phoneError) {
+            throw new FormSubmissionError(phoneError, 400)
+          }
+          values[field.name] = sanitizePhoneNumber(value)
+          continue
         }
-        values[field.name] = sanitizePhoneNumber(value)
-        continue
-      }
 
-      if (isNameField(field)) {
-        const nameError = validateName(value)
-        if (nameError) {
-          throw new FormSubmissionError(nameError, 400)
+        if (isNameField(field)) {
+          const nameError = validateName(value)
+          if (nameError) {
+            throw new FormSubmissionError(nameError, 400)
+          }
+          values[field.name] = sanitizeName(value)
+          continue
         }
-        values[field.name] = sanitizeName(value)
-        continue
       }
 
       values[field.name] = value
