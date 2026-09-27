@@ -65,12 +65,17 @@ See: [.planning/milestones/v1.7-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 
 </details>
 
-### 🟡 v1.8 Editorial Minimalist Monochrome Transformation (Phases 24-27) — IN PROGRESS
+<details>
+<summary>✅ v1.8 Editorial Minimalist Monochrome Transformation (Phases 24-27) — SHIPPED 2026-09-27</summary>
 
-- [ ] **Phase 24: Editorial Serif Typography & Global Zero-Radius Tokens Foundation** (1 plan) — in progress
-- [ ] **Phase 25: Public Form & Confirmation Experience Editorial Overhaul** (1 plan) — planned
-- [ ] **Phase 26: Admin Suite & Form Builder Editorial Minimalist Transformation** (1 plan) — planned
-- [ ] **Phase 27: Multi-Tier Verification, Visual Regression & Docker Container Up** (1 plan) — planned
+- [x] **Phase 24: Editorial Serif Typography & Global Zero-Radius Tokens Foundation** (1 plan) — completed 2026-09-27
+- [x] **Phase 25: Public Form & Confirmation Experience Editorial Overhaul** (1 plan) — completed 2026-09-27
+- [x] **Phase 26: Admin Suite & Form Builder Editorial Minimalist Transformation** (1 plan) — completed 2026-09-27
+- [x] **Phase 27: Multi-Tier Verification, Visual Regression & Docker Container Up** (1 plan) — completed 2026-09-27
+
+See: [.planning/milestones/v1.8-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/milestones/v1.8-ROADMAP.md)
+
+</details>
 
 ## Progress
 
@@ -90,11 +95,11 @@ See: [.planning/milestones/v1.7-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 | 21. Public Form & Confirmation Experience Monochrome Transformation | v1.7 | 1/1 | Complete | 2026-09-27 |
 | 22. Admin Dashboard & Form Builder Monochrome Overhaul | v1.7 | 1/1 | Complete | 2026-09-27 |
 | 23. Quality Assurance, Visual Regression & Build Verification | v1.7 | 1/1 | Complete | 2026-09-27 |
-| 24. Editorial Serif Typography & Global Zero-Radius Tokens Foundation | v1.8 | 0/1 | In Progress | - |
-| 25. Public Form & Confirmation Experience Editorial Overhaul | v1.8 | 0/1 | Planned | - |
-| 26. Admin Suite & Form Builder Editorial Minimalist Transformation | v1.8 | 0/1 | Planned | - |
-| 27. Multi-Tier Verification, Visual Regression & Docker Container Up | v1.8 | 0/1 | Planned | - |
+| 24. Editorial Serif Typography & Global Zero-Radius Tokens Foundation | v1.8 | 1/1 | Complete | 2026-09-27 |
+| 25. Public Form & Confirmation Experience Editorial Overhaul | v1.8 | 1/1 | Complete | 2026-09-27 |
+| 26. Admin Suite & Form Builder Editorial Minimalist Transformation | v1.8 | 1/1 | Complete | 2026-09-27 |
+| 27. Multi-Tier Verification, Visual Regression & Docker Container Up | v1.8 | 1/1 | Complete | 2026-09-27 |
 
 ---
 
-*Roadmap updated: 2026-09-27*
+*Roadmap updated: 2026-09-27 (v1.8 Shipped)*

@@ -54,6 +54,11 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           </svg>
         </div>
         <h1 className="success-title">Konfirmasi Pengiriman</h1>
+        {submissionId && (
+          <p style={{ margin: '0 0 16px', fontFamily: 'var(--font-family-mono)', fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+            [ ID: {submissionId} ]
+          </p>
+        )}
         <p className="success-message">
           {successMessage}
         </p>

@@ -1,92 +1,59 @@
-# Design System Specification: isian
+# Design System Specification: isian (Milestone v1.8)
 
 ## 1. Overview & Creative North Star
 
-**Creative North Star: "The Monochrome Ledger"**
-This design system embraces an ultra-clean, minimalist, and high-contrast Swiss/Tech aesthetic (reminiscent of modern tools like Linear, Vercel, and Apple). We move away from saturated teal and blue palettes in favor of a timeless monochromatic scale of obsidian, deep charcoal, calibrated grays, and pure crisp whites.
-
-The system relies on **tonal contrast, precision hairline borders, and typographic hierarchy** to deliver an interface that feels quiet, confident, and exceptionally sharp.
-
----
-
-## 2. Colors & Surface Philosophy
-
-The palette is engineered for intense visual focus, eliminating decorative color noise while retaining restrained, high-clarity status cues for critical user actions.
-
-### Monochromatic Tokens
-
-*   **Obsidian / Pitch Black (Dark Surface / Light Ink):** `#09090b` / `#000000`
-*   **Deep Charcoal (Dark Cards / Secondary Ink):** `#121214` / `#18181b`
-*   **Muted Grays (Dividers / Borders / Subtle Text):**
-    *   `gray-100`: `#f4f4f5`
-    *   `gray-200`: `#e4e4e7`
-    *   `gray-300`: `#d4d4d8`
-    *   `gray-400`: `#a1a1aa`
-    *   `gray-500`: `#71717a`
-    *   `gray-600`: `#52525b`
-    *   `gray-700`: `#3f3f46`
-    *   `gray-800`: `#27272a`
-    *   `gray-900`: `#18181b`
-*   **Stark White (Light Surface / Dark Ink):** `#ffffff` / `#fafafa`
-
-### Surface Stacking & Hairline Border Rule
-
-Boundaries between components are defined through crisp, understated precision:
-1.  **Hairline Borders (1px):**
-    *   *Light Mode:* `1px solid rgba(0, 0, 0, 0.08)` or `#e4e4e7`
-    *   *Dark Mode:* `1px solid rgba(255, 255, 255, 0.08)` or `#27272a`
-2.  **Elevation & Depth:** Ambient drop shadows (`--shadow-sm` through `--shadow-xl`) combined with delicate borders provide floating depth without visual clutter.
-3.  **Glassmorphism:** Floating elements (dropdowns, theme toggle, modals) utilize 85% background opacity with `backdrop-filter: blur(16px)`.
-
-### Semantic Indicators (Restrained)
-To guarantee form usability and accessibility, status indicators use desaturated, restrained tones:
-*   **Success:** Muted Emerald text (`#16a34a` / `#4ade80` dark) on soft translucent background.
-*   **Error:** Restrained Crimson text (`#dc2626` / `#f87171` dark) with instant field highlight.
-*   **Neutral / Pill Badges:** Inverted black-on-white or white-on-black badges with subtle border.
+**Creative North Star: "Editorial Minimalist Monochrome (Architectural Luxury & Print Precision)"**
+This design system transforms the `isian` platform into an ultra-curated, editorial-grade experience reminiscent of high-end architectural monographs, printed literary reviews, and minimalist museum catalogues. We transcend utilitarian interface conventions by combining:
+1. **Classical Serif & Monospace Typography:** Dramatic headlines, luxurious reading typography, and monospaced structural cues.
+2. **Absolute Monochrome Palette:** Pure, unyielding `#000000` (deep ink) and `#FFFFFF` (crisp paper) without distracting accent hues.
+3. **Strict Zero Border-Radius (0px Everywhere):** 90-degree sharp corners across every container, button, input, badge, modal, and signature canvas.
+4. **Structural Line Hierarchy & Zero Shadows:** Removal of all soft ambient drop shadows, replaced by intentional line weights (1px hairline, 2px focus/accent, 4px structural section, 8px masthead anchor).
+5. **Layered Paper & Line Textures:** Subtle repeating horizontal hairline stripes and grain textures that ground the canvas in tactile physical reality.
 
 ---
 
-## 3. Typography: The Editorial Scale
+## 2. Typography: The Editorial Triad
 
-A dual-font strategy: **Manrope** provides a geometric, modern authority for large numbers and headlines, while **Inter** delivers crisp, neutral legibility for questions, inputs, and tabular data.
-
-| Role | Token | Font | Size | Weight | Intent |
+| Role | Token | Font | Target Sizes | Weight | Intent |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Display** | `display-lg` | Manrope | 3.5rem | 700 | Large data hero stats & percentages |
-| **Headline**| `headline-md` | Manrope | 1.75rem| 600 | Page titles & Section headers |
-| **Title**   | `title-md` | Inter | 1.125rem| 600 | Form card titles & Step headings |
-| **Body**    | `body-md` | Inter | 0.875rem| 400 | Form questions, metadata & Table rows |
-| **Label**   | `label-sm` | Inter | 0.6875rem| 600 | Overlines & Category tags (all-caps, 0.05em tracking) |
+| **Display / Masthead** | `var(--font-family-display)` | `Playfair Display`, serif | 2.5rem – 4rem | 700 / 900 | Hero headers, form titles, celebratory confirmation screens |
+| **Body & Questions** | `var(--font-family)` | `Source Serif 4`, Georgia, serif | 0.875rem – 1.25rem | 400 / 600 | Question prompts, explanatory copy, form descriptions |
+| **Metadata & Badges** | `var(--font-family-mono)` | `JetBrains Mono`, monospace | 0.6875rem – 0.875rem | 500 / 600 | Step counts (`01/04`), timestamps, table headers, submission IDs |
 
 ---
 
-## 4. Components
+## 3. Colors & Dual-Theme Inversion Parity
 
-### Buttons
-*   **Primary Action:**
-    *   *Light Mode:* Solid Black (`#09090b`), White text (`#ffffff`), border: `1px solid #000000`. Hover: `#27272a`.
-    *   *Dark Mode:* Solid White (`#fafafa`), Black text (`#09090b`), border: `1px solid #ffffff`. Hover: `#e4e4e7`.
-*   **Secondary / Outline:** Ghost button with 1px hairline border, transparent background, and high-contrast text.
-*   **Destructive:** Ghost button with muted crimson border/text on hover.
+The system strictly adheres to high-contrast binary elegance:
 
-### Cards & Form Containers
-*   Cards sit on clean surfaces with 1px hairline borders (`var(--border-default)`) and subtle ambient shadows.
-*   Card headers feature clear typographic separation and compact action icon triggers.
+### Light Mode (The Printed Sheet)
+- **Canvas:** `#FFFFFF`
+- **Surface / Card:** `#FFFFFF`
+- **Primary Ink:** `#000000`
+- **Secondary Ink:** `#525252`
+- **Dividers & Borders:** `#000000` (accent/structural) / `#E5E5E5` (hairline)
+- **Inputs & Controls:** `#FFFFFF` background with `2px solid #000000` bottom or bounding box
 
-### Inputs & Digital Signature Pad
-*   Inputs feature clean 1px borders transitioning to high-contrast solid focus ring (`--border-focus`) without colored glow.
-*   Signature pad uses a crisp canvas with dark ink on light mode (`#09090b`) and light ink on dark mode (`#ffffff`).
+### Dark Mode (The Photographic Darkroom)
+- **Canvas:** `#000000`
+- **Surface / Card:** `#0A0A0A` / `#000000`
+- **Primary Ink:** `#FFFFFF`
+- **Secondary Ink:** `#A3A3A3`
+- **Dividers & Borders:** `#FFFFFF` (accent/structural) / `#262626` (hairline)
+- **Inputs & Controls:** `#000000` background with `2px solid #FFFFFF` bottom or bounding box
 
 ---
 
-## 5. Do's and Don'ts
+## 4. Geometry & Elevation Rules
 
-### Do
-*   **Do** embrace stark black-and-white contrasts with subtle mid-gray transitions.
-*   **Do** use 1px hairline borders to create clean modular framing.
-*   **Do** keep status colors functional and restrained rather than loud.
-
-### Don't
-*   **Don't** reintroduce saturated primary colors (cyan, blue, teal, purple) into background surfaces or buttons.
-*   **Don't** use heavy colored drop shadows.
-*   **Don't** compromise contrast ratios for text readability.
+1. **Zero Border Radius (0px):**
+   - No rounded pills, no soft corners. All inputs, cards, action buttons, modals, dropdowns, and tags feature precise 90-degree right angles.
+2. **Zero Drop Shadows:**
+   - Soft blurry shadows (`--shadow-sm` through `--shadow-xl`) are abolished (`none`). Elevation is conveyed through high-contrast boundary lines and color inversion.
+3. **Line System:**
+   - **Hairline (1px):** Grid dividers, subtle cell separators, secondary borders.
+   - **Medium (2px):** Card outlines, input fields, interactive borders.
+   - **Heavy (4px):** Header dividers, active step indicators, card accents.
+   - **Ultra (8px):** Main masthead bars, top layout accents, key milestones.
+4. **Binary Inversion Transitions:**
+   - Interactive hover states invert foreground and background colors instantaneously or in <100ms (e.g., black button with white text flips to white button with black text).

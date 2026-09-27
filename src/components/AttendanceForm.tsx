@@ -530,7 +530,9 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
       {isMultiStep && currentStep && (
         <div className="form-step-shell">
           <div className="form-step-progress" aria-label={`Langkah ${currentStepIndex + 1} dari ${steps.length}`}>
-            <span className="form-step-badge">Langkah {currentStepIndex + 1} dari {steps.length}</span>
+            <span className="form-step-badge">
+              Langkah {String(currentStepIndex + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}
+            </span>
             <div className="form-step-bar" aria-hidden="true">
               <span
                 className="form-step-bar-fill"
