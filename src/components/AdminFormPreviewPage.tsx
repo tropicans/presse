@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useSyncExternalStore } from 'react'
 import AdminFormPreview from './AdminFormPreview'
+import HimpunLogo from './HimpunLogo'
 import { getAdminPreviewStorageKey, type AdminPreviewForm, type AdminPreviewSnapshot } from '@/lib/admin-form-preview'
 
 interface Props {
@@ -146,7 +147,10 @@ export default function AdminFormPreviewPage({ formId, initialForm, initialDevic
     <div className="editorial-preview-page-shell">
       <header className="editorial-preview-page-topbar">
         <div>
-          <p className="forms-dashboard-overline">Pratinjau Form</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <HimpunLogo size={18} />
+            <p className="forms-dashboard-overline" style={{ margin: 0 }}>HIMPUN Pratinjau</p>
+          </div>
           <h1>Pratinjau tab baru</h1>
           <div className="editorial-preview-page-status-row">
             <span className={`editorial-preview-status-badge ${usingDraftSnapshot ? 'draft' : 'saved'}`}>

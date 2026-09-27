@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import SearchableSelect from './SearchableSelect'
+import HimpunLogo from '@/components/HimpunLogo'
 import type { AdminPreviewField, AdminPreviewForm, AdminPreviewPage } from '@/lib/admin-form-preview'
 import {
   sanitizeNipNrp,
@@ -250,7 +251,10 @@ function PreviewSession({ form }: Props) {
           <span />
           <span />
         </div>
-        <div className="editorial-preview-windowtag">Pratinjau langsung</div>
+        <div className="editorial-preview-windowtag" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <HimpunLogo size={14} />
+          <span>HIMPUN Live Preview</span>
+        </div>
         <div className="editorial-preview-windowicon">↗</div>
       </div>
       <div className="admin-preview-card">

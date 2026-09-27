@@ -6,6 +6,9 @@ import ThemeToggle from '@/components/ThemeToggle'
 export const metadata: Metadata = {
   title: 'HIMPUN',
   description: 'Platform pengelolaan formulir publik, kiriman, dan dashboard admin HIMPUN.',
+  icons: {
+    icon: '/icon.svg',
+  },
 }
 
 const themeScript = `(() => {

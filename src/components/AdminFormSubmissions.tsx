@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { getAdminFormStatusLabel } from '@/lib/admin-display'
+import HimpunLogo from '@/components/HimpunLogo'
 
 function MarkdownRenderer({ content }: { content: string }) {
   const lines = content.split('\n')
@@ -595,7 +596,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
         <header className="editorial-form-editor-topbar">
           <div className="editorial-form-editor-topbar-left">
             <div className="forms-dashboard-brand">
-              <div className="forms-dashboard-brand-mark" aria-hidden="true" />
+              <HimpunLogo size="sm" />
               <div>
                 <strong>HIMPUN</strong>
                 <span>Hasil Form</span>
@@ -694,7 +695,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
         <header className="editorial-form-editor-topbar">
           <div className="editorial-form-editor-topbar-left">
             <div className="forms-dashboard-brand">
-              <div className="forms-dashboard-brand-mark" aria-hidden="true" />
+              <HimpunLogo size="sm" />
               <div>
                 <strong>HIMPUN</strong>
                 <span>Hasil Form</span>
@@ -810,7 +811,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
       <header className="editorial-form-editor-topbar">
         <div className="editorial-form-editor-topbar-left">
           <div className="forms-dashboard-brand">
-            <div className="forms-dashboard-brand-mark" aria-hidden="true" />
+            <HimpunLogo size="sm" />
             <div>
               <strong>HIMPUN</strong>
               <span>Hasil Form</span>

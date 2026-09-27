@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { signOut } from 'next-auth/react'
 import { useCallback, useEffect, useState } from 'react'
+import HimpunLogo from '@/components/HimpunLogo'
 
 interface Attendance {
   id: number
@@ -239,7 +240,7 @@ export default function AdminTable() {
     <div className="forms-dashboard-shell attendance-dashboard-shell">
       <header className="forms-dashboard-topbar">
         <div className="forms-dashboard-brand">
-          <div className="forms-dashboard-brand-mark" aria-hidden="true" />
+          <HimpunLogo size="sm" />
           <div>
             <strong>HIMPUN</strong>
             <span>Dashboard admin</span>

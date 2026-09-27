@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { getAdminFormStatusLabel } from '@/lib/admin-display'
 import { getAdminPreviewStorageKey, type AdminPreviewField, type AdminPreviewForm, type AdminPreviewPage } from '@/lib/admin-form-preview'
+import HimpunLogo from '@/components/HimpunLogo'
 
 type EditableField = AdminPreviewField
 type EditablePage = AdminPreviewPage
@@ -860,7 +861,7 @@ export default function AdminFormEditor({ formId }: Props) {
       <header className="editorial-form-editor-topbar">
         <div className="editorial-form-editor-topbar-left">
           <div className="forms-dashboard-brand">
-            <div className="forms-dashboard-brand-mark" aria-hidden="true" />
+            <HimpunLogo size="sm" />
             <div>
               <strong>HIMPUN</strong>
               <span>Ruang kerja penyusunan formulir</span>

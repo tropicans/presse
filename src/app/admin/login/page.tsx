@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import HimpunLogo from '@/components/HimpunLogo'
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -71,11 +72,8 @@ export default function AdminLoginPage() {
             Kembali ke beranda
           </Link>
 
-          <div className="login-icon entry-suite-icon login-suite-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
+          <div className="login-icon entry-suite-icon login-suite-icon" style={{ padding: 0, background: 'transparent', border: 'none', boxShadow: 'none' }}>
+            <HimpunLogo size={44} />
           </div>
 
           <div className="login-suite-panel-copy">

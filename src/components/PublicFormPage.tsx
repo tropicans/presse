@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import PublicFormShell from '@/components/PublicFormShell'
+import HimpunLogo from '@/components/HimpunLogo'
 import type { PublicFormDefinition } from '@/lib/forms'
 
 interface PublicFormPageProps {
@@ -15,7 +16,7 @@ export default function PublicFormPage({ form }: PublicFormPageProps) {
     <div className="page-wrapper public-ledger-page">
       <header className="public-ledger-topbar">
         <Link href="/f/attendance-template" className="public-ledger-brand">
-          <div className="public-ledger-brand-mark" aria-hidden="true" />
+          <HimpunLogo size="sm" />
           <div>
             <strong>HIMPUN</strong>
             <span>Portal pengisian</span>
