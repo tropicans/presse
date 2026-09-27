@@ -77,6 +77,12 @@ See: [.planning/milestones/v1.8-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 
 </details>
 
+### 🟡 v1.9 Interactive Analytics & Submission Data Visualization (Phases 28-30) — IN PROGRESS
+
+- [ ] **Phase 28: Submission Analytics Dashboard & Distribution Visualization UI** (1 plan) — in progress
+- [ ] **Phase 29: Dynamic Aggregation API & Advanced Range Filter Engine** (1 plan) — planned
+- [ ] **Phase 30: Analytics Verification, Export Integration & Docker Up** (1 plan) — planned
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -99,7 +105,10 @@ See: [.planning/milestones/v1.8-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 | 25. Public Form & Confirmation Experience Editorial Overhaul | v1.8 | 1/1 | Complete | 2026-09-27 |
 | 26. Admin Suite & Form Builder Editorial Minimalist Transformation | v1.8 | 1/1 | Complete | 2026-09-27 |
 | 27. Multi-Tier Verification, Visual Regression & Docker Container Up | v1.8 | 1/1 | Complete | 2026-09-27 |
+| 28. Submission Analytics Dashboard & Distribution Visualization UI | v1.9 | 0/1 | In Progress | - |
+| 29. Dynamic Aggregation API & Advanced Range Filter Engine | v1.9 | 0/1 | Planned | - |
+| 30. Analytics Verification, Export Integration & Docker Up | v1.9 | 0/1 | Planned | - |
 
 ---
 
-*Roadmap updated: 2026-09-27 (v1.8 Shipped)*
+*Roadmap updated: 2026-09-27 (v1.9 Initiated)*

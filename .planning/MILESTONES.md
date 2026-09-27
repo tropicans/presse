@@ -1,5 +1,22 @@
 # Milestones
 
+## v1.8 Editorial Minimalist Monochrome Transformation (Shipped: 2026-09-27)
+
+**Phases completed:** 4 phases, 4 plans, 12 tasks
+
+**Key accomplishments:**
+
+- Transformed the visual language of `isian` to an **Editorial Minimalist Monochrome (Architectural Luxury & Print Precision)** aesthetic.
+- Integrated Google Fonts classical typography stack: `Playfair Display` (Headlines), `Source Serif 4` (Body/Questions), and `JetBrains Mono` (Metadata/Badges/Code).
+- Enforced pure `#000000` & `#FFFFFF` monochrome palette and purged all residual teal/cyan colors.
+- Enforced global strict 0px border-radius (`*, *::before, *::after { border-radius: 0px !important; }`) and eliminated ambient drop shadows in favor of an architectural line hierarchy (1px hairline, 2px medium, 4px heavy, 8px ultra).
+- Added subtle 32px repeating line grid texture to body canvas.
+- Overhauled public form journey (`/f/[slug]`, `AttendanceForm.tsx`, and `/success`) with prominent serif headings, zero-padded monospace step progress (`Langkah 01 / 04`), 2px solid bordered inputs, square radio/checkboxes with instant binary color inversion, and framed signature canvas.
+- Transformed admin suite (`/admin/forms`, form editor builder, step tabs, submissions dashboard) into an architectural monograph style.
+- Verified system stability with 61 passing unit tests, zero ESLint issues, strict TypeScript compliance, optimized Next.js standalone build, and healthy Docker Compose multi-container stack.
+
+---
+
 ## v1.7 Monochrome Design System Overhaul (Shipped: 2026-09-27)
 
 **Phases completed:** 4 phases, 4 plans, 12 tasks
