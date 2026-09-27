@@ -7903,6 +7903,90 @@ html[data-theme='dark'] .admin-bulk-action-btn.secondary:hover {
   }
 }
 
+/* ===================== UI DESIGN SYSTEM POLISH & ACCESSIBILITY ===================== */
+
+@keyframes ui-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes ui-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes ui-slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ui-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.6) 25%,
+    rgba(241, 245, 249, 0.9) 37%,
+    rgba(226, 232, 240, 0.6) 63%
+  );
+  background-size: 400% 100%;
+  animation: ui-shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+html[data-theme='dark'] .ui-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 37%,
+    rgba(255, 255, 255, 0.04) 63%
+  );
+  background-size: 400% 100%;
+}
+
+.ui-animate-scale-in {
+  animation: ui-scale-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.ui-animate-slide-up {
+  animation: ui-slide-up-fade 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Global focus-visible indicator for WCAG accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ledger-primary-fixed);
+  outline-offset: 2px;
+}
+
+/* Responsive adjustment for floating theme toggle on small screens */
+@media (max-width: 640px) {
+  .theme-toggle {
+    right: 12px;
+    bottom: 12px;
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 0.8rem;
+  }
+}
+
 .mobile-preview-toggle-btn {
   display: none !important;
 }
@@ -7915,4 +7999,5 @@ html[data-theme='dark'] .admin-bulk-action-btn.secondary:hover {
     display: none !important;
   }
 }
+
 
