@@ -5,7 +5,7 @@
 - ✅ **v1.3 LLM Submission Analysis** — Phases 10-11 (shipped 2026-07-16)
 - ✅ **v1.4 UI Polish & Admin Experience Enhancement** — Phases 12-13 (shipped 2026-08-28)
 - ✅ **v1.5 Admin Form Builder UX & Scalability Enhancement** — Phases 14-16 (shipped 2026-09-25)
-- 🟡 **v1.6 Form Input Validation & Submission Integrity** — Phases 17-19 (in progress)
+- ✅ **v1.6 Form Input Validation & Submission Integrity** — Phases 17-19 (shipped 2026-09-27)
 
 ## Phases
 
@@ -40,17 +40,16 @@ See: [.planning/milestones/v1.5-ROADMAP.md](file:///c:/Users/yudhiar/Downloads/o
 
 </details>
 
-### 🟡 v1.6 Form Input Validation & Submission Integrity (Phases 17-19)
+<details>
+<summary>✅ v1.6 Form Input Validation & Submission Integrity (Phases 17-19) — SHIPPED 2026-09-27</summary>
 
 - [x] **Phase 17: Core Format Validators & Server-Side Enforcement** (1 plan) — completed 2026-09-27
-  - Pure format validators & sanitizers (Email, WhatsApp/Phone, Full Name, Signature)
-  - Server-side enforcement in `validateFormSubmission`
 - [x] **Phase 18: Client-Side Form UX & Inline Error Feedback** (1 plan) — completed 2026-09-27
-  - Public form integration in `AttendanceForm` (hints, inputModes, hybrid error clearance, focus auto-scroll)
-  - Alignment in `AdminFormPreview`
 - [x] **Phase 19: Comprehensive Validation Test Suite & Regression Verification** (1 plan) — completed 2026-09-27
-  - Automated unit & integration tests in `forms.test.ts`
-  - Cross-form submission tests & linting/build verification
+
+See: [.planning/milestones/v1.6-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/milestones/v1.6-ROADMAP.md)
+
+</details>
 
 ## Progress
 

@@ -1,5 +1,21 @@
 # Milestones
 
+## v1.6 Form Input Validation & Submission Integrity (Shipped: 2026-09-27)
+
+**Phases completed:** 3 phases, 3 plans, 9 tasks
+
+**Key accomplishments:**
+
+- Built pure, zero-dependency validation and sanitization engine in `src/lib/form-validation.ts` safely shared across client and server without DB driver bundling conflicts.
+- Implemented robust format validators for NIP/NRP (18 digits ASN, 5-8 digits TNI/Polri, rejecting incomplete 9-17 digits), Email (RFC compliance, lowercase), WhatsApp/Phone (auto-normalizing +62/62 to 08, 10-15 digits), Full Name (min 2 chars, XSS prevention), and Signature (PNG data URL verification).
+- Delivered hybrid client-side error UX in `AttendanceForm` and `AdminFormPreview`: errors appear on next step/submit actions and instantly auto-clear as the user corrects their input.
+- Added smooth viewport auto-scroll and focus to the first invalid field upon validation failure.
+- Configured format helper hints and mobile-optimized `inputMode` (`numeric`, `email`, `tel`) across all formatted fields.
+- Reinforced server-side submission pipeline in `validateFormSubmission` (`src/lib/forms.ts`) to sanitize and store clean normalized data, preventing client bypass.
+- Established comprehensive automated test suite with 55 unit/integration tests in `src/lib/forms.test.ts`, verified against strict TypeScript compiler, ESLint, and Next.js standalone production build.
+
+---
+
 ## v1.5 Admin Form Builder UX & Scalability Enhancement (Shipped: 2026-09-25)
 
 **Phases completed:** 3 phases, 3 plans, 9 tasks

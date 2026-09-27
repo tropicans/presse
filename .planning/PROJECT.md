@@ -7,14 +7,30 @@ Platform pengelolaan formulir publik, kiriman (submissions), dan dashboard admin
 Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
 
 ## Current State
-Milestone **v1.6 Form Input Validation & Submission Integrity** is active (2026-09-27).
-Phases 1-16 completed across previous milestones v1.1 - v1.5. Currently executing Phases 17-19.
+Milestone **v1.6 Form Input Validation & Submission Integrity** shipped on 2026-09-27.
+Phases 1-19 completed across milestones v1.1 - v1.6. System is ready for the next milestone cycle.
 
 ## Next Milestone Goals
-Milestone **v1.6**:
-- Audit menyeluruh dan penegakan validasi format isian form (Nama Lengkap, NIP/NRP, Nomor WhatsApp/Telepon, Email, Teks Bebas, Pilihan, dan Tanda Tangan)
-- Pengalaman pengguna form publik yang mulus (hybrid error clearance saat mulai mengetik, auto-scroll ke field error pertama, petunjuk format, dan numeric/tel/email inputMode di ponsel)
-- Penegakan integritas data server-side pada `validateFormSubmission` dan cakupan automated test suite komprehensif
+To be defined via `/gsd-new-milestone`. Potential areas:
+- Advanced analytics & submissions export filtering
+- Role-based access control (RBAC) & fine-grained form permissions
+- Submission email/WhatsApp notifications & webhook triggers
+
+<details>
+<summary>Archived Milestone v1.6: Form Input Validation & Submission Integrity (Shipped: 2026-09-27)</summary>
+
+**Goal:** Mengaudit, memperketat, dan menyelaraskan seluruh validasi isian form (Nama Lengkap, NIP/NRP, Nomor WhatsApp/Telepon, Email, Teks Bebas, Pilihan, dan Tanda Tangan) pada form publik dan endpoint pengiriman server-side dengan feedback pengguna yang ramah dan konsisten.
+
+**Delivered features:**
+- **Zero-Dependency Validation Module:** `src/lib/form-validation.ts` memisahkan fungsi validasi murni dari driver database agar aman dipakai di client-side.
+- **Format Validators & Normalizers:** Validasi NIP (18 digit) dan NRP (5-8 digit), Email RFC, Phone/WhatsApp (+62 normalization, 10-15 digit), Nama Lengkap (min 2 karakter, sanitasi XSS), Tanda Tangan (valid PNG data URL).
+- **Hybrid Error Clearance UX:** Error muncul saat tombol lanjut/kirim ditekan, dan otomatis terhapus saat user mulai mengetik ulang.
+- **Accessibility & Focus Ergonomics:** Auto-scroll halus dan auto-focus ke elemen input pertama yang bermasalah.
+- **Mobile Input Optimization:** Bantuan teks format hint dan konfigurasi `inputMode` (`numeric`, `email`, `tel`).
+- **Server-Side Enforcement:** Pipeline `validateFormSubmission` menyimpan data tersanitasi dan menolak payload bypass.
+- **Automated Test Coverage:** 55 unit & integration tests di `src/lib/forms.test.ts` dengan 100% pass rate.
+
+</details>
 
 <details>
 <summary>Archived Milestone v1.5: Admin Form Builder UX & Scalability Enhancement</summary>
@@ -32,20 +48,8 @@ Milestone **v1.6**:
 
 ## Requirements
 
-### Active (v1.6)
-- **VALID-01**: NIP/NRP Validation (18 digit ASN, 5-8 digit NRP, auto-sanitasi, numeric inputMode)
-- **VALID-02**: Email Format Validation (RFC syntax check, auto-trim, descriptive error)
-- **VALID-03**: Phone / WhatsApp Number Validation (format sanitization, numeric digits 10-15, tel inputMode)
-- **VALID-04**: Full Name Validation (min 2 characters, clean extra whitespace, reject scripts)
-- **VALID-05**: Signature Canvas & Typed Signature Validation (canvas stroke threshold, min text length, base64 PNG check)
-- **VALID-06**: Hybrid Error Clearance & Inline Feedback (error on step-next/submit, instant clear on input edit)
-- **VALID-07**: Smooth Focus & Auto-Scroll to First Error (scrollIntoView to first invalid field)
-- **VALID-08**: Consistent Field Hints & Mobile Input Modes (format hints, appropriate inputModes)
-- **VALID-09**: Admin Form Preview Alignment (identical hints, sanitization, and inputModes in preview)
-- **VALID-10**: Unified Server-Side Validation Pipeline (validateFormSubmission format and length verification)
-- **VALID-11**: Automated Test Suite for All Field Validations (positive, negative, sanitization test cases in forms.test.ts)
-
 ### Validated
+- ✓ **VALID-01** - **VALID-11**: Form Input Validation & Submission Integrity (v1.6 - Pure format validators, hybrid auto-clear error UX, auto-scroll focus, hints, inputModes, server validation pipeline, 55 automated tests)
 - ✓ Pembuatan dan pengeditan form dasar (teks, area teks, radio, dropdown, tanda tangan)
 - ✓ Alur validasi server-side dan client-side dasar
 - ✓ Pratinjau draf form admin
