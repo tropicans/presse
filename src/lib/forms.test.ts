@@ -19,6 +19,8 @@ import {
   validateName,
   isNameField,
   validateSignatureValue,
+  getFieldInputMode,
+  getFieldFormatHint,
 } from './forms'
 
 vi.mock('next/cache', () => ({
@@ -426,5 +428,176 @@ describe('Email, Phone, Name, and Signature format validators', () => {
         tandaTangan: validSig,
       })
     }).toThrow('Nomor telepon/WhatsApp')
+  })
+
+  it('identifies field types accurately across various naming and labeling conventions', () => {
+    // NIP/NRP detection
+    expect(isNipNrpField({ name: 'nipNrp' })).toBe(true)
+    expect(isNipNrpField({ name: 'custom_1', label: 'NIP' })).toBe(true)
+    expect(isNipNrpField({ name: 'custom_2', label: 'NRP' })).toBe(true)
+    expect(isNipNrpField({ name: 'custom_3', label: 'NIP/NRP' })).toBe(true)
+    expect(isNipNrpField({ name: 'alamat', label: 'Alamat Rumah' })).toBe(false)
+
+    // Email detection
+    expect(isEmailField({ name: 'email' })).toBe(true)
+    expect(isEmailField({ name: 'surelPeserta' })).toBe(true)
+    expect(isEmailField({ name: 'field_x', label: 'Alamat Email Kantor' })).toBe(true)
+    expect(isEmailField({ name: 'field_y', label: 'Surel' })).toBe(true)
+    expect(isEmailField({ name: 'instansi', label: 'Asal Instansi' })).toBe(false)
+
+    // Phone detection
+    expect(isPhoneField({ name: 'telepon' })).toBe(true)
+    expect(isPhoneField({ name: 'no_hp' })).toBe(true)
+    expect(isPhoneField({ name: 'whatsapp' })).toBe(true)
+    expect(isPhoneField({ name: 'phone' })).toBe(true)
+    expect(isPhoneField({ name: 'custom', label: 'Nomor WhatsApp / WA' })).toBe(true)
+    expect(isPhoneField({ name: 'custom', label: 'No. Handphone Aktif' })).toBe(true)
+    expect(isPhoneField({ name: 'custom', label: 'Kontak Narahubung' })).toBe(true)
+    expect(isPhoneField({ name: 'catatan', label: 'Catatan Khusus' })).toBe(false)
+
+    // Name detection
+    expect(isNameField({ name: 'namaLengkap' })).toBe(true)
+    expect(isNameField({ name: 'name' })).toBe(true)
+    expect(isNameField({ name: 'custom', label: 'Nama Lengkap dan Gelar' })).toBe(true)
+    expect(isNameField({ name: 'custom', label: 'Nama Peserta' })).toBe(true)
+    expect(isNameField({ name: 'jabatan', label: 'Jabatan / Pangkat' })).toBe(false)
+  })
+
+  it('computes field inputMode and format hints consistently', () => {
+    // NIP/NRP field
+    const nipField = { name: 'nipNrp', label: 'NIP/NRP' }
+    expect(getFieldInputMode(nipField)).toBe('numeric')
+    expect(getFieldFormatHint(nipField)).toContain('18 digit angka untuk NIP ASN')
+
+    // Email field
+    const emailField = { name: 'email', label: 'Email Kantor' }
+    expect(getFieldInputMode(emailField)).toBe('email')
+    expect(getFieldFormatHint(emailField)).toContain('nama@domain.com')
+
+    // Phone field
+    const phoneField = { name: 'noTelepon', label: 'Nomor WhatsApp' }
+    expect(getFieldInputMode(phoneField)).toBe('tel')
+    expect(getFieldFormatHint(phoneField)).toContain('10-15 digit angka')
+
+    // Standard field
+    const generalField = { name: 'alamat', label: 'Alamat Lengkap' }
+    expect(getFieldInputMode(generalField)).toBeUndefined()
+    expect(getFieldFormatHint(generalField)).toBeNull()
+  })
+
+  it('handles phone number sanitization and validation comprehensively', () => {
+    // Sanitization edge cases
+    expect(sanitizePhoneNumber('+62 812-3456-7890')).toBe('081234567890')
+    expect(sanitizePhoneNumber('6281234567890')).toBe('081234567890')
+    expect(sanitizePhoneNumber('(021) 555-1234')).toBe('0215551234')
+    expect(sanitizePhoneNumber('  0812 3456 7890  ')).toBe('081234567890')
+
+    // Validations
+    expect(validatePhoneNumber('081234567890')).toBeNull() // 12 digits
+    expect(validatePhoneNumber('0812345678')).toBeNull() // 10 digits (min boundary)
+    expect(validatePhoneNumber('081234567890123')).toBeNull() // 15 digits (max boundary)
+    expect(validatePhoneNumber('+6281234567890')).toBeNull() // sanitizes before validate
+
+    // Invalid phone numbers
+    expect(validatePhoneNumber('081234567')).toBe('Nomor telepon/WhatsApp terlalu pendek (minimal 10 digit)') // 9 digits
+    expect(validatePhoneNumber('0812345678901234')).toBe('Nomor telepon/WhatsApp maksimal 15 digit') // 16 digits
+    expect(validatePhoneNumber('0812345ABCD')).toBe('Nomor telepon/WhatsApp hanya boleh berisi angka')
+    expect(validatePhoneNumber('')).toBeNull() // optional/empty is allowed by validator
+  })
+
+  it('validates email addresses with strict RFC and domain syntax', () => {
+    // Valid emails
+    expect(validateEmail('budi.santoso@instansi.go.id')).toBeNull()
+    expect(validateEmail('user+tag@domain.co.id')).toBeNull()
+    expect(validateEmail('  admin@kemendagri.go.id  ')).toBeNull()
+
+    // Invalid emails
+    expect(validateEmail('invalid-email')).toBe('Format email tidak valid (contoh: nama@domain.com)')
+    expect(validateEmail('user@')).toBe('Format email tidak valid (contoh: nama@domain.com)')
+    expect(validateEmail('@domain.com')).toBe('Format email tidak valid (contoh: nama@domain.com)')
+    expect(validateEmail('user@domain')).toBe('Format email tidak valid (contoh: nama@domain.com)')
+    expect(validateEmail('user @domain.com')).toBe('Format email tidak valid (contoh: nama@domain.com)')
+    expect(validateEmail('')).toBeNull() // empty is allowed by pure validator (required check is handled by form engine)
+  })
+
+  it('validates full names preventing script injection and empty strings', () => {
+    // Valid names
+    expect(validateName('Prof. Dr. Ir. Sutrisno, M.Sc.')).toBeNull()
+    expect(validateName('Siti Nurhaliza')).toBeNull()
+    expect(validateName('Ali')).toBeNull()
+
+    // Invalid names
+    expect(validateName('A')).toBe('Nama lengkap minimal 2 karakter')
+    expect(validateName('<script>alert("xss")</script>')).toBe('Nama lengkap mengandung karakter yang tidak diizinkan')
+    expect(validateName('User {admin}')).toBe('Nama lengkap mengandung karakter yang tidak diizinkan')
+    expect(validateName('User; DROP TABLE forms;')).toBe('Nama lengkap mengandung karakter yang tidak diizinkan')
+    expect(validateName('')).toBeNull()
+  })
+
+  it('validates signature format and length', () => {
+    const validDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAACWAQMAAABf6N'
+    expect(validateSignatureValue(validDataUrl)).toBeNull()
+
+    // Non-PNG or plain text
+    expect(validateSignatureValue('data:image/jpeg;base64,12345')).toBe('Format tanda tangan tidak valid')
+    expect(validateSignatureValue('data:image/svg+xml;base64,12345')).toBe('Format tanda tangan tidak valid')
+    expect(validateSignatureValue('John Doe')).toBe('Format tanda tangan tidak valid')
+
+    // Empty content
+    expect(validateSignatureValue('data:image/png;base64,')).toBe('Tanda tangan tidak boleh kosong')
+    expect(validateSignatureValue('')).toBeNull()
+  })
+
+  it('rejects invalid inputs on multi-field forms during server submission pipeline', () => {
+    const validSig = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAACWAQMAAABf6N'
+    const fullFormDef: PublicFormDefinition = {
+      id: 'form-pipeline-test',
+      slug: 'form-pipeline-slug',
+      title: 'Form Pendaftaran Lengkap',
+      description: null,
+      successMessage: null,
+      submitLabel: 'Kirim',
+      fields: [
+        { id: 'f_name', name: 'namaLengkap', label: 'Nama Lengkap', type: 'text', required: true },
+        { id: 'f_nip', name: 'nipNrp', label: 'NIP / NRP', type: 'text', required: true },
+        { id: 'f_email', name: 'email', label: 'Email', type: 'text', required: true },
+        { id: 'f_phone', name: 'noTelepon', label: 'WhatsApp', type: 'text', required: true },
+        { id: 'f_sig', name: 'tandaTangan', label: 'Tanda Tangan', type: 'signature', required: true },
+      ],
+      settings: { workflow: 'STANDARD' },
+    }
+
+    // Invalid NIP (11 digits, incomplete NIP)
+    expect(() => {
+      validateFormSubmission(fullFormDef, {
+        namaLengkap: 'Budi Santoso',
+        nipNrp: '19850101123',
+        email: 'budi@instansi.go.id',
+        noTelepon: '081234567890',
+        tandaTangan: validSig,
+      })
+    }).toThrow('NIP harus 18 digit angka, atau NRP 5-8 digit angka')
+
+    // Invalid Name (<script>)
+    expect(() => {
+      validateFormSubmission(fullFormDef, {
+        namaLengkap: 'Budi <script>evil()</script>',
+        nipNrp: '198501012010011001',
+        email: 'budi@instansi.go.id',
+        noTelepon: '081234567890',
+        tandaTangan: validSig,
+      })
+    }).toThrow('Nama lengkap mengandung karakter yang tidak diizinkan')
+
+    // Invalid Signature (jpeg)
+    expect(() => {
+      validateFormSubmission(fullFormDef, {
+        namaLengkap: 'Budi Santoso',
+        nipNrp: '198501012010011001',
+        email: 'budi@instansi.go.id',
+        noTelepon: '081234567890',
+        tandaTangan: 'data:image/jpeg;base64,12345',
+      })
+    }).toThrow('Format tanda tangan tidak valid')
   })
 })

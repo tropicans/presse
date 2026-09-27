@@ -433,6 +433,8 @@ import {
   sanitizeName,
   validateName,
   validateSignatureValue,
+  getFieldInputMode,
+  getFieldFormatHint,
 } from './form-validation'
 export {
   sanitizeNipNrp,
@@ -448,6 +450,8 @@ export {
   sanitizeName,
   validateName,
   validateSignatureValue,
+  getFieldInputMode,
+  getFieldFormatHint,
 }
 
 function normalizeLabel(label: string) {

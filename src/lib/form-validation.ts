@@ -31,7 +31,7 @@ export function validateNipNrp(value: string): string | null {
 export function isEmailField(field: { name: string; label?: string }): boolean {
   const name = field.name.toLowerCase()
   const label = (field.label ?? '').toLowerCase()
-  return name.includes('email') || label.includes('email') || label.includes('surel')
+  return name.includes('email') || name.includes('surel') || label.includes('email') || label.includes('surel')
 }
 
 export function sanitizeEmail(value: string): string {
@@ -130,6 +130,26 @@ export function validateSignatureValue(value: string): string | null {
   const base64Content = clean.slice('data:image/png;base64,'.length)
   if (!base64Content) {
     return 'Tanda tangan tidak boleh kosong'
+  }
+  return null
+}
+
+export function getFieldInputMode(field: { name: string; label?: string }): 'numeric' | 'email' | 'tel' | undefined {
+  if (isNipNrpField(field)) return 'numeric'
+  if (isEmailField(field)) return 'email'
+  if (isPhoneField(field)) return 'tel'
+  return undefined
+}
+
+export function getFieldFormatHint(field: { name: string; label?: string }): string | null {
+  if (isNipNrpField(field)) {
+    return '18 digit angka untuk NIP ASN atau 5–8 digit untuk NRP TNI/Polri (tanpa spasi).'
+  }
+  if (isEmailField(field)) {
+    return 'Masukkan alamat email aktif (contoh: nama@domain.com).'
+  }
+  if (isPhoneField(field)) {
+    return 'Nomor WhatsApp/telepon aktif (10-15 digit angka).'
   }
   return null
 }
