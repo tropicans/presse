@@ -97,4 +97,15 @@ describe('CSS layout constraints', () => {
     expect(cssContent).toContain("html[data-theme='dark'] body {")
     expect(cssContent).toContain('background-color: #000000')
   })
+
+  it('verifies analytics dashboard design system classes (ANLY-01 to ANLY-04)', () => {
+    const cssPath = path.resolve(process.cwd(), 'src/app/globals.css')
+    const cssContent = fs.readFileSync(cssPath, 'utf8')
+
+    expect(cssContent).toContain('.analytics-shell {')
+    expect(cssContent).toContain('.analytics-metric-card {')
+    expect(cssContent).toContain('.analytics-chart-panel {')
+    expect(cssContent).toContain('.analytics-question-card {')
+    expect(cssContent).toContain('.analytics-option-meter {')
+  })
 })

@@ -828,6 +828,9 @@ export default function AdminFormSubmissions({ formId }: Props) {
         </div>
 
         <div className="editorial-form-editor-topbar-actions">
+          <Link href={`/admin/forms/${data.form.id}/analytics`} className="editorial-form-editor-ghost-btn">
+            Analitik Respon
+          </Link>
           <Link href={`/admin/forms/${data.form.id}`} className="editorial-form-editor-ghost-btn">
             Edit Formulir
           </Link>

@@ -8263,4 +8263,296 @@ textarea:focus-visible {
   }
 }
 
+/* ===================== ANALYTICS DASHBOARD (v1.9 Phase 28) ===================== */
+.analytics-shell {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.analytics-header {
+  border-bottom: 4px solid var(--border-default);
+  padding-bottom: 24px;
+  margin-bottom: 28px;
+}
+
+.analytics-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.analytics-header-title {
+  font-family: var(--font-family-display);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.analytics-header-subtitle {
+  font-family: var(--font-family-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+.analytics-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.analytics-filterbar {
+  border: 2px solid var(--border-default);
+  background: var(--bg-surface);
+  padding: 16px 20px;
+  margin-bottom: 28px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.analytics-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.analytics-filter-label {
+  font-family: var(--font-family-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.analytics-filter-select,
+.analytics-filter-input {
+  border: 2px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font-family-mono);
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 0px !important;
+}
+
+.analytics-filter-select:focus,
+.analytics-filter-input:focus {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+.analytics-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.analytics-metric-card {
+  border: 2px solid var(--border-default);
+  background: var(--bg-surface);
+  padding: 22px 20px;
+  transition: border-color 0.1s ease;
+}
+
+.analytics-metric-card:hover {
+  border-color: var(--text-primary);
+}
+
+.analytics-metric-card-label {
+  font-family: var(--font-family-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.analytics-metric-card-value {
+  font-family: var(--font-family-display);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.analytics-metric-card-sub {
+  font-family: var(--font-family-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 10px;
+  border-top: 1px solid var(--border-default);
+  padding-top: 8px;
+}
+
+.analytics-section-title {
+  font-family: var(--font-family-display);
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-default);
+  padding-bottom: 10px;
+  margin: 36px 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.analytics-chart-panel {
+  border: 2px solid var(--border-default);
+  background: var(--bg-surface);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.analytics-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.analytics-chart-container {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding-top: 20px;
+  border-bottom: 2px solid var(--border-default);
+  overflow-x: auto;
+}
+
+.analytics-chart-bar-group {
+  flex: 1;
+  min-width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.analytics-chart-bar {
+  width: 100%;
+  max-width: 44px;
+  background: var(--text-primary);
+  border: 1px solid var(--border-default);
+  transition: opacity 0.1s ease;
+  cursor: pointer;
+  min-height: 3px;
+  border-radius: 0px !important;
+}
+
+.analytics-chart-bar:hover {
+  opacity: 0.8;
+  outline: 2px solid var(--border-focus);
+}
+
+.analytics-chart-label {
+  font-family: var(--font-family-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.analytics-question-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.analytics-question-card {
+  border: 2px solid var(--border-default);
+  background: var(--bg-surface);
+  padding: 24px;
+}
+
+.analytics-question-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border-default);
+  padding-bottom: 12px;
+}
+
+.analytics-question-title {
+  font-family: var(--font-family-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.analytics-question-type {
+  font-family: var(--font-family-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.analytics-option-list {
+  display: grid;
+  gap: 12px;
+}
+
+.analytics-option-row {
+  display: grid;
+  gap: 6px;
+}
+
+.analytics-option-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-family-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.analytics-option-meter {
+  height: 12px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  width: 100%;
+  overflow: hidden;
+  border-radius: 0px !important;
+}
+
+.analytics-option-fill {
+  height: 100%;
+  background: var(--text-primary);
+  transition: width 0.25s ease;
+  border-radius: 0px !important;
+}
+
+.analytics-correct-badge {
+  font-family: var(--font-family-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  padding: 1px 6px;
+  margin-left: 8px;
+  border-radius: 0px !important;
+}
+
 

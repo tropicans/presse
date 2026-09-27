@@ -3,6 +3,17 @@ import type { JsonValue, Sql } from '@prisma/client/runtime/client'
 import { PrismaClientKnownRequestError, join, sqltag as sql } from '@prisma/client/runtime/client'
 import ExcelJS from 'exceljs'
 import { prisma } from '@/lib/prisma'
+import {
+  computeAnalyticsKPIs,
+  computeDailyVolume,
+  computeQuestionDistributions,
+  filterSubmissions,
+  type DateRangeFilter,
+  type ParticipantFilter,
+  type SubmissionColumn,
+  type SubmissionItem,
+} from '@/lib/form-analytics'
+
 
 const MAX_TEXT_LENGTH = 500
 const MAX_SIGNATURE_LENGTH = 500000
@@ -3142,3 +3153,135 @@ export async function exportAdminFormSubmissionsWorkbook(
     workbook,
   }
 }
+
+export interface FormAnalyticsOptions {
+  range?: string | null
+  participantType?: string | null
+  search?: string | null
+}
+
+export interface FormAnalyticsResult {
+  form: {
+    id: string
+    slug: string
+    title: string
+    status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+  }
+  totalItems: number
+  filteredItems: number
+  hasParticipantType: boolean
+  hasQuiz: boolean
+  columns: SubmissionColumn[]
+  kpis: {
+    totalResponses: number
+    totalItems: number
+    averageQuizScore: string | null
+    quizPassRate: string | null
+    latestResponseTime: string
+  }
+  dailyVolume: Array<{
+    day: string
+    count: number
+    heightPercent: number
+    formattedDay: string
+  }>
+  questionDistributions: Array<{
+    column: SubmissionColumn
+    totalAnswered: number
+    options: Array<{
+      label: string
+      count: number
+      percentage: number
+    }>
+  }>
+}
+
+export async function getFormAnalytics(
+  id: string,
+  options?: FormAnalyticsOptions
+): Promise<FormAnalyticsResult | null> {
+  const detail = await getAdminFormDetail(id)
+
+  if (!detail) {
+    return null
+  }
+
+  const rows = await prisma.$queryRaw<SubmissionRow[]>`
+    SELECT
+      s.id,
+      s.created_at AS "createdAt",
+      s.path_json AS "pathJson",
+      sa.field_id AS "fieldId",
+      sa.value_text AS "valueText"
+    FROM submissions s
+    LEFT JOIN submission_answers sa ON sa.submission_id = s.id
+    WHERE s.form_id = ${id}
+    ORDER BY s.created_at DESC, sa.created_at ASC
+  `
+
+  const itemsById = new Map<string, SubmissionItem>()
+
+  for (const row of rows) {
+    const item = itemsById.get(row.id) ?? {
+      id: row.id,
+      createdAt: row.createdAt.toISOString(),
+      answers: {},
+      meta: readSubmissionMeta(row.pathJson),
+    }
+
+    const field = detail.fields.find((candidate) => candidate.id === row.fieldId)
+    if (field) {
+      item.answers[field.name] = row.valueText ?? ''
+    }
+
+    itemsById.set(row.id, item)
+  }
+
+  const allItems = Array.from(itemsById.values())
+  const dateRange: DateRangeFilter =
+    options?.range === '7d' || options?.range === '30d' || options?.range === 'month'
+      ? options.range
+      : 'all'
+  const participantFilter: ParticipantFilter =
+    options?.participantType === 'internal' || options?.participantType === 'external'
+      ? options.participantType
+      : 'all'
+  const searchQuery = (options?.search ?? '').trim()
+
+  const filtered = filterSubmissions(allItems, dateRange, participantFilter, searchQuery)
+
+  const columns: SubmissionColumn[] = detail.fields.map((field) => ({
+    id: field.id,
+    name: field.name,
+    label: field.label,
+    type: field.type,
+  }))
+
+  const hasParticipantType = allItems.some(
+    (item) => item.meta?.participantType !== null && item.meta?.participantType !== undefined
+  )
+  const hasQuiz = allItems.some(
+    (item) => item.meta?.quiz !== null && item.meta?.quiz !== undefined
+  )
+  const kpis = computeAnalyticsKPIs(filtered, allItems.length, hasQuiz)
+  const dailyVolume = computeDailyVolume(filtered)
+  const questionDistributions = computeQuestionDistributions(columns, filtered)
+
+  return {
+    form: {
+      id: detail.id,
+      slug: detail.slug,
+      title: detail.title,
+      status: detail.status,
+    },
+    totalItems: allItems.length,
+    filteredItems: filtered.length,
+    hasParticipantType,
+    hasQuiz,
+    columns,
+    kpis,
+    dailyVolume,
+    questionDistributions,
+  }
+}
+
