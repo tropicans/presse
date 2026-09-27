@@ -84,8 +84,38 @@ npm run build
 - k6 load test: `npm run load:test:public`; envs include `BASE_URL`, `FORM_SLUG`, `K6_VUS`, `K6_ITERATIONS_PER_VU`, `K6_MAX_DURATION`, `SUBMIT_FORM`, `LOAD_FORM_DEFINITION`, `UNIQUE_IPS`, `PARTICIPANT_TYPE`.
 - Load test covers `/f/<slug>`, `/api/public/forms/<slug>`, optional `/api/public/forms/<slug>/submit`.
 
+## Smart Container Rebuild Protocol (Auto Rebuild on Changes)
+Setiap selesai melakukan perubahan kode (fitur baru, bug fix, refactor, atau modifikasi schema/dependencies):
+1. **Trigger Condition (Deteksi Cerdas)**:
+   - Rebuild **HANYA** jika terdapat perubahan pada kode aplikasi atau runtime: `src/**`, `prisma/**`, `package.json`, `Dockerfile`, `docker-compose.yml`, atau `start.sh`.
+   - **ABAIKAN** rebuild jika perubahan HANYA menyentuh file dokumentasi, catatan planning, atau konfigurasi non-runtime (misal: `.planning/**`, `*.md`, `.gitignore`).
+2. **Pre-Flight Validation**:
+   - Sebelum menjalankan build Docker, pastikan validasi lokal lulus untuk mencegah pemborosan resource dan cache:
+     ```bash
+     npm test
+     npm run lint
+     npx tsc --noEmit --pretty false
+     ```
+3. **Smart Targeted Rebuild & Up**:
+   - Bangun hanya service yang terdampak (`app` dan `worker`), tanpa mereset atau mengganggu data container `postgres`:
+     ```bash
+     docker compose --env-file .env.production build app worker
+     docker compose --env-file .env.production up -d --no-deps app worker
+     ```
+   - Jika terdapat penambahan SQL migration atau perubahan pada `prisma/`:
+     ```bash
+     docker compose --env-file .env.production up -d
+     ```
+4. **Post-Rebuild Health Check**:
+   - Selalu verifikasi bahwa container aplikasi telah aktif dan sehat:
+     ```powershell
+     Invoke-RestMethod -Uri http://127.0.0.1:3456/api/health
+     ```
+   - Pastikan status mengembalikan `ok` sebelum melanjutkan ke tahap audit, commit, dan push.
+
 ## Commit Attribution
 AI commits MUST include own model attribution, for example:
 ```text
 Co-Authored-By: Claude Sonnet 4 <noreply@example.com>
 ```
+
