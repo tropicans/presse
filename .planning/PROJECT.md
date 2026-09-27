@@ -7,16 +7,25 @@ Platform pengelolaan formulir publik, kiriman (submissions), dan dashboard admin
 Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
 
 ## Current State
-Milestone **v1.6 Form Input Validation & Submission Integrity** shipped on 2026-09-27.
-Phases 1-19 completed across milestones v1.1 - v1.6. System is ready for the next milestone cycle.
-
-## Next Milestone Goals
-To be defined via `/gsd-new-milestone`. Potential areas:
-- Advanced analytics & submissions export filtering
-- Role-based access control (RBAC) & fine-grained form permissions
-- Submission email/WhatsApp notifications & webhook triggers
+Milestone **v1.7 Monochrome Design System Overhaul** completed and shipped (2026-09-27).
+Phases 1-23 completed across milestones v1.1 - v1.7. Ready for next milestone.
 
 <details>
+<summary>Archived Milestone v1.7: Monochrome Design System Overhaul (Shipped: 2026-09-27)</summary>
+
+**Goal:** Transformasi total sistem desain visual aplikasi isian dari palet teal/deep blue ke gaya **Monochrome Minimalist & High-Contrast (Swiss / Tech Luxury Style)** yang bersih, presisi, dan konsisten pada seluruh antarmuka publik dan dashboard admin di kedua mode (Light & Dark).
+
+**Delivered features:**
+- **Global Design Tokens & Palette Refactor:** Skala warna monokromatis terstandarisasi (Obsidian, Deep Charcoal, Zinc/Grayscale, Stark White) di `src/app/globals.css` dan `new_design/dashboard/DESIGN.md`.
+- **Light & Dark Theme Harmonization:** Kontras tinggi teruji, radial ambient sheen lembut, dan transisi mulus pada kedua tema.
+- **Precision Hairline Borders & Restrained Elevation:** Border presisi 1px (`rgba(0,0,0,0.08)` / `rgba(255,255,255,0.08)`) dan ambient shadows halus.
+- **Monochrome Public Form Interface:** Pembaruan menyeluruh `AttendanceForm.tsx`, kartu form, multi-step stepper, tombol navigasi, pill inputs, dan checkbox.
+- **High-Contrast Digital Signature & Likert:** Tinta tanda tangan kontras pekat dan kisi Likert yang tajam.
+- **Monochrome Feedback & Confirmation UX:** Halaman `/success` dan indikator status pengiriman dengan badge monokrom presisi.
+- **Admin Dashboard & Form Builder Overhaul:** Pembaruan `/admin/login`, `/admin/forms`, `/admin/forms/[id]/edit`, tab langkah, kartu accordion, peta outline, floating toolbar, dan submissions table.
+- **Quality Assurance & Container Health:** 56 tests passing, clean ESLint, zero TypeScript errors, successful standalone production build, dan Docker Compose stack sehat.
+
+</details>
 <summary>Archived Milestone v1.6: Form Input Validation & Submission Integrity (Shipped: 2026-09-27)</summary>
 
 **Goal:** Mengaudit, memperketat, dan menyelaraskan seluruh validasi isian form (Nama Lengkap, NIP/NRP, Nomor WhatsApp/Telepon, Email, Teks Bebas, Pilihan, dan Tanda Tangan) pada form publik dan endpoint pengiriman server-side dengan feedback pengguna yang ramah dan konsisten.
@@ -49,6 +58,7 @@ To be defined via `/gsd-new-milestone`. Potential areas:
 ## Requirements
 
 ### Validated
+- ✓ **MONO-01** - **MONO-09**: Monochrome Design System Overhaul (v1.7 - Standardized monochrome palette, Light/Dark harmonization, hairline borders, public form UI, signature/Likert contrast, success/error UX, admin dashboard & form editor overhaul, submissions alignment, comprehensive testing & Docker container validation)
 - ✓ **VALID-01** - **VALID-11**: Form Input Validation & Submission Integrity (v1.6 - Pure format validators, hybrid auto-clear error UX, auto-scroll focus, hints, inputModes, server validation pipeline, 55 automated tests)
 - ✓ Pembuatan dan pengeditan form dasar (teks, area teks, radio, dropdown, tanda tangan)
 - ✓ Alur validasi server-side dan client-side dasar

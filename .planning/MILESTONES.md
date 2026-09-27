@@ -1,5 +1,20 @@
 # Milestones
 
+## v1.7 Monochrome Design System Overhaul (Shipped: 2026-09-27)
+
+**Phases completed:** 4 phases, 4 plans, 12 tasks
+
+**Key accomplishments:**
+
+- Transformed the entire visual design language from teal/deep blue to a high-contrast **Monochrome Minimalist & High-Contrast (Swiss / Tech Luxury Style)** aesthetic inspired by Vercel and Linear.
+- Refactored core CSS tokens in `src/app/globals.css` into a standardized monochromatic palette (Obsidian `#000000`/`#09090b`, Deep Charcoal `#121214`/`#18181b`, Grayscale/Zinc `#27272a` to `#f4f4f5`, Stark White `#ffffff`) and documented specifications in `new_design/dashboard/DESIGN.md`.
+- Harmonized Light and Dark themes with seamless radial sheens, razor-sharp 1px hairline borders (`rgba(0,0,0,0.08)` / `rgba(255,255,255,0.08)`), and restrained ambient elevation.
+- Redesigned public form experience (`AttendanceForm.tsx`, `/f/[slug]`) including multi-step progression, crisp input pills, high-contrast signature pad, Likert scales, and minimalist `/success` confirmation screens.
+- Overhauled admin dashboard and form builder suite (`/admin/login`, `/admin/forms`, `/admin/forms/[id]/edit`, `/admin/forms/[id]/submissions`) including step tabs, collapsible accordion field cards, outline map, floating toolbar, and submissions table.
+- Verified system stability with 56 passing unit tests, zero ESLint issues, strict TypeScript compliance, optimized Next.js standalone build, and fully healthy Docker Compose container stack.
+
+---
+
 ## v1.6 Form Input Validation & Submission Integrity (Shipped: 2026-09-27)
 
 **Phases completed:** 3 phases, 3 plans, 9 tasks

@@ -15,4 +15,13 @@ describe('CSS layout constraints', () => {
     const formCardBody = formCardMatch![0]
     expect(formCardBody).not.toContain('overflow: hidden')
   })
+
+  it('defines monochrome design tokens in :root', () => {
+    const cssPath = path.resolve(process.cwd(), 'src/app/globals.css')
+    const cssContent = fs.readFileSync(cssPath, 'utf8')
+
+    expect(cssContent).toContain('--primary-900: #09090b')
+    expect(cssContent).toContain('--ledger-bg: #fafafa')
+    expect(cssContent).toContain('--ledger-primary-fixed: #27272a')
+  })
 })

@@ -6,6 +6,7 @@
 - ✅ **v1.4 UI Polish & Admin Experience Enhancement** — Phases 12-13 (shipped 2026-08-28)
 - ✅ **v1.5 Admin Form Builder UX & Scalability Enhancement** — Phases 14-16 (shipped 2026-09-25)
 - ✅ **v1.6 Form Input Validation & Submission Integrity** — Phases 17-19 (shipped 2026-09-27)
+- ✅ **v1.7 Monochrome Design System Overhaul** — Phases 20-23 (shipped 2026-09-27)
 
 ## Phases
 
@@ -51,6 +52,18 @@ See: [.planning/milestones/v1.6-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 
 </details>
 
+<details>
+<summary>✅ v1.7 Monochrome Design System Overhaul (Phases 20-23) — SHIPPED 2026-09-27</summary>
+
+- [x] **Phase 20: Monochrome Design Tokens & Global Visual Foundation** (1 plan) — completed 2026-09-27
+- [x] **Phase 21: Public Form & Confirmation Experience Monochrome Transformation** (1 plan) — completed 2026-09-27
+- [x] **Phase 22: Admin Dashboard & Form Builder Monochrome Overhaul** (1 plan) — completed 2026-09-27
+- [x] **Phase 23: Quality Assurance, Visual Regression & Build Verification** (1 plan) — completed 2026-09-27
+
+See: [.planning/milestones/v1.7-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/milestones/v1.7-ROADMAP.md)
+
+</details>
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -65,6 +78,10 @@ See: [.planning/milestones/v1.6-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 | 17. Core Format Validators & Server-Side Enforcement | v1.6 | 1/1 | Complete | 2026-09-27 |
 | 18. Client-Side Form UX & Inline Error Feedback | v1.6 | 1/1 | Complete | 2026-09-27 |
 | 19. Comprehensive Validation Test Suite & Regression Verification | v1.6 | 1/1 | Complete | 2026-09-27 |
+| 20. Monochrome Design Tokens & Global Visual Foundation | v1.7 | 1/1 | Complete | 2026-09-27 |
+| 21. Public Form & Confirmation Experience Monochrome Transformation | v1.7 | 1/1 | Complete | 2026-09-27 |
+| 22. Admin Dashboard & Form Builder Monochrome Overhaul | v1.7 | 1/1 | Complete | 2026-09-27 |
+| 23. Quality Assurance, Visual Regression & Build Verification | v1.7 | 1/1 | Complete | 2026-09-27 |
 
 ---
 
