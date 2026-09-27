@@ -552,7 +552,8 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
         </div>
       )}
 
-      {(currentStep?.fields ?? form.fields).map((field, fieldIndex) => {
+      <div key={currentStep?.id ?? currentStepIndex} className="ui-animate-slide-up">
+        {(currentStep?.fields ?? form.fields).map((field, fieldIndex) => {
         const errorId = `${field.name}-error`
         const hintId = `${field.name}-hint`
         const describedBy = fieldErrors[field.name] ? errorId : undefined
@@ -828,6 +829,7 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
 
         return null
       })}
+      </div>
 
       <div className="form-navigation-shell">
         <div className="form-navigation">
