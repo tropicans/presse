@@ -419,8 +419,36 @@ export class FormSubmissionError extends Error {
   }
 }
 
-import { sanitizeNipNrp, isNipNrpField, validateNipNrp } from './form-validation'
-export { sanitizeNipNrp, isNipNrpField, validateNipNrp }
+import {
+  sanitizeNipNrp,
+  isNipNrpField,
+  validateNipNrp,
+  isEmailField,
+  sanitizeEmail,
+  validateEmail,
+  isPhoneField,
+  sanitizePhoneNumber,
+  validatePhoneNumber,
+  isNameField,
+  sanitizeName,
+  validateName,
+  validateSignatureValue,
+} from './form-validation'
+export {
+  sanitizeNipNrp,
+  isNipNrpField,
+  validateNipNrp,
+  isEmailField,
+  sanitizeEmail,
+  validateEmail,
+  isPhoneField,
+  sanitizePhoneNumber,
+  validatePhoneNumber,
+  isNameField,
+  sanitizeName,
+  validateName,
+  validateSignatureValue,
+}
 
 function normalizeLabel(label: string) {
   return label.trim().toLowerCase()
@@ -1580,13 +1608,14 @@ export function validateFormSubmission(form: PublicFormDefinition, payload: Reco
     }
 
     if (field.type === 'signature') {
-      if (!value.startsWith('data:image/png;base64,')) {
-        throw new FormSubmissionError('Format tanda tangan tidak valid', 400)
+      const sigError = validateSignatureValue(value)
+      if (sigError) {
+        throw new FormSubmissionError(sigError, 400)
       }
-      if (value.length > MAX_SIGNATURE_LENGTH) {
+      if (value.startsWith('data:image/png;base64,') && value.length > MAX_SIGNATURE_LENGTH) {
         throw new FormSubmissionError('Ukuran tanda tangan terlalu besar', 400)
       }
-      values[field.name] = value
+      values[field.name] = value.trim()
       continue
     }
 
@@ -1602,6 +1631,33 @@ export function validateFormSubmission(form: PublicFormDefinition, payload: Reco
           throw new FormSubmissionError(nipError, 400)
         }
         values[field.name] = sanitizeNipNrp(value)
+        continue
+      }
+
+      if (isEmailField(field)) {
+        const emailError = validateEmail(value)
+        if (emailError) {
+          throw new FormSubmissionError(emailError, 400)
+        }
+        values[field.name] = sanitizeEmail(value)
+        continue
+      }
+
+      if (isPhoneField(field)) {
+        const phoneError = validatePhoneNumber(value)
+        if (phoneError) {
+          throw new FormSubmissionError(phoneError, 400)
+        }
+        values[field.name] = sanitizePhoneNumber(value)
+        continue
+      }
+
+      if (isNameField(field)) {
+        const nameError = validateName(value)
+        if (nameError) {
+          throw new FormSubmissionError(nameError, 400)
+        }
+        values[field.name] = sanitizeName(value)
         continue
       }
 

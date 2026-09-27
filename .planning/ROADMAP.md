@@ -42,7 +42,7 @@ See: [.planning/milestones/v1.5-ROADMAP.md](file:///c:/Users/yudhiar/Downloads/o
 
 ### 🟡 v1.6 Form Input Validation & Submission Integrity (Phases 17-19)
 
-- [ ] **Phase 17: Core Format Validators & Server-Side Enforcement** (1 plan)
+- [x] **Phase 17: Core Format Validators & Server-Side Enforcement** (1 plan) — completed 2026-09-27
   - Pure format validators & sanitizers (Email, WhatsApp/Phone, Full Name, Signature)
   - Server-side enforcement in `validateFormSubmission`
 - [ ] **Phase 18: Client-Side Form UX & Inline Error Feedback** (1 plan)
@@ -63,7 +63,7 @@ See: [.planning/milestones/v1.5-ROADMAP.md](file:///c:/Users/yudhiar/Downloads/o
 | 14. Step Tabs Navigation & Active-Step Insertion | v1.5 | 1/1 | Complete | 2026-09-25 |
 | 15. Collapsible Field Cards & Header Summaries | v1.5 | 1/1 | Complete | 2026-09-25 |
 | 16. Outline Navigation Panel, 1-Click Duplicate & Sticky Toolbar Polish | v1.5 | 1/1 | Complete | 2026-09-25 |
-| 17. Core Format Validators & Server-Side Enforcement | v1.6 | 0/1 | Not Started | - |
+| 17. Core Format Validators & Server-Side Enforcement | v1.6 | 1/1 | Complete | 2026-09-27 |
 | 18. Client-Side Form UX & Inline Error Feedback | v1.6 | 0/1 | Not Started | - |
 | 19. Comprehensive Validation Test Suite & Regression Verification | v1.6 | 0/1 | Not Started | - |
 
