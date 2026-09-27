@@ -17,8 +17,8 @@ export default function PublicFormShell({ form }: PublicFormShellProps) {
           <Image
             src="/garuda.png"
             alt="Garuda Pancasila"
-            width={80}
-            height={80}
+            width={52}
+            height={52}
             className="header-logo public-ledger-logo"
             priority
           />
