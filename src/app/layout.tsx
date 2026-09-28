@@ -4,11 +4,22 @@ import Providers from '@/components/Providers'
 import ThemeToggle from '@/components/ThemeToggle'
 
 export const metadata: Metadata = {
-  title: 'HIMPUN',
-  description: 'Platform pengelolaan formulir publik, kiriman, dan dashboard admin HIMPUN.',
-  icons: {
-    icon: '/icon.svg',
+  title: {
+    default: 'Form',
+    template: '%s | Form',
   },
+  description: 'Platform pengelolaan formulir publik, kiriman, dan dashboard admin Form.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/icon.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
+  manifest: '/manifest.json',
 }
 
 const themeScript = `(() => {

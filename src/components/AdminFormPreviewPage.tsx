@@ -149,7 +149,7 @@ export default function AdminFormPreviewPage({ formId, initialForm, initialDevic
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
             <HimpunLogo size={18} />
-            <p className="forms-dashboard-overline" style={{ margin: 0 }}>HIMPUN Pratinjau</p>
+            <p className="forms-dashboard-overline" style={{ margin: 0 }}>Form Pratinjau</p>
           </div>
           <h1>Pratinjau tab baru</h1>
           <div className="editorial-preview-page-status-row">

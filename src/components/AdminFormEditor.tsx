@@ -863,7 +863,7 @@ export default function AdminFormEditor({ formId }: Props) {
           <div className="forms-dashboard-brand">
             <HimpunLogo size="sm" />
             <div>
-              <strong>HIMPUN</strong>
+              <strong>Form</strong>
               <span>Ruang kerja penyusunan formulir</span>
             </div>
           </div>

@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
           <div className="admin-login-header">
             <div className="admin-login-brand">
               <HimpunLogo size={28} />
-              <span className="admin-login-brand-name">HIMPUN</span>
+              <span className="admin-login-brand-name">Form</span>
             </div>
             <span className="admin-login-badge">PORTAL ADMIN</span>
           </div>

@@ -125,5 +125,30 @@ describe('CSS layout constraints', () => {
     expect(cssContent).toContain('.admin-login-trust-chips {')
     expect(cssContent).toContain("html[data-theme='dark'] .admin-login-google-btn {")
   })
+
+  it('verifies Form application branding and web app icon assets', () => {
+    const publicDir = path.resolve(process.cwd(), 'public')
+    const appDir = path.resolve(process.cwd(), 'src/app')
+
+    // Manifest verification
+    const manifestPath = path.join(publicDir, 'manifest.json')
+    expect(fs.existsSync(manifestPath)).toBe(true)
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+    expect(manifest.name).toBe('Form')
+    expect(manifest.short_name).toBe('Form')
+
+    // Public icon assets verification
+    expect(fs.existsSync(path.join(publicDir, 'icon.png'))).toBe(true)
+    expect(fs.statSync(path.join(publicDir, 'icon.png')).size).toBeGreaterThan(1000)
+    expect(fs.existsSync(path.join(publicDir, 'icon-192.png'))).toBe(true)
+    expect(fs.existsSync(path.join(publicDir, 'icon-512.png'))).toBe(true)
+    expect(fs.existsSync(path.join(publicDir, 'apple-touch-icon.png'))).toBe(true)
+    expect(fs.existsSync(path.join(publicDir, 'favicon.ico'))).toBe(true)
+
+    // App router icon assets verification
+    expect(fs.existsSync(path.join(appDir, 'icon.png'))).toBe(true)
+    expect(fs.existsSync(path.join(appDir, 'apple-icon.png'))).toBe(true)
+    expect(fs.existsSync(path.join(appDir, 'favicon.ico'))).toBe(true)
+  })
 })
 

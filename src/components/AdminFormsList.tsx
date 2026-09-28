@@ -286,7 +286,7 @@ export default function AdminFormsList() {
         <div className="forms-dashboard-brand">
           <HimpunLogo size="sm" />
           <div>
-            <strong>HIMPUN</strong>
+            <strong>Form</strong>
             <span>Dashboard admin formulir</span>
           </div>
         </div>
