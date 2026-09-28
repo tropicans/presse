@@ -92,6 +92,8 @@ function createField(type: EditableField['type'], pageId: string): EditableField
     placeholder: '',
     pageId,
     options: createOptionsForType(type),
+    copyFromFieldId: '',
+    copyFromLabel: '',
   }
 }
 
@@ -794,6 +796,8 @@ export default function AdminFormEditor({ formId }: Props) {
             placeholder: field.placeholder,
             pageId: field.pageId,
             options: field.options,
+            copyFromFieldId: field.copyFromFieldId || undefined,
+            copyFromLabel: field.copyFromLabel?.trim() || undefined,
           })),
         }),
       })
@@ -1479,14 +1483,59 @@ export default function AdminFormEditor({ formId }: Props) {
                     </div>
 
                 {(field.type === 'text' || field.type === 'textarea') && (
-                  <label className="admin-builder-field">
-                    <span>Placeholder</span>
-                    <input
-                      value={field.placeholder}
-                      onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
-                      className="admin-builder-input"
-                    />
-                  </label>
+                  <>
+                    <label className="admin-builder-field">
+                      <span>Placeholder</span>
+                      <input
+                        value={field.placeholder}
+                        onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
+                        className="admin-builder-input"
+                      />
+                    </label>
+                    <div className="admin-builder-field">
+                      <label>
+                        <span>Salin dari Pertanyaan Lain (Opsional)</span>
+                        <p className="admin-builder-option-helper">
+                          Responden akan melihat kotak centang &quot;Sama dengan...&quot; untuk mengisi otomatis nilai dari pertanyaan yang dipilih.
+                        </p>
+                        <select
+                          value={field.copyFromFieldId ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            updateField(field.id, {
+                              copyFromFieldId: val || undefined,
+                            })
+                          }}
+                          className="admin-builder-select"
+                        >
+                          <option value="">-- Tidak ada (diisi manual) --</option>
+                          {form.fields
+                            .filter((other) => other.id !== field.id)
+                            .map((other, otherIdx) => (
+                              <option key={other.id} value={other.id}>
+                                {other.label.trim() ? other.label : `Pertanyaan ${otherIdx + 1}`} ({fieldTypeLabels[other.type] || other.type})
+                              </option>
+                            ))}
+                        </select>
+                      </label>
+                      {field.copyFromFieldId && (
+                        <label style={{ marginTop: '0.5rem', display: 'block' }}>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                            Label Checkbox Kustom (Opsional)
+                          </span>
+                          <input
+                            value={field.copyFromLabel ?? ''}
+                            placeholder={(() => {
+                              const src = form.fields.find((f) => f.id === field.copyFromFieldId)
+                              return src?.label ? `Sama dengan ${src.label}` : 'Sama dengan pertanyaan sebelumnya'
+                            })()}
+                            onChange={(e) => updateField(field.id, { copyFromLabel: e.target.value })}
+                            className="admin-builder-input"
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </>
                 )}
 
                 {(field.type === 'radio' || field.type === 'select' || field.type === 'likert') && (

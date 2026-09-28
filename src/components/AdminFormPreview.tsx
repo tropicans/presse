@@ -197,6 +197,7 @@ function PreviewSession({ form }: Props) {
   const [formData, setFormData] = useState<Record<string, string>>(initialValues)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [copiedFields, setCopiedFields] = useState<Record<string, boolean>>({})
   const steps = useMemo(() => buildSteps(form, formData), [form, formData])
   const safeCurrentStepIndex = Math.min(currentStepIndex, Math.max(steps.length - 1, 0))
   const currentStep = steps[safeCurrentStepIndex] ?? steps[0]
@@ -213,6 +214,26 @@ function PreviewSession({ form }: Props) {
 
   const scrollToPreviewTop = () => {
     previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const handleCopyToggle = (targetField: AdminPreviewField, sourceField: AdminPreviewField, checked: boolean) => {
+    setCopiedFields((prev) => ({
+      ...prev,
+      [targetField.name]: checked,
+    }))
+
+    if (checked) {
+      const sourceVal = formData[sourceField.name] ?? ''
+      setFormData((prev) => {
+        const next = { ...prev, [targetField.name]: sourceVal }
+        for (const f of form.fields) {
+          if (copiedFields[f.name] && f.copyFromFieldId === targetField.id) {
+            next[f.name] = sourceVal
+          }
+        }
+        return next
+      })
+    }
   }
 
   useEffect(() => {
@@ -237,10 +258,17 @@ function PreviewSession({ form }: Props) {
       nextValue = sanitizePhoneNumber(value)
     }
 
-    setFormData((current) => ({
-      ...current,
-      [name]: nextValue,
-    }))
+    setFormData((current) => {
+      const next = { ...current, [name]: nextValue }
+      if (targetField) {
+        for (const field of form.fields) {
+          if (copiedFields[field.name] && field.copyFromFieldId === targetField.id) {
+            next[field.name] = nextValue
+          }
+        }
+      }
+      return next
+    })
   }
 
   return (
@@ -444,26 +472,54 @@ function PreviewSession({ form }: Props) {
             }
 
             if (field.type === 'textarea') {
+              const sourceField = field.copyFromFieldId
+                ? form.fields.find((f) => f.id === field.copyFromFieldId)
+                : null
+              const isCopied = Boolean(sourceField && copiedFields[field.name])
+
               return (
                 <div key={field.id} className="form-group">
-                  <label className="form-label" htmlFor={field.name}>
-                    {label}
-                    {field.required ? ' *' : ''}
-                  </label>
+                  <div className="form-label-with-action">
+                    <label className="form-label" htmlFor={field.name}>
+                      {label}
+                      {field.required ? ' *' : ''}
+                    </label>
+                    {sourceField && (
+                      <label className="form-copy-checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={isCopied}
+                          onChange={(e) => handleCopyToggle(field, sourceField, e.target.checked)}
+                          className="form-copy-checkbox"
+                        />
+                        <span>
+                          {field.copyFromLabel?.trim()
+                            ? field.copyFromLabel
+                            : `Sama dengan ${getDisplayLabel(sourceField, formData)}`}
+                        </span>
+                      </label>
+                    )}
+                  </div>
                   <textarea
                     id={field.name}
                     name={field.name}
                     value={formData[field.name] ?? ''}
                     onChange={handleChange}
+                    readOnly={isCopied}
                     rows={3}
                     placeholder={field.placeholder || undefined}
-                    className="form-textarea"
+                    className={`form-textarea ${isCopied ? 'is-copied' : ''}`}
                   />
                 </div>
               )
             }
 
             if (field.type === 'text') {
+              const sourceField = field.copyFromFieldId
+                ? form.fields.find((f) => f.id === field.copyFromFieldId)
+                : null
+              const isCopied = Boolean(sourceField && copiedFields[field.name])
+
               const isNip = isNipNrpField(field)
               const isEmail = isEmailField(field)
               const isPhone = isPhoneField(field)
@@ -491,10 +547,27 @@ function PreviewSession({ form }: Props) {
 
               return (
                 <div key={field.id} className="form-group">
-                  <label className="form-label" htmlFor={field.name}>
-                    {label}
-                    {field.required ? ' *' : ''}
-                  </label>
+                  <div className="form-label-with-action">
+                    <label className="form-label" htmlFor={field.name}>
+                      {label}
+                      {field.required ? ' *' : ''}
+                    </label>
+                    {sourceField && (
+                      <label className="form-copy-checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={isCopied}
+                          onChange={(e) => handleCopyToggle(field, sourceField, e.target.checked)}
+                          className="form-copy-checkbox"
+                        />
+                        <span>
+                          {field.copyFromLabel?.trim()
+                            ? field.copyFromLabel
+                            : `Sama dengan ${getDisplayLabel(sourceField, formData)}`}
+                        </span>
+                      </label>
+                    )}
+                  </div>
                   {fieldHint && (
                     <p className="field-help">
                       {fieldHint}
@@ -507,8 +580,9 @@ function PreviewSession({ form }: Props) {
                     name={field.name}
                     value={formData[field.name] ?? ''}
                     onChange={handleChange}
+                    readOnly={isCopied}
                     placeholder={fieldPlaceholder}
-                    className="form-input"
+                    className={`form-input ${isCopied ? 'is-copied' : ''}`}
                   />
                 </div>
               )

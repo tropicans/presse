@@ -12,6 +12,8 @@ export interface AdminPreviewField {
     points: number
     nextPageId?: string
   }>
+  copyFromFieldId?: string
+  copyFromLabel?: string
 }
 
 export interface AdminPreviewPage {

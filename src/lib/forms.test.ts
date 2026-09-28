@@ -690,4 +690,42 @@ describe('Email, Phone, Name, and Signature format validators', () => {
       })
     }).toThrow('Format tanda tangan tidak valid')
   })
+
+  it('supports copyRules and copyFromField in public forms and admin forms', () => {
+    const formWithCopy: PublicFormDefinition = {
+      id: 'form-copy-test',
+      slug: 'form-copy-slug',
+      title: 'Form Alamat',
+      description: null,
+      successMessage: null,
+      submitLabel: 'Kirim',
+      fields: [
+        { id: 'f_ktp', name: 'alamatKtp', label: 'Alamat KTP', type: 'text', required: true },
+        {
+          id: 'f_domisili',
+          name: 'alamatDomisili',
+          label: 'Alamat Domisili',
+          type: 'text',
+          required: true,
+          copyFromFieldId: 'f_ktp',
+          copyFromLabel: 'Sama dengan Alamat KTP',
+        },
+      ],
+      settings: {
+        workflow: 'STANDARD',
+        copyRules: [
+          { targetFieldId: 'f_domisili', sourceFieldId: 'f_ktp', checkboxLabel: 'Sama dengan Alamat KTP' },
+        ],
+      },
+    }
+
+    const payload = {
+      alamatKtp: 'Jl. Merdeka No. 45 Jakarta',
+      alamatDomisili: 'Jl. Merdeka No. 45 Jakarta',
+    }
+
+    const validated = validateFormSubmission(formWithCopy, payload)
+    expect(validated.alamatKtp).toBe('Jl. Merdeka No. 45 Jakarta')
+    expect(validated.alamatDomisili).toBe('Jl. Merdeka No. 45 Jakarta')
+  })
 })

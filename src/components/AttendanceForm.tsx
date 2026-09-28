@@ -217,6 +217,7 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [copiedFields, setCopiedFields] = useState<Record<string, boolean>>({})
   const steps = useMemo(() => buildSteps(form, formData), [form, formData])
   const currentStep = steps[currentStepIndex] ?? steps[0]
   const isMultiStep = steps.length > 1
@@ -365,6 +366,32 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     return nextErrors
   }
 
+  const handleCopyToggle = (targetField: FormField, sourceField: FormField, checked: boolean) => {
+    setCopiedFields((prev) => ({
+      ...prev,
+      [targetField.name]: checked,
+    }))
+
+    if (checked) {
+      const sourceVal = formData[sourceField.name] ?? ''
+      setFormData((prev) => {
+        const next = { ...prev, [targetField.name]: sourceVal }
+        for (const f of form.fields) {
+          if (copiedFields[f.name] && f.copyFromFieldId === targetField.id) {
+            next[f.name] = sourceVal
+          }
+        }
+        return next
+      })
+      setFieldErrors((prev) => {
+        if (!prev[targetField.name]) return prev
+        const nextErrors = { ...prev }
+        delete nextErrors[targetField.name]
+        return nextErrors
+      })
+    }
+  }
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -377,7 +404,17 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
       nextValue = sanitizePhoneNumber(value)
     }
 
-    setFormData((prev) => ({ ...prev, [name]: nextValue }))
+    setFormData((prev) => {
+      const next = { ...prev, [name]: nextValue }
+      if (targetField) {
+        for (const field of form.fields) {
+          if (copiedFields[field.name] && field.copyFromFieldId === targetField.id) {
+            next[field.name] = nextValue
+          }
+        }
+      }
+      return next
+    })
     setFieldErrors((prev) => {
       if (!prev[name]) {
         return prev
@@ -736,19 +773,45 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
         }
 
         if (field.type === 'textarea') {
+          const sourceField = field.copyFromFieldId
+            ? form.fields.find((f) => f.id === field.copyFromFieldId)
+            : null
+          const isCopied = Boolean(sourceField && copiedFields[field.name])
+
           return (
             <div key={field.id} className="form-group">
-              <label className="form-label" htmlFor={field.name}>{label}</label>
+              <div className="form-label-with-action">
+                <label className="form-label" htmlFor={field.name}>
+                  {label}
+                  {field.required ? ' *' : ''}
+                </label>
+                {sourceField && (
+                  <label className="form-copy-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={isCopied}
+                      onChange={(e) => handleCopyToggle(field, sourceField, e.target.checked)}
+                      className="form-copy-checkbox"
+                    />
+                    <span>
+                      {field.copyFromLabel?.trim()
+                        ? field.copyFromLabel
+                        : `Sama dengan ${getDisplayLabel(sourceField, formData, form)}`}
+                    </span>
+                  </label>
+                )}
+              </div>
               <textarea
                 id={field.name}
                 name={field.name}
                 value={formData[field.name] ?? ''}
                 onChange={handleChange}
                 required={field.required}
+                readOnly={isCopied}
                 rows={field.rows ?? 3}
                 maxLength={field.maxLength}
                 placeholder={field.placeholder ?? undefined}
-                className="form-textarea"
+                className={`form-textarea ${isCopied ? 'is-copied' : ''}`}
                 aria-invalid={fieldErrors[field.name] ? 'true' : 'false'}
                 aria-describedby={describedBy}
               />
@@ -762,6 +825,11 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
         }
 
         if (field.type === 'text') {
+          const sourceField = field.copyFromFieldId
+            ? form.fields.find((f) => f.id === field.copyFromFieldId)
+            : null
+          const isCopied = Boolean(sourceField && copiedFields[field.name])
+
           const isNip = isNipNrpField(field)
           const isEmail = isEmailField(field)
           const isPhone = isPhoneField(field)
@@ -795,10 +863,27 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
 
           return (
             <div key={field.id} className="form-group">
-              <label className="form-label" htmlFor={field.name}>
-                {label}
-                {field.required ? ' *' : ''}
-              </label>
+              <div className="form-label-with-action">
+                <label className="form-label" htmlFor={field.name}>
+                  {label}
+                  {field.required ? ' *' : ''}
+                </label>
+                {sourceField && (
+                  <label className="form-copy-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={isCopied}
+                      onChange={(e) => handleCopyToggle(field, sourceField, e.target.checked)}
+                      className="form-copy-checkbox"
+                    />
+                    <span>
+                      {field.copyFromLabel?.trim()
+                        ? field.copyFromLabel
+                        : `Sama dengan ${getDisplayLabel(sourceField, formData, form)}`}
+                    </span>
+                  </label>
+                )}
+              </div>
               {fieldHint && (
                 <p id={hintId} className="field-help">
                   {fieldHint}
@@ -812,9 +897,10 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
                 value={formData[field.name] ?? ''}
                 onChange={handleChange}
                 required={field.required}
+                readOnly={isCopied}
                 maxLength={field.maxLength}
                 placeholder={fieldPlaceholder}
-                className="form-input"
+                className={`form-input ${isCopied ? 'is-copied' : ''}`}
                 aria-invalid={fieldErrors[field.name] ? 'true' : 'false'}
                 aria-describedby={textDescribedBy}
               />

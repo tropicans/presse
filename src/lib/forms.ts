@@ -39,6 +39,8 @@ interface BaseField {
   type: FormFieldType
   required?: boolean
   isQuizQuestion?: boolean
+  copyFromFieldId?: string
+  copyFromLabel?: string
 }
 
 export interface TextField extends BaseField {
@@ -81,6 +83,12 @@ interface FormConditionalRoute {
   nextPageId: string
 }
 
+export interface FormFieldCopyRule {
+  targetFieldId: string
+  sourceFieldId: string
+  checkboxLabel?: string
+}
+
 export interface FormSettings {
   workflow: FormWorkflow
   uniqueFields?: string[]
@@ -89,6 +97,7 @@ export interface FormSettings {
   quiz?: QuizSettings
   pages?: FormPageDefinition[]
   conditionalRoutes?: FormConditionalRoute[]
+  copyRules?: FormFieldCopyRule[]
 }
 
 export interface QuizSettings {
@@ -153,6 +162,8 @@ export interface AdminEditableField {
   placeholder: string
   pageId: string
   options: AdminEditableFieldOption[]
+  copyFromFieldId?: string
+  copyFromLabel?: string
 }
 
 export interface AdminFormPage {
@@ -706,11 +717,63 @@ function readFormConditionalRoutes(
   })
 }
 
+function readFormCopyRules(
+  settingsJson: JsonValue | null,
+  fieldIds: string[]
+): FormFieldCopyRule[] {
+  if (!settingsJson || typeof settingsJson !== 'object' || Array.isArray(settingsJson)) {
+    return []
+  }
+
+  const settings = settingsJson as Record<string, unknown>
+  const rawCopyRules = settings.copyRules
+
+  if (!Array.isArray(rawCopyRules) || rawCopyRules.length === 0) {
+    return []
+  }
+
+  const availableFieldIds = new Set(fieldIds)
+  const seenTargets = new Set<string>()
+
+  return rawCopyRules.flatMap<FormFieldCopyRule>((rawRule) => {
+    if (!rawRule || typeof rawRule !== 'object' || Array.isArray(rawRule)) {
+      return []
+    }
+
+    const rule = rawRule as Record<string, unknown>
+    const targetFieldId = typeof rule.targetFieldId === 'string' ? rule.targetFieldId.trim() : ''
+    const sourceFieldId = typeof rule.sourceFieldId === 'string' ? rule.sourceFieldId.trim() : ''
+    const checkboxLabel = typeof rule.checkboxLabel === 'string' && rule.checkboxLabel.trim()
+      ? rule.checkboxLabel.trim()
+      : undefined
+
+    if (!targetFieldId || !sourceFieldId || targetFieldId === sourceFieldId) {
+      return []
+    }
+
+    if (!availableFieldIds.has(targetFieldId) || !availableFieldIds.has(sourceFieldId)) {
+      return []
+    }
+
+    if (seenTargets.has(targetFieldId)) {
+      return []
+    }
+
+    seenTargets.add(targetFieldId)
+    return [{
+      targetFieldId,
+      sourceFieldId,
+      checkboxLabel,
+    }]
+  })
+}
+
 function serializeFormSettings(
   workflow: FormWorkflow,
   quizSettings: QuizSettings,
   pages?: FormPageDefinition[],
-  conditionalRoutes?: FormConditionalRoute[]
+  conditionalRoutes?: FormConditionalRoute[],
+  copyRules?: FormFieldCopyRule[]
 ) {
   return JSON.stringify({
     workflow,
@@ -726,6 +789,13 @@ function serializeFormSettings(
       optionLabel: route.optionLabel,
       nextPageId: route.nextPageId,
     })),
+    copyRules: copyRules && copyRules.length > 0
+      ? copyRules.map((rule) => ({
+          targetFieldId: rule.targetFieldId,
+          sourceFieldId: rule.sourceFieldId,
+          checkboxLabel: rule.checkboxLabel || undefined,
+        }))
+      : undefined,
   })
 }
 
@@ -1014,6 +1084,8 @@ function buildFormSettings(form: Pick<FormRow, 'slug' | 'settingsJson'>, fields:
     ? readFormPages(form.settingsJson ?? null, fields.map((field) => field.id))
     : undefined
 
+  const copyRules = readFormCopyRules(form.settingsJson ?? null, fields.map((field) => field.id))
+
   const hasQuizFields = fields.some((field) => field.isQuizQuestion)
   const settings: FormSettings = {
     workflow,
@@ -1028,6 +1100,7 @@ function buildFormSettings(form: Pick<FormRow, 'slug' | 'settingsJson'>, fields:
           pages.map((page) => page.id)
         )
       : undefined,
+    copyRules: copyRules.length > 0 ? copyRules : undefined,
   }
 
   if (hasQuizFields) {
@@ -1648,6 +1721,8 @@ async function getFormRowsById(id: string) {
 
 function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDefinition {
   const optionsByField = buildPublicOptionsByField(rows.options)
+  const copyRules = readFormCopyRules(rows.form.settingsJson ?? null, rows.fields.map((f) => f.id))
+  const copyRuleByTargetId = new Map(copyRules.map((rule) => [rule.targetFieldId, rule]))
 
   const fields = rows.fields.flatMap<FormField>((field) => {
     const fieldOptions = rows.options.filter((option) => option.fieldId === field.id)
@@ -1658,6 +1733,11 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
     }
 
     const name = mapFieldName(field)
+    const copyRule = copyRuleByTargetId.get(field.id)
+    const copyProps = copyRule ? {
+      copyFromFieldId: copyRule.sourceFieldId,
+      copyFromLabel: copyRule.checkboxLabel,
+    } : {}
 
     if (mappedType === 'radio' || mappedType === 'likert') {
       return [{
@@ -1668,6 +1748,7 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
         required: field.required,
         options: optionsByField[field.id] ?? [],
         isQuizQuestion: fieldOptions.some((option) => option.isCorrect),
+        ...copyProps,
       }]
     }
 
@@ -1680,6 +1761,7 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
         required: field.required,
         options: optionsByField[field.id] ?? [],
         isQuizQuestion: fieldOptions.some((option) => option.isCorrect),
+        ...copyProps,
       }]
     }
 
@@ -1690,6 +1772,7 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
         label: field.label,
         type: mappedType,
         required: field.required,
+        ...copyProps,
       }]
     }
 
@@ -1700,6 +1783,7 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
         label: field.label,
         type: mappedType,
         required: field.required,
+        ...copyProps,
       }]
     }
 
@@ -1712,6 +1796,7 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
       placeholder: field.placeholder,
       maxLength: name === 'nipNrp' ? 50 : MAX_TEXT_LENGTH,
       rows: mappedType === 'textarea' ? 3 : undefined,
+      ...copyProps,
     }]
   })
 
@@ -2484,6 +2569,8 @@ export async function getAdminFormDetail(id: string): Promise<AdminFormDetail | 
     fieldIds,
     pages.map((page) => page.id)
   )
+  const copyRules = readFormCopyRules(rows.form.settingsJson ?? null, fieldIds)
+  const copyRuleByTargetId = new Map(copyRules.map((rule) => [rule.targetFieldId, rule]))
   const pageIdByFieldId = new Map<string, string>()
   const nextPageIdByOptionKey = new Map<string, string>()
 
@@ -2517,6 +2604,8 @@ export async function getAdminFormDetail(id: string): Promise<AdminFormDetail | 
         return []
       }
 
+      const copyRule = copyRuleByTargetId.get(field.id)
+
       return [{
         id: field.id,
         name: mapFieldName(field),
@@ -2531,6 +2620,8 @@ export async function getAdminFormDetail(id: string): Promise<AdminFormDetail | 
             createConditionalRouteKey(field.id, option.label)
           ),
         })),
+        copyFromFieldId: copyRule?.sourceFieldId,
+        copyFromLabel: copyRule?.checkboxLabel,
       }]
     }),
   }
@@ -2552,6 +2643,8 @@ interface UpdateAdminFormPayload {
     placeholder?: string
     pageId: string
     options?: AdminEditableFieldOption[]
+    copyFromFieldId?: string
+    copyFromLabel?: string
   }>
 }
 
@@ -2696,8 +2789,6 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
     passingPercentage: normalizePassingPercentage(payload.quizSettings?.passingPercentage),
   }
   const normalizedPayloadFields = payload.fields
-  const formPages = normalizeAdminFormPages(payload.pages, normalizedPayloadFields)
-  const conditionalRoutes = normalizeAdminConditionalRoutes(normalizedPayloadFields, formPages)
 
   const editableFieldIds = new Set(current.fields.map((field) => field.id))
   const allowedTypes = new Set<FormFieldType>(['text', 'textarea', 'radio', 'select', 'likert', 'signature', 'yes_no'])
@@ -2705,6 +2796,34 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
   if (normalizedPayloadFields.length === 0) {
     throw new FormSubmissionError('Form harus memiliki minimal satu field', 400)
   }
+
+  // Pre-generate IDs for new fields upfront so formPages, conditionalRoutes, and copyRules have concrete IDs
+  const idMap = new Map<string, string>()
+  for (const field of normalizedPayloadFields) {
+    if (!editableFieldIds.has(field.id) && field.id.startsWith('new-')) {
+      const generatedId = randomId('field')
+      idMap.set(field.id, generatedId)
+      field.id = generatedId
+    }
+  }
+
+  for (const field of normalizedPayloadFields) {
+    if (field.copyFromFieldId && idMap.has(field.copyFromFieldId)) {
+      field.copyFromFieldId = idMap.get(field.copyFromFieldId)!
+    }
+  }
+
+  const allFieldIds = new Set(normalizedPayloadFields.map((f) => f.id))
+  const copyRules: FormFieldCopyRule[] = normalizedPayloadFields
+    .filter((f) => f.copyFromFieldId && f.copyFromFieldId !== f.id && allFieldIds.has(f.copyFromFieldId))
+    .map((f) => ({
+      targetFieldId: f.id,
+      sourceFieldId: f.copyFromFieldId!,
+      checkboxLabel: f.copyFromLabel?.trim() || undefined,
+    }))
+
+  const formPages = normalizeAdminFormPages(payload.pages, normalizedPayloadFields)
+  const conditionalRoutes = normalizeAdminConditionalRoutes(normalizedPayloadFields, formPages)
 
   if (formPages.some((page) => page.fieldIds.length === 0)) {
     throw new FormSubmissionError('Setiap langkah harus memiliki minimal satu field', 400)
@@ -2741,7 +2860,8 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
           workflow,
           quizSettings,
           formPages,
-          conditionalRoutes
+          conditionalRoutes,
+          copyRules
         )}::jsonb,
         updated_at = NOW()
       WHERE id = ${id}
