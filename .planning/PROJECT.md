@@ -7,9 +7,19 @@ Platform pengelolaan formulir publik, kiriman (submissions), dan dashboard admin
 Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
 
 ## Current State
-Milestone **v2.1 Admin Invitation System & Google OAuth Access Delegation** active.
-Milestone v2.0 UI/UX Density & Information Hierarchy Refactor shipped (2026-09-27).
-Phases 1-36 completed across milestones v1.1 - v2.0.
+Milestone **v2.1 Admin Invitation System & Google OAuth Access Delegation** shipped (2026-09-28).
+Phases 1-40 completed across milestones v1.1 - v2.1.
+
+<details>
+<summary>Archived Milestone v2.1: Admin Invitation System & Google OAuth Access Delegation (Shipped: 2026-09-28)</summary>
+
+**Goal:** Memungkinkan pendelegasian akses administratif melalui tautan undangan aman (tokenized link, TTL 48 jam) dengan tetap mempertahankan login Google OAuth tanpa penyimpanan password lokal (zero password):
+- **Database Schema & Domain Engine:** Tabel `admin_users` dan `admin_invitations` via migrasi Prisma; generator token kriptografis 64-hex dengan TTL 48 jam; transaksi atomik penerimaan dan proteksi pencabutan root superadmin (`ADMIN_EMAILS`).
+- **NextAuth Integration & Admin APIs:** Pengecekan dinamis akses admin di callback NextAuth; auto-claim undangan aktif saat Google Sign-In; API routes terproteksi role SUPERADMIN (`GET /api/admin/users`, `POST /invite`, `POST /revoke`) dan API verifikasi publik.
+- **Admin Team UI & Public Claim Experience:** Dashboard manajemen tim `/admin/users` dengan kartu metrik KPI, form invite dengan salin tautan 1-klik, tabel admin aktif/undangan tertunda, dan dialog konfirmasi; halaman klaim `/admin/invite` berpenghitung mundur masa berlaku token.
+- **Multi-Tier Quality Assurance:** 95 unit tests passing, zero ESLint/TypeScript errors, build Next.js 16 standalone sukses, dan rebuild Docker containers (`isian-app`, `isian-worker`) sehat dan aktif di port 3456.
+
+</details>
 
 <details>
 <summary>Archived Milestone v2.0: UI/UX Density & Information Hierarchy Refactor (Shipped: 2026-09-27)</summary>

@@ -10,7 +10,7 @@
 - ✅ **v1.8 Editorial Minimalist Monochrome Transformation** — Phases 24-27 (shipped 2026-09-27)
 - ✅ **v1.9 Interactive Analytics & Submission Data Visualization** — Phases 28-30 (shipped 2026-09-27)
 - ✅ **v2.0 UI/UX Density & Information Hierarchy Refactor** — Phases 31-36 (shipped 2026-09-27)
-- 🟡 **v2.1 Admin Invitation System & Google OAuth Access Delegation** — Phases 37-40 (in progress)
+- ✅ **v2.1 Admin Invitation System & Google OAuth Access Delegation** — Phases 37-40 (shipped 2026-09-28)
 
 ## Phases
 
@@ -101,14 +101,17 @@ See: [.planning/milestones/v1.9-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 - [x] **Phase 35: Responsive, Accessibility & Cross-Screen Refinements** (1 plan) — completed 2026-09-27
 - [x] **Phase 36: Multi-Tier Verification, Visual Regression & Docker Container Up** (1 plan) — completed 2026-09-27
 
+<details>
+<summary>✅ v2.1 Admin Invitation System & Google OAuth Access Delegation (Phases 37-40) — SHIPPED 2026-09-28</summary>
+
+- [x] **Phase 37: Database Schema, Migration & Core Domain Helpers for Admin Invitations** (1 plan) — completed 2026-09-28
+- [x] **Phase 38: NextAuth Integration & Admin User Management API Routes** (1 plan) — completed 2026-09-28
+- [x] **Phase 39: Admin Team UI & Public Invitation Claim Flow** (1 plan) — completed 2026-09-28
+- [x] **Phase 40: Multi-Tier Verification, Security Audit & Docker Container Up** (1 plan) — completed 2026-09-28
+
+See: [.planning/milestones/v2.1-ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/milestones/v2.1-ROADMAP.md)
+
 </details>
-
-### 🟡 v2.1 Admin Invitation System & Google OAuth Access Delegation (Phases 37-40)
-
-- [ ] **Phase 37: Database Schema, Migration & Core Domain Helpers for Admin Invitations** (1 plan)
-- [ ] **Phase 38: NextAuth Integration & Admin User Management API Routes** (1 plan)
-- [ ] **Phase 39: Admin Team UI & Public Invitation Claim Flow** (1 plan)
-- [ ] **Phase 40: Multi-Tier Verification, Security Audit & Docker Container Up** (1 plan)
 
 ## Progress
 
@@ -141,13 +144,14 @@ See: [.planning/milestones/v1.9-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloa
 | 34. Form Editor & Question Card Structure Refactor | v2.0 | 1/1 | Complete | 2026-09-27 |
 | 35. Responsive, Accessibility & Cross-Screen Refinements | v2.0 | 1/1 | Complete | 2026-09-27 |
 | 36. Multi-Tier Verification, Visual Regression & Docker Container Up | v2.0 | 1/1 | Complete | 2026-09-27 |
-| 37. Database Schema, Migration & Core Domain Helpers for Admin Invitations | v2.1 | 0/1 | Planned | - |
-| 38. NextAuth Integration & Admin User Management API Routes | v2.1 | 0/1 | Planned | - |
-| 39. Admin Team UI & Public Invitation Claim Flow | v2.1 | 0/1 | Planned | - |
-| 40. Multi-Tier Verification, Security Audit & Docker Container Up | v2.1 | 0/1 | Planned | - |
+| 37. Database Schema, Migration & Core Domain Helpers for Admin Invitations | v2.1 | 1/1 | Complete | 2026-09-28 |
+| 38. NextAuth Integration & Admin User Management API Routes | v2.1 | 1/1 | Complete | 2026-09-28 |
+| 39. Admin Team UI & Public Invitation Claim Flow | v2.1 | 1/1 | Complete | 2026-09-28 |
+| 40. Multi-Tier Verification, Security Audit & Docker Container Up | v2.1 | 1/1 | Complete | 2026-09-28 |
 
 ---
 
-*Roadmap updated: 2026-09-28 (v2.1 In Progress)*
+*Roadmap updated: 2026-09-28 (v2.1 Shipped)*
+
 
 

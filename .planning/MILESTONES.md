@@ -1,5 +1,21 @@
 # Milestones
 
+## v2.1 Admin Invitation System & Google OAuth Access Delegation (Shipped: 2026-09-28)
+
+**Phases completed:** 4 phases, 4 plans, 12 tasks
+
+**Key accomplishments:**
+
+- Architected and deployed database schema for administrative access delegation (`admin_users` and `admin_invitations` tables) via Prisma migration `20260928000000_add_admin_invitations`.
+- Implemented core lifecycle domain logic in `src/lib/admin-invitations.ts`: cryptographic 64-character hex token generation, 48-hour expiration calculation, lazy expiration evaluations, atomic transaction acceptance, and safeguards preventing self-revocation or revocation of root Superadmins.
+- Integrated dynamic authorization into NextAuth (`src/lib/auth.ts`): allows Superadmins configured in `.env` (`ADMIN_EMAILS`) and active database Admins, auto-claims unexpired invitations upon Google sign-in, and enriches session objects with user role metadata (`SUPERADMIN` vs `ADMIN`).
+- Built protected admin API routes (`/api/admin/users`, `/invite`, `/revoke`) and public invitation verification endpoints (`/api/public/invite/verify`, `/accept`).
+- Created Superadmin Team Management Dashboard (`/admin/users`) with KPI metrics, invite form with 1-click **"Salin Tautan"** copy feedback, active/pending tables, and revocation confirmation modals.
+- Developed public invitation landing page (`/admin/invite`) displaying invited email, role, remaining validity countdown, and "Terima Undangan & Masuk dengan Google" button.
+- Executed multi-tier verification: 95/95 passing Vitest tests, clean ESLint, zero TypeScript errors, successful standalone production build, and Smart Targeted Rebuild of Docker containers with healthy live verification.
+
+---
+
 ## v2.0 UI/UX Density & Information Hierarchy Refactor (Shipped: 2026-09-27)
 
 **Phases completed:** 6 phases, 6 plans, 18 tasks
