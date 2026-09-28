@@ -27,6 +27,18 @@ enum FieldType {
   SIGNATURE
 }
 
+enum AdminRole {
+  SUPERADMIN
+  ADMIN
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
 model Attendance {
   id          Int      @id @default(autoincrement())
   namaLengkap String   @map("nama_lengkap")
@@ -157,3 +169,37 @@ model SubmissionJob {
   @@index([status, availableAt, createdAt], map: "submission_jobs_status_available_idx")
   @@map("submission_jobs")
 }
+
+model AdminUser {
+  id              String            @id @default(uuid())
+  email           String            @unique
+  name            String?
+  role            AdminRole         @default(ADMIN)
+  isActive        Boolean           @default(true) @map("is_active")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at")
+  invitationsSent AdminInvitation[] @relation("InvitedBy")
+
+  @@index([email], map: "admin_users_email_idx")
+  @@map("admin_users")
+}
+
+model AdminInvitation {
+  id          String           @id @default(uuid())
+  email       String
+  role        AdminRole        @default(ADMIN)
+  token       String           @unique
+  status      InvitationStatus @default(PENDING)
+  expiresAt   DateTime         @map("expires_at")
+  invitedById String?          @map("invited_by_id")
+  acceptedAt  DateTime?        @map("accepted_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+  invitedBy   AdminUser?       @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@index([email], map: "admin_invitations_email_idx")
+  @@index([token], map: "admin_invitations_token_idx")
+  @@index([status], map: "admin_invitations_status_idx")
+  @@map("admin_invitations")
+}
+
