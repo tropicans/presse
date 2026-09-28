@@ -1,59 +1,56 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: UI/UX Density & Information Hierarchy Refactor
-status: completed
-last_updated: "2026-09-27T14:18:00.000Z"
-last_activity: 2026-09-27
+milestone: v2.1
+milestone_name: Admin Invitation System & Google OAuth Access Delegation
+status: in_progress
+last_updated: "2026-09-28T10:52:00.000Z"
+last_activity: 2026-09-28
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 6
-  completed_plans: 6
-  percent: 100
-current_phase: 36
-current_phase_name: Multi-Tier Verification, Visual Regression & Docker Container Up
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 4
+  completed_plans: 0
+  percent: 0
+current_phase: 37
+current_phase_name: Database Schema, Migration & Core Domain Helpers for Admin Invitations
 ---
 
-# Project State: UI/UX Density & Information Hierarchy Refactor (Completed)
+# Project State: Admin Invitation System & Google OAuth Access Delegation (In Progress)
 
 ## Project Reference
 
-See: [.planning/PROJECT.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/PROJECT.md) (updated 2026-09-27)
-Requirements: [.planning/REQUIREMENTS.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/REQUIREMENTS.md)
-Roadmap: [.planning/ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/ROADMAP.md)
+See: [.planning/PROJECT.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/PROJECT.md) (updated 2026-09-28)  
+Requirements: [.planning/REQUIREMENTS.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/REQUIREMENTS.md)  
+Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/ROADMAP.md)  
 
-**Core value:** Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang compact, modern, dan bernilai guna tinggi.
-**Current focus:** Milestone v2.0 Completed.
+**Core value:** Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang compact, modern, dan bernilai guna tinggi.  
+**Current focus:** Phase 37 — Database Schema, Migration & Core Domain Helpers for Admin Invitations.
 
 ## Current Position
 
-Milestone: v2.0 — UI/UX Density & Information Hierarchy Refactor
-Status: Completed
+Milestone: v2.1 — Admin Invitation System & Google OAuth Access Delegation  
+Status: In Progress  
 Phases:
-- Phase 31: Design Tokens, Typography & Spacing Scale Alignment (Completed)
-- Phase 32: Shared Components & Global Container Density Refactor (Completed)
-- Phase 33: Admin Dashboard & Formulir List Density Overhaul (Completed)
-- Phase 34: Form Editor & Question Card Structure Refactor (Completed)
-- Phase 35: Responsive, Accessibility & Cross-Screen Refinements (Completed)
-- Phase 36: Multi-Tier Verification, Visual Regression & Docker Container Up (Completed)
+- Phase 37: Database Schema, Migration & Core Domain Helpers for Admin Invitations (Planned)
+- Phase 38: NextAuth Integration & Admin User Management API Routes (Planned)
+- Phase 39: Admin Team UI & Public Invitation Claim Flow (Planned)
+- Phase 40: Multi-Tier Verification, Security Audit & Docker Container Up (Planned)
 
-## Key Decisions (Phase 31 Discussed & Approved)
+## Key Decisions
 
 | Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Hybrid Typography Stack (Inter + Playfair Display + JetBrains Mono) | Membatasi serif hanya untuk page title/brand display (~32-36px); menggunakan Inter untuk seluruh UI control, label, button, input, dan tabel untuk densitas & keterbacaan tinggi | Disepakati |
-| Subtle Modern Architectural Radius (4px/6px/8px) | Menghapus rule keras `border-radius: 0px !important`; menerapkan radius ergonomis seperti pada visual reference screenshot `new_design/` | Disepakati |
-| Dark Mode Default with Tonal Surface Hierarchy | Menjadikan dark mode sebagai default dengan layer bertingkat (Canvas #0B0D0E, Surface #13161A, Elevated #1C2026, Border #272C35) sambil mempertahankan dukungan light mode | Disepakati |
-| Strict Spacing Scale (4/8/12/16/20/24/32/40/48px) | Menghilangkan arbitrary padding/margin, menurunkan tinggi kontrol ke 36-40px (compact 32px), dan mempercepat scanning informasi | Disepakati |
+|---|---|---|
+| Model Undangan Berbasis Token Link (48 Jam) | Opsi B dipilih: Admin men-generate tautan undangan ber-token acak kriptografis (TTL 48 jam) untuk disalin (*copy-to-clipboard*) dan dibagikan langsung tanpa memerlukan SMTP server pihak ketiga | Disepakati |
+| Autentikasi Tetap Google OAuth (Zero Password) | Pengguna yang diundang tetap masuk menggunakan akun Google resmi mereka; tidak ada penyimpanan password atau risiko kebocoran kredensial di server | Disepakati |
+| Dual-Tier Roles: SUPERADMIN & ADMIN | `SUPERADMIN` ter-bootstrap dari `ADMIN_EMAILS` di `.env` (misal `tropicans@gmail.com`) dan memiliki hak mengundang/mencabut admin. `ADMIN` biasa hanya dapat mengelola form, submissions, dan melihat analitik | Disepakati |
+| Two-Step Claim & Binding | Calon admin membuka tautan undangan `/admin/invite?token=...`, sistem memverifikasi validitas token, lalu mengarahkan ke Google Sign-In untuk mengikat email Google terverifikasi | Disepakati |
 
 ## Next Steps
 
-1. Jalankan **/gsd-plan-phase 31** untuk merancang implementasi token CSS, font stack, dan scale di `src/app/globals.css`.
-2. Lanjutkan ke Phase 32 untuk shared components dan de-escalation container border.
-3. Lanjutkan ke Phase 33 untuk perombakan dashboard Formulir dan pemadatan baris tabel.
-4. Lanjutkan ke Phase 34 untuk form editor dan kartu pertanyaan yang lebih compact.
-5. Selesaikan dengan Phase 35-36 untuk uji responsif, regression test, build standalone, dan Docker up.
+1. Jalankan **/gsd-plan-phase 37** untuk merancang migrasi database SQL (`admin_users`, `admin_invitations`) dan domain helper di `src/lib/admin-invitations.ts`.
+2. Lanjutkan ke Phase 38 untuk integrasi NextAuth dynamic allowlist check dan endpoint API admin user management.
+3. Lanjutkan ke Phase 39 untuk antarmuka dashboard manajemen tim `/admin/users` dan halaman klaim undangan `/admin/invite`.
+4. Selesaikan dengan Phase 40 untuk multi-tier verification (Vitest, lint, tsc, build standalone) dan Docker container up.
 
 ## Quick Tasks Completed
 

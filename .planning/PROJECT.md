@@ -7,8 +7,20 @@ Platform pengelolaan formulir publik, kiriman (submissions), dan dashboard admin
 Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
 
 ## Current State
-Milestone **v1.9 Interactive Analytics & Submission Data Visualization** shipped (2026-09-27).
-Phases 1-30 completed across milestones v1.1 - v1.9. System is production ready and fully verified.
+Milestone **v2.1 Admin Invitation System & Google OAuth Access Delegation** active.
+Milestone v2.0 UI/UX Density & Information Hierarchy Refactor shipped (2026-09-27).
+Phases 1-36 completed across milestones v1.1 - v2.0.
+
+<details>
+<summary>Archived Milestone v2.0: UI/UX Density & Information Hierarchy Refactor (Shipped: 2026-09-27)</summary>
+
+**Goal:** Refaktor menyeluruh terhadap densitas, skala tipografi, dan hierarki visual di seluruh antarmuka Form (ISIAN) untuk menghilangkan elemen yang terlalu besar dan boros ruang vertikal, dengan tetap mempertahankan karakter editorial monokrom:
+- **Design Tokens Refactor:** Mengintegrasikan Inter untuk kontrol UI, tabel, input, dan body copy; menyelaraskan Playfair Display khusus judul display; menghapus `border-radius: 0px !important` dan menggantinya dengan radius arsitektural halus (4px, 6px, 8px).
+- **Control & Spacing Standardization:** Menstandarkan tinggi kontrol (32px, 36px, 40px) dan skala spasi 4/8/12/16/20/24/32/40/48px.
+- **Admin Dashboard & Form Editor Density Overhaul:** Memadatkan kartu metrik KPI, merampingkan tabel formulir, menyederhanakan kartu pertanyaan builder menjadi ringkasan satu baris yang collapsible.
+- **Multi-Tier Quality Assurance:** 68 unit tests passing, zero TypeScript/ESLint error, build standalone berhasil, dan Docker containers sehat.
+
+</details>
 
 <details>
 <summary>Archived Milestone v1.9: Interactive Analytics & Submission Data Visualization (Shipped: 2026-09-27)</summary>

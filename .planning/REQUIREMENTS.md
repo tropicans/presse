@@ -1,34 +1,40 @@
-# Requirements: Milestone v1.9 Interactive Analytics & Submission Data Visualization
+# Requirements: Milestone v2.1 Admin Invitation System & Google OAuth Access Delegation
 
-**Milestone:** v1.9  
-**Status:** In Progress (2026-09-27)  
-**Goal:** Membangun antarmuka analitik interaktif yang menyajikan ringkasan KPI data respon formulir/kuis, visualisasi tren harian menggunakan grafik arsitektural, diagram distribusi jawaban per pertanyaan (pilihan, Likert, kuis), serta filter lanjutan dalam estetika Editorial Minimalist Monochrome.
+**Milestone:** v2.1  
+**Status:** In Progress (2026-09-28)  
+**Goal:** Membangun sistem pendelegasian hak akses admin berbasis undangan link token 48 jam dengan Google OAuth tanpa password, di mana Super Admin (`tropicans@gmail.com` / `ADMIN_EMAILS`) memegang kontrol penuh untuk mengundang dan mencabut akses anggota tim pengelola formulir.
 
 ## Requirements
 
-### Analytics UI & Visualization Architecture
+### Database & Authentication Domain
+- [ ] **INVITE-01: Admin Users & Invitations Schema Migration** — Membuat tabel PostgreSQL (`admin_users` dan `admin_invitations`) untuk mencatat daftar admin aktif, peran (`SUPERADMIN` vs `ADMIN`), token undangan acak kriptografis (UUID/CUID/SHA-256), waktu kadaluwarsa (48 jam), status (`PENDING`, `ACCEPTED`, `REVOKED`, `EXPIRED`), dan identitas pengundang.
+- [ ] **INVITE-02: NextAuth Dynamic Authorization & Session Enrichment** — Memperbarui `src/lib/auth.ts` agar memeriksa email Superadmin dari `.env` (`ADMIN_EMAILS`) serta tabel `admin_users` yang berstatus aktif saat `signIn`, dan menyematkan atribut `role` (`SUPERADMIN` atau `ADMIN`) ke dalam objek NextAuth `session`.
+- [ ] **INVITE-03: Invitation Token Lifecycle Engine** — Membangun modul domain di `src/lib/admin-invitations.ts` yang mengelola siklus hidup undangan: pembuatan token, validasi kadaluwarsa (48 jam), klaim/penerimaan undangan oleh akun Google terverifikasi, dan pencabutan akses (*revocation*).
 
-- [x] **ANLY-01**: **Editorial Analytics Dashboard Shell & Metrics Overview** — Merancang rute `/admin/forms/[id]/analytics` dengan judul Playfair Display, pembatas garis arsitektural 4px, dan kartu metrik KPI (Total Respon, Tingkat Selesai, Rata-rata Skor Kuis, Respon Terakhir) dalam tipografi monospace JetBrains Mono bersiku 0px.
-- [x] **ANLY-02**: **Monochrome Daily Volume Timeline Chart** — Menampilkan visualisasi volume pengiriman harian (SVG/CSS bar chart) tanpa rounded corners, dengan garis kisi hairline, sumbu numerik monospace, dan tooltip interaktif kontras tinggi.
-- [x] **ANLY-03**: **Question Response Distribution Breakdown** — Menyajikan breakdown distribusi frekuensi dan persentase untuk setiap jenis pertanyaan (pilihan ganda, kuis benar/salah, skala Likert) menggunakan meter bar horizontal monokrom dengan penanda opsi benar.
-- [x] **ANLY-04**: **Advanced Interactive Filter Suite** — Menyediakan filter rentang tanggal (7 hari, 30 hari, bulan ini, kustom), filter tipe partisipan (semua, internal, eksternal), dan filter pencarian teks yang langsung memperbarui visualisasi analitik secara reaktif.
+### Admin API & Superadmin Access Control
+- [ ] **INVITE-04: Protected Admin Team & Invitation APIs** — Mengimplementasikan route handler aman di `/api/admin/users` (list active admins & pending invitations), `/api/admin/users/invite` (generate token & invite link), dan `/api/admin/users/revoke` (cabut akses admin atau batalkan undangan), dengan otorisasi ketat khusus `SUPERADMIN`.
+- [ ] **INVITE-05: Public Invitation Token Verification & Acceptance APIs** — Mengimplementasikan endpoint `/api/public/invite/verify` untuk mengecek status dan detail token sebelum login, serta integrasi alur klaim undangan saat proses sign-in Google selesai.
 
-### Backend Data Aggregation & Verification
+### User Interface & Experience
+- [ ] **INVITE-06: Superadmin Team Management Dashboard (`/admin/users`)** — Menambahkan antarmuka manajemen tim editorial monokrom: kartu ringkasan tim, formulir undang pengguna baru dengan tombol *1-Click Copy Link*, tabel anggota aktif & undangan tertunda (*pending*), tombol cabut akses (*revoke*), serta tautan navigasi di header/sidebar yang hanya terlihat oleh Superadmin.
+- [ ] **INVITE-07: Public Invitation Acceptance Landing Page (`/admin/invite`)** — Halaman sambutan undangan yang menampilkan email yang diundang, peran yang diberikan, countdown sisa waktu berlaku tautan, dan tombol *"Terima Undangan & Masuk dengan Google"* yang elegan dan responsif.
 
-- [x] **ANLY-05**: **Server-Side Submission Aggregation API** — Mengimplementasikan endpoint `GET /api/admin/forms/[id]/analytics` yang melakukan agregasi performan tinggi di PostgreSQL (`prisma.$queryRaw`) untuk menghitung metrik, distribusi opsi, dan time-series tanpa membebani memori server.
-- [x] **ANLY-06**: **Multi-Tier Quality Assurance & Container Up** — Memvalidasi seluruh fungsionalitas analitik dengan automated unit test (Vitest), ESLint, TypeScript compiler, Next.js standalone build, dan Docker containerization.
+### Verification & Infrastructure
+- [ ] **INVITE-08: Multi-Tier Quality Assurance, Security Audit & Docker Up** — Pengujian menyeluruh dengan Vitest (unit & integration tests domain undangan dan auth), zero TypeScript & ESLint errors, build Next.js standalone, dan Smart Container Rebuild (`docker compose build app worker && up -d`) dengan verifikasi health check.
 
 ## Traceability
 
 | Requirement | Phase | Status |
-|-------------|-------|--------|
-| ANLY-01 | Phase 28 | Complete |
-| ANLY-02 | Phase 28 | Complete |
-| ANLY-03 | Phase 28 | Complete |
-| ANLY-04 | Phase 28 | Complete |
-| ANLY-05 | Phase 29 | Complete |
-| ANLY-06 | Phase 30 | Complete |
+|---|---|---|
+| INVITE-01 | Phase 37 | Pending |
+| INVITE-02 | Phase 37 | Pending |
+| INVITE-03 | Phase 37 | Pending |
+| INVITE-04 | Phase 38 | Pending |
+| INVITE-05 | Phase 38 | Pending |
+| INVITE-06 | Phase 39 | Pending |
+| INVITE-07 | Phase 39 | Pending |
+| INVITE-08 | Phase 40 | Pending |
 
 ---
 
-*Milestone initiated: 2026-09-27*
+*Milestone initiated: 2026-09-28*
