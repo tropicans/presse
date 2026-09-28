@@ -114,4 +114,16 @@ describe('CSS layout constraints', () => {
     expect(cssContent).toContain('.admin-preview-note {')
     expect(cssContent).not.toContain('background: linear-gradient(180deg, #eef2ff')
   })
+
+  it('verifies admin login portal architectural monochrome styling', () => {
+    const cssPath = path.resolve(process.cwd(), 'src/app/globals.css')
+    const cssContent = fs.readFileSync(cssPath, 'utf8')
+
+    expect(cssContent).toContain('.admin-login-layout {')
+    expect(cssContent).toContain('.admin-login-card {')
+    expect(cssContent).toContain('.admin-login-google-btn {')
+    expect(cssContent).toContain('.admin-login-trust-chips {')
+    expect(cssContent).toContain("html[data-theme='dark'] .admin-login-google-btn {")
+  })
 })
+

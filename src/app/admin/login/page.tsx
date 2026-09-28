@@ -65,58 +65,82 @@ export default function AdminLoginPage() {
   const buttonLabel = isRedirectingToGoogle ? 'Mengarahkan ke Google...' : 'Masuk dengan akun Google lain'
 
   return (
-    <main className="page-wrapper entry-suite-page login-suite-page">
-      <section className="entry-suite-card login-suite-card login-suite-shell login-suite-shell-minimal">
-        <div className="login-suite-panel login-suite-panel-minimal">
-          <Link href="/" className="login-suite-backlink">
-            Kembali ke beranda
-          </Link>
-
-          <div className="login-icon entry-suite-icon login-suite-icon" style={{ padding: 0, background: 'transparent', border: 'none', boxShadow: 'none' }}>
-            <HimpunLogo size={44} />
+    <main className="admin-login-layout">
+      <div className="admin-login-container">
+        <div className="admin-login-card">
+          <div className="admin-login-header">
+            <div className="admin-login-brand">
+              <HimpunLogo size={28} />
+              <span className="admin-login-brand-name">HIMPUN</span>
+            </div>
+            <span className="admin-login-badge">PORTAL ADMIN</span>
           </div>
 
-          <div className="login-suite-panel-copy">
-            <p className="home-suite-panel-label">Masuk</p>
-            <h1 className="login-title entry-suite-title login-suite-title login-suite-title-minimal">{title}</h1>
-            <p className="login-subtitle entry-suite-subtitle login-suite-subtitle login-suite-subtitle-minimal">
-              {subtitle}
-            </p>
-            <h2 className="login-suite-panel-title">
-              {isAccessDenied
-                ? 'Akun belum terdaftar sebagai admin'
-                : 'Login Google admin'}
-            </h2>
+          <div className="admin-login-body">
+            <div className="admin-login-title-group">
+              <h1 className="admin-login-title">{title}</h1>
+              <p className="admin-login-subtitle">{subtitle}</p>
+            </div>
+
+            {isAccessDenied && (
+              <div className="admin-login-alert" role="alert">
+                <div className="admin-login-alert-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
+                <div className="admin-login-alert-content">
+                  <strong>Akses Tidak Diberikan</strong>
+                  <p>
+                    Email Google Anda belum tercantum dalam daftar admin (<code>ADMIN_EMAILS</code>). Pastikan Anda masuk dengan email yang tepat atau hubungi pengelola sistem.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={handleSignIn}
+              className="admin-login-google-btn"
+              disabled={loading}
+              aria-busy={loading}
+            >
+              {loading ? (
+                <span className="admin-login-spinner" aria-hidden="true" />
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+              )}
+              <span>{buttonLabel}</span>
+            </button>
+
+            <div className="admin-login-trust-chips" aria-label="Spesifikasi keamanan autentikasi">
+              <span className="admin-login-chip">Google OAuth 2.0</span>
+              <span className="admin-login-chip">Restriksi Allowlist</span>
+              <span className="admin-login-chip">Sesi Terenkripsi</span>
+            </div>
+
+            <div className="admin-login-note-box">
+              <p className="admin-login-note">
+                {isAccessDenied
+                  ? 'Jika Anda yakin akun ini berhak mengakses, perbarui konfigurasi ADMIN_EMAILS lalu muat ulang halaman ini.'
+                  : 'Sistem menggunakan autentikasi tunggal via Google Workspace. Akses terbatas khusus personel terotorisasi.'}
+              </p>
+            </div>
           </div>
 
-          <button
-            onClick={handleSignIn}
-            className="google-signin-btn google-signin-btn-prominent login-suite-signin-btn"
-            disabled={loading}
-            aria-busy={loading}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            {buttonLabel}
-          </button>
-
-          <div className="entry-suite-points login-suite-points login-suite-points-minimal" aria-label="Akses area admin">
-            <span>Redirect otomatis</span>
-            <span>Google sign-in</span>
-            <span>Admin terproteksi</span>
+          <div className="admin-login-footer">
+            <Link href="/" className="admin-login-backlink">
+              ← Kembali ke Beranda
+            </Link>
           </div>
-
-          <p className="login-suite-note">
-            {isAccessDenied
-              ? 'Jika Anda merasa akun ini seharusnya bisa masuk, tambahkan email tersebut ke daftar admin lalu coba lagi.'
-              : 'Jika browser tidak otomatis berpindah ke Google, gunakan tombol di atas.'}
-          </p>
         </div>
-      </section>
+      </div>
     </main>
   )
 }

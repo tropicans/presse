@@ -55,3 +55,10 @@ Phases:
 4. Lanjutkan ke Phase 34 untuk form editor dan kartu pertanyaan yang lebih compact.
 5. Selesaikan dengan Phase 35-36 untuk uji responsif, regression test, build standalone, dan Docker up.
 
+## Quick Tasks Completed
+
+| Slug | Date | Description | Status |
+|------|------|-------------|--------|
+| `20260928-align-admin-login-global-design` | 2026-09-28 | Perombakan halaman login admin agar selaras dengan Global Editorial Minimalist Monochrome Design System | Complete ✓ |
+
+
