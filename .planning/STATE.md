@@ -49,3 +49,12 @@ Phases:
 
 1. Milestone v2.1 telah selesai dan diarsip.
 2. Siap untuk inisiasi milestone berikutnya melalui `/gsd-new-milestone`.
+
+## Quick Tasks Completed
+
+| Slug | Date | Description | Status |
+|------|------|-------------|--------|
+| `20260928-align-admin-login-global-design` | 2026-09-28 | Perombakan halaman login admin agar selaras dengan Global Editorial Minimalist Monochrome Design System | Complete ✓ |
+| `20260928-rename-to-form-and-set-icon` | 2026-09-28 | Mengganti nama aplikasi menjadi Form dan memperbarui icon web app & favicon dengan icon baru | Complete ✓ |
+| `20260928-fix-canonical-invite-url-origin` | 2026-09-28 | Perbaikan origin URL tautan undangan admin agar memprioritaskan domain kanonikal (NEXTAUTH_URL/form.ppkasn.id) dan menyaring host 0.0.0.0 | Complete ✓ |
+

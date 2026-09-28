@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth'
 import { listAdminTeam } from '@/lib/admin-invitations'
+import { getAppBaseUrl } from '@/lib/env'
 
-export async function GET() {
+export async function GET(req?: NextRequest) {
   const session = await getAdminSession()
 
   if (!session?.user?.email) {
@@ -21,7 +22,8 @@ export async function GET() {
 
   try {
     const team = await listAdminTeam()
-    return NextResponse.json({ ok: true, data: team })
+    const baseUrl = getAppBaseUrl(req)
+    return NextResponse.json({ ok: true, data: { ...team, baseUrl } })
   } catch (error) {
     console.error('[admin/users] Failed to list admin team:', error)
     return NextResponse.json(

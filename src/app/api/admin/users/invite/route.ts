@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth'
 import { createAdminInvitation } from '@/lib/admin-invitations'
+import { getAppBaseUrl } from '@/lib/env'
 
 export async function POST(req: NextRequest) {
   const session = await getAdminSession()
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
       invitedByEmail: session.user.email,
     })
 
-    const origin = req.nextUrl.origin || process.env.NEXTAUTH_URL || 'http://localhost:3456'
+    const origin = getAppBaseUrl(req)
     const inviteUrl = `${origin}/admin/invite?token=${result.invitation.token}`
 
     return NextResponse.json({

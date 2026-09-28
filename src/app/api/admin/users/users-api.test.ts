@@ -136,6 +136,40 @@ describe('Admin Users API Routes', () => {
       expect(json.ok).toBe(true)
       expect(json.inviteUrl).toContain('/admin/invite?token=token-abc')
     })
+
+    it('prioritizes NEXTAUTH_URL over 0.0.0.0 host for inviteUrl generation', async () => {
+      const originalEnv = process.env.NEXTAUTH_URL
+      process.env.NEXTAUTH_URL = 'https://form.ppkasn.id'
+      try {
+        vi.mocked(getAdminSession).mockResolvedValueOnce({
+          user: { email: 'tropicans@gmail.com', role: 'SUPERADMIN', isSuperAdmin: true },
+          expires: '',
+        } as any)
+
+        vi.mocked(createAdminInvitation).mockResolvedValueOnce({
+          invitation: {
+            id: 'inv-1',
+            email: 'calon@example.com',
+            role: 'ADMIN',
+            token: '7c2d652b1e3cda0d97861dd2928830dfeb8d69250939379b63a638bbc56854e5',
+            status: 'PENDING',
+            expiresAt: new Date(),
+            createdAt: new Date(),
+          },
+        })
+
+        const req = new NextRequest('https://0.0.0.0:3456/api/admin/users/invite', {
+          method: 'POST',
+          body: JSON.stringify({ email: 'calon@example.com' }),
+        })
+
+        const res = await inviteAdminUser(req)
+        const json = await res.json()
+        expect(json.inviteUrl).toBe('https://form.ppkasn.id/admin/invite?token=7c2d652b1e3cda0d97861dd2928830dfeb8d69250939379b63a638bbc56854e5')
+      } finally {
+        process.env.NEXTAUTH_URL = originalEnv
+      }
+    })
   })
 
   describe('POST /api/admin/users/revoke', () => {

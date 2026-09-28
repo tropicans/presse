@@ -41,6 +41,7 @@ interface TeamData {
   superadmins: SuperadminItem[]
   users: AdminUserItem[]
   invitations: AdminInvitationItem[]
+  baseUrl?: string
 }
 
 const dateTimeFormatter = new Intl.DateTimeFormat('id-ID', {
@@ -110,7 +111,12 @@ export default function AdminUsersManagement({ currentUserEmail }: { currentUser
         return
       }
 
-      setLatestInviteUrl(json.inviteUrl)
+      const effectiveBaseUrl = data?.baseUrl || 'https://form.ppkasn.id'
+      const cleanUrl = json.inviteUrl?.includes('0.0.0.0')
+        ? json.inviteUrl.replace(/https?:\/\/0\.0\.0\.0:\d+/, effectiveBaseUrl)
+        : json.inviteUrl
+
+      setLatestInviteUrl(cleanUrl)
       setInviteEmail('')
       setFeedback({ type: 'success', message: 'Tautan undangan 48 jam berhasil dibuat!' })
       await loadTeamData()
@@ -533,7 +539,8 @@ export default function AdminUsersManagement({ currentUserEmail }: { currentUser
                   </thead>
                   <tbody>
                     {pendingInvitations.map((inv) => {
-                      const origin = typeof window !== 'undefined' ? window.location.origin : ''
+                      const windowOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+                      const origin = data?.baseUrl || (!windowOrigin.includes('0.0.0.0') ? windowOrigin : 'https://form.ppkasn.id')
                       const url = `${origin}/admin/invite?token=${inv.token}`
                       return (
                         <tr key={inv.id} style={{ borderBottom: '1px solid var(--border-default)' }}>
