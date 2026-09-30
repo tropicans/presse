@@ -863,11 +863,20 @@ export default function AdminFormsList() {
 
             <label className="admin-builder-field">
                 <span>Judul form</span>
-              <input
+              <textarea
                 value={newFormTitle}
-                onChange={(event) => setNewFormTitle(event.target.value)}
-                className="admin-builder-input"
+                onChange={(event) => setNewFormTitle(event.target.value.replace(/\r?\n/g, ' '))}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault()
+                    if (newFormTitle.trim()) {
+                      void handleCreateForm()
+                    }
+                  }
+                }}
+                className="admin-builder-textarea admin-builder-title-textarea"
                 placeholder="Masukkan judul form"
+                rows={2}
                 autoFocus
               />
             </label>

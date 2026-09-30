@@ -966,7 +966,18 @@ export default function AdminFormEditor({ formId }: Props) {
           </p>
           <label className="admin-builder-field">
             <span>Judul</span>
-            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="admin-builder-input" />
+            <textarea
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value.replace(/\r?\n/g, ' ') })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                }
+              }}
+              className="admin-builder-textarea admin-builder-title-textarea"
+              rows={2}
+              placeholder="Judul formulir"
+            />
           </label>
           <label className="admin-builder-field">
             <span>Deskripsi</span>
