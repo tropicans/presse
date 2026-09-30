@@ -1,12 +1,33 @@
+export function filterNipInput(value: string): string {
+  return value.replace(/\D/g, '')
+}
+
 export function sanitizeNipNrp(value: string): string {
   return value.replace(/[\s.-]/g, '')
 }
 
 export function isNipNrpField(field: { name: string; label?: string; type?: string }): boolean {
   if (field.type && field.type !== 'text') return false
-  if (field.name === 'nipNrp' || field.name === 'nip' || field.name === 'nrp') return true
-  const normLabel = (field.label ?? '').trim().toLowerCase()
-  return normLabel === 'nip' || normLabel === 'nrp' || normLabel === 'nip/nrp' || normLabel === 'nip / nrp'
+  const name = field.name.toLowerCase()
+  const label = (field.label ?? '').toLowerCase()
+
+  const nameMatches =
+    name === 'nip' ||
+    name === 'nrp' ||
+    name === 'nipnrp' ||
+    name === 'nip_nrp' ||
+    name.includes('nip') ||
+    name.includes('nrp')
+
+  if (nameMatches) return true
+
+  return (
+    /\bnip\b/i.test(label) ||
+    /\bnrp\b/i.test(label) ||
+    label.includes('nip/nrp') ||
+    label.includes('nip / nrp') ||
+    label.includes('nomor induk pegawai')
+  )
 }
 
 export function validateNipNrp(value: string): string | null {

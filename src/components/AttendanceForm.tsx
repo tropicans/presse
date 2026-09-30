@@ -6,13 +6,12 @@ import SignaturePad from './SignaturePad'
 import SearchableSelect from './SearchableSelect'
 import type { PublicFormDefinition, FormField, FormStepDefinition } from '@/lib/forms'
 import {
-  sanitizeNipNrp,
+  filterNipInput,
   validateNipNrp,
   isNipNrpField,
   isEmailField,
   validateEmail,
   isPhoneField,
-  sanitizePhoneNumber,
   validatePhoneNumber,
   isNameField,
   validateName,
@@ -399,9 +398,9 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     let nextValue = value
     const targetField = form.fields.find((f) => f.name === name)
     if (name === 'nipNrp' || (targetField?.type === 'text' && isNipNrpField(targetField))) {
-      nextValue = sanitizeNipNrp(value)
+      nextValue = filterNipInput(value)
     } else if (targetField?.type === 'text' && isPhoneField(targetField)) {
-      nextValue = sanitizePhoneNumber(value)
+      nextValue = value.replace(/[^\d+]/g, '')
     }
 
     setFormData((prev) => {
@@ -892,6 +891,7 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
               <input
                 type={isEmail ? 'email' : 'text'}
                 inputMode={fieldInputMode}
+                pattern={isNip ? '[0-9]*' : undefined}
                 id={field.name}
                 name={field.name}
                 value={formData[field.name] ?? ''}

@@ -442,6 +442,7 @@ export class FormSubmissionError extends Error {
 }
 
 import {
+  filterNipInput,
   sanitizeNipNrp,
   isNipNrpField,
   validateNipNrp,
@@ -459,6 +460,7 @@ import {
   getFieldFormatHint,
 } from './form-validation'
 export {
+  filterNipInput,
   sanitizeNipNrp,
   isNipNrpField,
   validateNipNrp,
