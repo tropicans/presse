@@ -34,6 +34,7 @@ export default function SearchableSelect({
   ariaDescribedby,
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom')
   const [search, setSearch] = useState('')
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -56,9 +57,28 @@ export default function SearchableSelect({
     opt.label.toLowerCase().includes(search.toLowerCase())
   )
 
+  const updatePlacement = () => {
+    if (containerRef.current && typeof window !== 'undefined') {
+      const rect = containerRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      const dropdownHeight = 320
+      if (spaceBelow < dropdownHeight && rect.top > spaceBelow) {
+        setPlacement('top')
+        return
+      }
+    }
+    setPlacement('bottom')
+  }
+
   // Toggle dropdown
   const toggleDropdown = () => {
-    setIsOpen((prev) => !prev)
+    setIsOpen((prev) => {
+      const next = !prev
+      if (next) {
+        updatePlacement()
+      }
+      return next
+    })
     setSearch('')
     setHighlightedIndex(-1)
   }
@@ -86,10 +106,21 @@ export default function SearchableSelect({
     }
   }, [])
 
-  // Focus search input when dropdown opens
+  // Focus search input when dropdown opens and handle scroll/resize
   useEffect(() => {
-    if (isOpen && searchInputRef.current) {
-      searchInputRef.current.focus()
+    if (isOpen) {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus()
+      }
+      const handleScrollOrResize = () => {
+        updatePlacement()
+      }
+      window.addEventListener('resize', handleScrollOrResize)
+      window.addEventListener('scroll', handleScrollOrResize, true)
+      return () => {
+        window.removeEventListener('resize', handleScrollOrResize)
+        window.removeEventListener('scroll', handleScrollOrResize, true)
+      }
     }
   }, [isOpen])
 
@@ -102,6 +133,7 @@ export default function SearchableSelect({
     } else if (e.key === 'ArrowDown') {
       e.preventDefault()
       if (!isOpen) {
+        updatePlacement()
         setIsOpen(true)
       } else {
         setHighlightedIndex((prev) =>
@@ -185,7 +217,7 @@ export default function SearchableSelect({
       </select>
 
       {isOpen && (
-        <div className="searchable-select-dropdown">
+        <div className={`searchable-select-dropdown ${placement === 'top' ? 'placement-top' : 'placement-bottom'}`}>
           <div className="searchable-select-search-wrapper">
             <input
               ref={searchInputRef}

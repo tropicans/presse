@@ -2733,7 +2733,7 @@ body {
 .admin-preview-shell {
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: visible;
   background: var(--bg-surface-elevated);
 }
 
@@ -5678,6 +5678,7 @@ html[data-theme='dark'] .editorial-preview-device-btn.active {
   gap: 12px;
   padding: 14px 18px;
   border-bottom: 1px solid var(--border-default);
+  border-radius: 24px 24px 0 0;
 }
 
 .editorial-preview-windowdots {
@@ -5717,7 +5718,7 @@ html[data-theme='dark'] .editorial-preview-device-btn.active {
   border-radius: 24px;
   background: var(--bg-surface);
   box-shadow: inset 0 0 0 1px var(--border-default);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .editorial-form-editor-preview-panel .admin-preview-head,
@@ -8327,12 +8328,24 @@ html[data-theme='dark'] .entry-suite-primary-btn {
   overflow: hidden;
 }
 
+.searchable-select-dropdown.placement-top {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 6px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+}
+
 /* public-ledger-page styling overrides */
 .public-ledger-page .searchable-select-dropdown {
   background: var(--ledger-surface-high);
   border: none;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   border-radius: 14px;
+}
+
+.public-ledger-page .searchable-select-dropdown.placement-top {
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .searchable-select-search-wrapper {
