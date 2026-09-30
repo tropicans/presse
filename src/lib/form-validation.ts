@@ -102,6 +102,8 @@ export function sanitizePhoneNumber(value: string): string {
     clean = '0' + clean.slice(3)
   } else if (clean.startsWith('62') && clean.length >= 11) {
     clean = '0' + clean.slice(2)
+  } else if (clean.startsWith('8') && clean.length >= 9 && clean.length <= 14) {
+    clean = '0' + clean
   }
   return clean
 }
@@ -111,6 +113,9 @@ export function validatePhoneNumber(value: string): string | null {
   if (!clean) return null
   if (!/^\d+$/.test(clean)) {
     return 'Nomor telepon/WhatsApp hanya boleh berisi angka'
+  }
+  if (!clean.startsWith('0')) {
+    return 'Nomor telepon/WhatsApp harus diawali angka 0 (contoh: 0812...)'
   }
   if (clean.length < 10) {
     return 'Nomor telepon/WhatsApp terlalu pendek (minimal 10 digit)'

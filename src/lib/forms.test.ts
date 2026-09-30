@@ -412,10 +412,13 @@ describe('Email, Phone, Name, and Signature format validators', () => {
   it('sanitizes and validates phone numbers', () => {
     expect(sanitizePhoneNumber('+62 812-3456-7890')).toBe('081234567890')
     expect(sanitizePhoneNumber('6281234567890')).toBe('081234567890')
+    expect(sanitizePhoneNumber('812-3456-7890')).toBe('081234567890')
     expect(sanitizePhoneNumber('0812 3456 7890')).toBe('081234567890')
 
     expect(validatePhoneNumber('081234567890')).toBeNull()
     expect(validatePhoneNumber('+62 812 3456 7890')).toBeNull()
+    expect(validatePhoneNumber('81234567890')).toBeNull()
+    expect(validatePhoneNumber('1234567890')).toBe('Nomor telepon/WhatsApp harus diawali angka 0 (contoh: 0812...)')
     expect(validatePhoneNumber('0812345')).toBe('Nomor telepon/WhatsApp terlalu pendek (minimal 10 digit)')
     expect(validatePhoneNumber('08123456789012345')).toBe('Nomor telepon/WhatsApp maksimal 15 digit')
     expect(validatePhoneNumber('08123456abc')).toBe('Nomor telepon/WhatsApp hanya boleh berisi angka')
@@ -579,6 +582,7 @@ describe('Email, Phone, Name, and Signature format validators', () => {
     // Sanitization edge cases
     expect(sanitizePhoneNumber('+62 812-3456-7890')).toBe('081234567890')
     expect(sanitizePhoneNumber('6281234567890')).toBe('081234567890')
+    expect(sanitizePhoneNumber('81234567890')).toBe('081234567890')
     expect(sanitizePhoneNumber('(021) 555-1234')).toBe('0215551234')
     expect(sanitizePhoneNumber('  0812 3456 7890  ')).toBe('081234567890')
 
@@ -587,11 +591,14 @@ describe('Email, Phone, Name, and Signature format validators', () => {
     expect(validatePhoneNumber('0812345678')).toBeNull() // 10 digits (min boundary)
     expect(validatePhoneNumber('081234567890123')).toBeNull() // 15 digits (max boundary)
     expect(validatePhoneNumber('+6281234567890')).toBeNull() // sanitizes before validate
+    expect(validatePhoneNumber('81234567890')).toBeNull() // sanitizes 8xx to 08xx before validate
 
     // Invalid phone numbers
     expect(validatePhoneNumber('081234567')).toBe('Nomor telepon/WhatsApp terlalu pendek (minimal 10 digit)') // 9 digits
     expect(validatePhoneNumber('0812345678901234')).toBe('Nomor telepon/WhatsApp maksimal 15 digit') // 16 digits
     expect(validatePhoneNumber('0812345ABCD')).toBe('Nomor telepon/WhatsApp hanya boleh berisi angka')
+    expect(validatePhoneNumber('1234567890')).toBe('Nomor telepon/WhatsApp harus diawali angka 0 (contoh: 0812...)')
+    expect(validatePhoneNumber('7123456789')).toBe('Nomor telepon/WhatsApp harus diawali angka 0 (contoh: 0812...)')
     expect(validatePhoneNumber('')).toBeNull() // optional/empty is allowed by validator
   })
 
