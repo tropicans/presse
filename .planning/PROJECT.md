@@ -7,8 +7,20 @@ Platform pengelolaan formulir publik, kiriman (submissions), dan dashboard admin
 Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
 
 ## Current State
-Milestone **v2.1 Admin Invitation System & Google OAuth Access Delegation** shipped (2026-09-28).
+Milestone **v2.2 Agreement & Terms Checkbox Field Support** in progress.
+Previous milestone **v2.1 Admin Invitation System & Google OAuth Access Delegation** shipped (2026-09-28).
 Phases 1-40 completed across milestones v1.1 - v2.1.
+
+## Current Milestone: v2.2 Agreement & Terms Checkbox Field Support
+
+**Goal:** Menambahkan tipe field khusus Checkbox Persetujuan (Agreement / Terms & Conditions) end-to-end mulai dari skema database, form editor builder, public form & live preview renderer, validasi wajib centang, hingga ekspor & analitik respon.
+
+**Target features:**
+- Database & Domain Core: Menambahkan tipe `CHECKBOX` (atau pemetaan `YES_NO`/boolean checkbox) pada domain form, validasi server-side wajib centang (`required`).
+- Admin Form Editor: Menambahkan pilihan tipe field "Persetujuan / Kotak Centang" di `AdminFormEditor`, konfigurasi label klausul persetujuan, dan visual compact card header.
+- Public Form & Live Preview: Merender elemen checkbox persetujuan interaktif dengan estetika monokrom arsitektural di `AttendanceForm` dan `AdminFormPreview`, serta validasi client-side ramah pengguna.
+- Submissions, Export & Analytics: Format tampilan jawaban persetujuan di tabel kiriman, ekspor XLSX, dan visualisasi distribusi analitik.
+- Multi-tier QA: Unit testing, typecheck, lint, build standalone, dan Docker container health check.
 
 <details>
 <summary>Archived Milestone v2.1: Admin Invitation System & Google OAuth Access Delegation (Shipped: 2026-09-28)</summary>
@@ -136,6 +148,13 @@ Phases 1-40 completed across milestones v1.1 - v2.1.
 - ✓ **BUILDER-09**: Active Step Field Insertion — Field baru otomatis ditambahkan ke langkah yang sedang aktif (Validated in Phase 14)
 - ✓ **BUILDER-10**: Sticky Workspace Header & Toolbar — Sticky action header dan toolbar yang menjaga tombol kontrol tetap dalam jangkauan (Validated in Phase 16)
 
+### Active
+- [ ] **AGREE-01**: Skema DB dan model domain untuk tipe field `CHECKBOX` / persetujuan, termasuk validasi server-side wajib centang saat `required: true`.
+- [ ] **AGREE-02**: Antarmuka konfigurasi tipe field Checkbox Persetujuan pada Form Editor (`AdminFormEditor.tsx`) dengan teks klausul dan toggle wajib.
+- [ ] **AGREE-03**: Rendering elemen checkbox persetujuan interaktif pada `AttendanceForm.tsx` dan `AdminFormPreview.tsx` dengan validasi client-side auto-scroll/focus saat belum dicentang.
+- [ ] **AGREE-04**: Integrasi tampilan jawaban di dashboard kiriman (`AdminFormSubmissions.tsx`), ekspor data Excel/CSV, dan analitik distribusi.
+- [ ] **AGREE-05**: Multi-tier QA: automated tests di `forms.test.ts`, lint, tsc, Next.js standalone build, dan Docker verification.
+
 ### Out of Scope
 - Perubahan arsitektur basis data atau skema SQL publik (struktur `pages` dan `fields` JSON sudah mendukung multi-step).
 - Pustaka drag-and-drop eksternal yang berat (menggunakan navigasi keyboard/tombol aksi instan dan HTML5 reorder ringan atau action-based move).
@@ -178,4 +197,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-25 for Milestone v1.5*
+*Last updated: 2026-10-01 for Milestone v2.2*

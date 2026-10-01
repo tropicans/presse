@@ -1,18 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: Admin Invitation System & Google OAuth Access Delegation
-status: completed
-last_updated: "2026-09-28T11:15:00.000Z"
-last_activity: 2026-09-28
+milestone: v2.2
+milestone_name: Agreement & Terms Checkbox Field Support
+status: planning
+last_updated: "2026-10-01T07:39:42.256Z"
+last_activity: 2026-10-01
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
-current_phase: 40
-current_phase_name: Multi-Tier Verification, Security Audit & Docker Container Up
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State: Admin Invitation System & Google OAuth Access Delegation (Completed)
@@ -28,13 +26,10 @@ Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jot
 
 ## Current Position
 
-Milestone: v2.1 — Admin Invitation System & Google OAuth Access Delegation  
-Status: Completed  
-Phases:
-- [x] Phase 37: Database Schema, Migration & Core Domain Helpers for Admin Invitations (Completed 2026-09-28)
-- [x] Phase 38: NextAuth Integration & Admin User Management API Routes (Completed 2026-09-28)
-- [x] Phase 39: Admin Team UI & Public Invitation Claim Flow (Completed 2026-09-28)
-- [x] Phase 40: Multi-Tier Verification, Security Audit & Docker Container Up (Completed 2026-09-28)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-10-01 — Milestone v2.2 started
 
 ## Key Decisions
 
@@ -58,4 +53,3 @@ Phases:
 | `20260928-rename-to-form-and-set-icon` | 2026-09-28 | Mengganti nama aplikasi menjadi Form dan memperbarui icon web app & favicon dengan icon baru | Complete ✓ |
 | `20260928-fix-canonical-invite-url-origin` | 2026-09-28 | Perbaikan origin URL tautan undangan admin agar memprioritaskan domain kanonikal (NEXTAUTH_URL/form.ppkasn.id) dan menyaring host 0.0.0.0 | Complete ✓ |
 | `20260928-form-field-copy-from-feature` | 2026-09-28 | Fitur salin nilai pertanyaan (Checkbox 'Sama dengan...') pada Form Builder, Public Form, dan Live Preview | Complete ✓ |
-
