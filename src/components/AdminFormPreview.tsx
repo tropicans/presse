@@ -271,6 +271,10 @@ function PreviewSession({ form }: Props) {
     })
   }
 
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setFormData((prev) => ({ ...prev, [name]: checked ? 'true' : '' }))
+  }
+
   return (
     <div ref={previewRef} className="admin-preview-shell">
       <div className="editorial-preview-windowbar" aria-hidden="true">
@@ -584,6 +588,52 @@ function PreviewSession({ form }: Props) {
                     placeholder={fieldPlaceholder}
                     className={`form-input ${isCopied ? 'is-copied' : ''}`}
                   />
+                </div>
+              )
+            }
+
+            if (field.type === 'checkbox') {
+              const isChecked = formData[field.name] === 'true' || formData[field.name] === '1' || formData[field.name] === 'Setuju'
+
+              return (
+                <div key={field.id} className="form-group checkbox-agreement-group">
+                  <label
+                    className={`checkbox-agreement-card ${isChecked ? 'is-checked' : ''}`}
+                    htmlFor={field.name}
+                  >
+                    <div className="checkbox-agreement-control">
+                      <input
+                        type="checkbox"
+                        id={field.name}
+                        name={field.name}
+                        checked={isChecked}
+                        onChange={(e) => handleCheckboxChange(field.name, e.target.checked)}
+                        className="checkbox-agreement-native"
+                      />
+                      <div className="checkbox-agreement-box" aria-hidden="true">
+                        <svg
+                          className="checkbox-agreement-check"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="3.5 8.5 6.5 11.5 12.5 5" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="checkbox-agreement-content">
+                      <span className="checkbox-agreement-text">
+                        {label}
+                        {field.required ? ' *' : ''}
+                      </span>
+                      {field.placeholder && (
+                        <span className="checkbox-agreement-subtext">{field.placeholder}</span>
+                      )}
+                    </div>
+                  </label>
                 </div>
               )
             }

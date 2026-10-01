@@ -72,6 +72,7 @@ export interface YesNoField extends BaseField {
 
 export interface CheckboxField extends BaseField {
   type: 'checkbox'
+  placeholder?: string | null
 }
 
 export type FormField = TextField | RadioField | SelectField | SignatureField | YesNoField | CheckboxField

@@ -14,8 +14,8 @@
 - [x] **AGREE-03: Admin Form Editor Integration** — Menambahkan opsi tipe field `Persetujuan (Checkbox)` di `AdminFormEditor.tsx`, kartu konfigurasi pernyataan persetujuan/disclaimer, toggle wajib diisi, label ringkasan kartu terlipat, dan integrasi panel outline formulir.
 
 ### Public Form & Live Preview
-- [ ] **AGREE-04: Accessible Monochrome Checkbox UI** — Merender elemen kotak centang persetujuan interaktif dengan estetika monokrom arsitektural di `AttendanceForm.tsx` dan `AdminFormPreview.tsx`, mendukung navigasi keyboard (Tab & Space), transisi fokus `:focus-visible`, dan klik label untuk toggle centang.
-- [ ] **AGREE-05: Client-Side Step Validation & Auto-Focus** — Menerapkan validasi persetujuan di sisi klien saat tombol Lanjut atau Kirim ditekan, auto-scroll dan focus ke elemen kotak centang jika belum disetujui, serta auto-clear pesan kesalahan secara instan saat kotak centang diklik.
+- [x] **AGREE-04: Accessible Monochrome Checkbox UI** — Merender elemen kotak centang persetujuan interaktif dengan estetika monokrom arsitektural di `AttendanceForm.tsx` dan `AdminFormPreview.tsx`, mendukung navigasi keyboard (Tab & Space), transisi fokus `:focus-visible`, dan klik label untuk toggle centang.
+- [x] **AGREE-05: Client-Side Step Validation & Auto-Focus** — Menerapkan validasi persetujuan di sisi klien saat tombol Lanjut atau Kirim ditekan, auto-scroll dan focus ke elemen kotak centang jika belum disetujui, serta auto-clear pesan kesalahan secara instan saat kotak centang diklik.
 
 ### Submissions, Export & Analytics
 - [ ] **AGREE-06: Submissions Table, Excel Export & Analytics Integration** — Memformat tampilan jawaban persetujuan di tabel kiriman admin (`AdminFormSubmissions.tsx`) dengan badge ergonomis `✓ Disetujui`, memformat nilai ekspor Excel `.xlsx` menjadi `"Disetujui"`, dan menyertakan distribusi persetujuan pada dashboard analitik.
@@ -30,8 +30,8 @@
 | AGREE-01 | Phase 41 | Complete |
 | AGREE-02 | Phase 41 | Complete |
 | AGREE-03 | Phase 42 | Complete |
-| AGREE-04 | Phase 43 | Pending |
-| AGREE-05 | Phase 43 | Pending |
+| AGREE-04 | Phase 43 | Complete |
+| AGREE-05 | Phase 43 | Complete |
 | AGREE-06 | Phase 44 | Pending |
 | AGREE-07 | Phase 45 | Pending |
 

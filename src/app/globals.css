@@ -9149,4 +9149,125 @@ html[data-theme='dark'] .analytics-correct-badge {
   border-color: rgba(34, 197, 94, 0.35);
 }
 
+/* ==========================================================================
+   Checkbox Agreement & Disclaimer Card
+   ========================================================================== */
+.checkbox-agreement-group {
+  margin-top: 16px;
+  margin-bottom: 20px;
+}
+
+.checkbox-agreement-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--bg-surface-elevated, #1c2026);
+  border: 1px solid var(--border-line, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.checkbox-agreement-card:hover {
+  border-color: var(--text-primary, #ffffff);
+}
+
+.checkbox-agreement-card.is-checked {
+  background: var(--bg-surface, #13161a);
+  border-color: var(--text-primary, #ffffff);
+}
+
+.checkbox-agreement-card.is-invalid {
+  border-color: var(--danger-color, #ef4444);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.checkbox-agreement-card:has(.checkbox-agreement-native:focus-visible) {
+  outline: 2px solid var(--text-primary, #ffffff);
+  outline-offset: 2px;
+}
+
+.checkbox-agreement-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.checkbox-agreement-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+}
+
+.checkbox-agreement-box {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-line, rgba(255, 255, 255, 0.25));
+  border-radius: var(--radius-sm, 4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  transition: all 0.12s ease;
+  color: transparent;
+}
+
+.checkbox-agreement-card:hover .checkbox-agreement-box {
+  border-color: var(--text-primary, #ffffff);
+}
+
+.checkbox-agreement-card.is-checked .checkbox-agreement-box,
+.checkbox-agreement-card:has(.checkbox-agreement-native:checked) .checkbox-agreement-box {
+  background: var(--text-primary, #ffffff);
+  border-color: var(--text-primary, #ffffff);
+  color: var(--bg-canvas, #000000);
+}
+
+.checkbox-agreement-check {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.8;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.checkbox-agreement-card.is-checked .checkbox-agreement-check,
+.checkbox-agreement-card:has(.checkbox-agreement-native:checked) .checkbox-agreement-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.checkbox-agreement-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.checkbox-agreement-text {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text-primary, #ffffff);
+  font-weight: 500;
+}
+
+.checkbox-agreement-subtext {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-secondary, #94a3b8);
+}
+
 

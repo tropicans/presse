@@ -310,6 +310,14 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     const nextErrors: Record<string, string> = {}
 
     for (const field of fieldsToValidate) {
+      if (field.type === 'checkbox') {
+        const isChecked = formData[field.name] === 'true' || formData[field.name] === '1' || formData[field.name] === 'Setuju'
+        if (field.required && !isChecked) {
+          nextErrors[field.name] = 'Pernyataan ini wajib disetujui untuk melanjutkan'
+        }
+        continue
+      }
+
       const rawValue = (formData[field.name] ?? '').trim()
 
       if (field.required && !rawValue) {
@@ -427,6 +435,19 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
 
   const handleSignatureChange = (name: string, value: string | null) => {
     setFormData((prev) => ({ ...prev, [name]: value ?? '' }))
+    setFieldErrors((prev) => {
+      if (!prev[name]) {
+        return prev
+      }
+
+      const nextErrors = { ...prev }
+      delete nextErrors[name]
+      return nextErrors
+    })
+  }
+
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setFormData((prev) => ({ ...prev, [name]: checked ? 'true' : '' }))
     setFieldErrors((prev) => {
       if (!prev[name]) {
         return prev
@@ -904,6 +925,63 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
                 aria-invalid={fieldErrors[field.name] ? 'true' : 'false'}
                 aria-describedby={textDescribedBy}
               />
+              {fieldErrors[field.name] && (
+                <p id={errorId} className="field-error">
+                  {fieldErrors[field.name]}
+                </p>
+              )}
+            </div>
+          )
+        }
+
+        if (field.type === 'checkbox') {
+          const isChecked = formData[field.name] === 'true' || formData[field.name] === '1' || formData[field.name] === 'Setuju'
+          const hasError = Boolean(fieldErrors[field.name])
+
+          return (
+            <div
+              key={field.id}
+              className={`form-group checkbox-agreement-group ${hasError ? 'has-error' : ''}`}
+            >
+              <label
+                className={`checkbox-agreement-card ${isChecked ? 'is-checked' : ''} ${hasError ? 'is-invalid' : ''}`}
+                htmlFor={field.name}
+              >
+                <div className="checkbox-agreement-control">
+                  <input
+                    type="checkbox"
+                    id={field.name}
+                    name={field.name}
+                    checked={isChecked}
+                    onChange={(e) => handleCheckboxChange(field.name, e.target.checked)}
+                    className="checkbox-agreement-native"
+                    aria-describedby={describedBy}
+                    aria-invalid={hasError ? 'true' : 'false'}
+                  />
+                  <div className="checkbox-agreement-box" aria-hidden="true">
+                    <svg
+                      className="checkbox-agreement-check"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="3.5 8.5 6.5 11.5 12.5 5" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="checkbox-agreement-content">
+                  <span className="checkbox-agreement-text">
+                    {label}
+                    {field.required ? ' *' : ''}
+                  </span>
+                  {field.placeholder && (
+                    <span className="checkbox-agreement-subtext">{field.placeholder}</span>
+                  )}
+                </div>
+              </label>
               {fieldErrors[field.name] && (
                 <p id={errorId} className="field-error">
                   {fieldErrors[field.name]}
