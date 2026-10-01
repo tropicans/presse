@@ -45,7 +45,7 @@ const defaultLikertOptions = [
 
 const CONDITIONAL_ROUTE_SUBMIT = '__SUBMIT__'
 
-const fieldTypeOptions: Array<EditableField['type']> = ['text', 'textarea', 'radio', 'select', 'likert', 'signature']
+const fieldTypeOptions: Array<EditableField['type']> = ['text', 'textarea', 'radio', 'select', 'likert', 'signature', 'checkbox']
 const fieldTypeLabels: Record<EditableField['type'], string> = {
   text: 'Teks Singkat',
   textarea: 'Teks Panjang',
@@ -1446,13 +1446,24 @@ export default function AdminFormEditor({ formId }: Props) {
 
                     <div className="admin-builder-field-grid">
                       <label className="admin-builder-field admin-builder-field-main">
-                        <span>Label Pertanyaan</span>
-                        <input
-                          value={field.label}
-                          onChange={(e) => updateField(field.id, { label: e.target.value })}
-                          className="admin-builder-input"
-                          placeholder="Tulis teks pertanyaan di sini..."
-                        />
+                        <span>{field.type === 'checkbox' ? 'Pernyataan Persetujuan / Disclaimer' : 'Label Pertanyaan'}</span>
+                        {field.type === 'checkbox' ? (
+                          <textarea
+                            value={field.label}
+                            onChange={(e) => updateField(field.id, { label: e.target.value })}
+                            className="admin-builder-input"
+                            rows={3}
+                            placeholder="Contoh: Saya memahami bahwa pembentukan atau pelengkapan tim bergantung pada ketersediaan peserta dan tidak dijamin oleh panitia."
+                            style={{ resize: 'vertical', minHeight: '68px', lineHeight: 1.5 }}
+                          />
+                        ) : (
+                          <input
+                            value={field.label}
+                            onChange={(e) => updateField(field.id, { label: e.target.value })}
+                            className="admin-builder-input"
+                            placeholder="Tulis teks pertanyaan di sini..."
+                          />
+                        )}
                       </label>
 
                       <label className="admin-builder-field">
@@ -1469,6 +1480,7 @@ export default function AdminFormEditor({ formId }: Props) {
                               || e.target.value === 'radio'
                               || e.target.value === 'select'
                               || e.target.value === 'likert'
+                              || e.target.value === 'checkbox'
                               ? ''
                               : field.placeholder,
                           })}
@@ -1711,8 +1723,13 @@ export default function AdminFormEditor({ formId }: Props) {
                     checked={field.required}
                     onChange={(e) => updateField(field.id, { required: e.target.checked })}
                   />
-                  Wajib diisi
+                  {field.type === 'checkbox' ? 'Wajib disetujui (formulir tidak dapat dikirim sebelum dicentang)' : 'Wajib diisi'}
                 </label>
+                {field.type === 'checkbox' && (
+                  <p className="admin-builder-option-helper" style={{ margin: '4px 0 0 0' }}>
+                    Responden akan melihat kotak centang khusus dengan pernyataan persetujuan ini pada formulir publik.
+                  </p>
+                )}
               </div>
             )}
           </div>

@@ -11,7 +11,7 @@
 - [x] **AGREE-02: Server-Side Consent Validation** — Menegakkan validasi persetujuan di `validateFormSubmission` (`src/lib/forms.ts`) sehingga jika field persetujuan berstatus `required: true`, submission wajib bernilai persetujuan yang valid (`'true'` / `'Setuju'`), serta menolak submission tanpa centang dengan error HTTP 400 `"[Label] wajib disetujui"`.
 
 ### Admin Form Editor & Authoring
-- [ ] **AGREE-03: Admin Form Editor Integration** — Menambahkan opsi tipe field `Persetujuan (Checkbox)` di `AdminFormEditor.tsx`, kartu konfigurasi pernyataan persetujuan/disclaimer, toggle wajib diisi, label ringkasan kartu terlipat, dan integrasi panel outline formulir.
+- [x] **AGREE-03: Admin Form Editor Integration** — Menambahkan opsi tipe field `Persetujuan (Checkbox)` di `AdminFormEditor.tsx`, kartu konfigurasi pernyataan persetujuan/disclaimer, toggle wajib diisi, label ringkasan kartu terlipat, dan integrasi panel outline formulir.
 
 ### Public Form & Live Preview
 - [ ] **AGREE-04: Accessible Monochrome Checkbox UI** — Merender elemen kotak centang persetujuan interaktif dengan estetika monokrom arsitektural di `AttendanceForm.tsx` dan `AdminFormPreview.tsx`, mendukung navigasi keyboard (Tab & Space), transisi fokus `:focus-visible`, dan klik label untuk toggle centang.
@@ -29,7 +29,7 @@
 |---|---|---|
 | AGREE-01 | Phase 41 | Complete |
 | AGREE-02 | Phase 41 | Complete |
-| AGREE-03 | Phase 42 | Pending |
+| AGREE-03 | Phase 42 | Complete |
 | AGREE-04 | Phase 43 | Pending |
 | AGREE-05 | Phase 43 | Pending |
 | AGREE-06 | Phase 44 | Pending |
