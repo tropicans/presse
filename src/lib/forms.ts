@@ -24,11 +24,11 @@ const ATTENDANCE_FORM_ID = 'attendance-template-form'
 const ATTENDANCE_PARTICIPANT_TYPE_OPTIONS = ['Internal', 'Eksternal'] as const
 const WEBINAR_CORE_FIELD_ID_PREFIX = 'webinar-core-'
 
-type FieldType = 'SHORT_TEXT' | 'LONG_TEXT' | 'RADIO' | 'SELECT' | 'YES_NO' | 'SIGNATURE'
+type FieldType = 'SHORT_TEXT' | 'LONG_TEXT' | 'RADIO' | 'SELECT' | 'YES_NO' | 'SIGNATURE' | 'CHECKBOX'
 export type FormWorkflow = 'STANDARD' | 'WEBINAR'
 export type FormMode = 'STANDARD' | 'QUIZ' | 'ATTENDANCE'
 
-export type FormFieldType = 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature' | 'yes_no'
+export type FormFieldType = 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature' | 'yes_no' | 'checkbox'
 
 const CONDITIONAL_ROUTE_SUBMIT = '__SUBMIT__'
 
@@ -70,7 +70,11 @@ export interface YesNoField extends BaseField {
   type: 'yes_no'
 }
 
-export type FormField = TextField | RadioField | SelectField | SignatureField | YesNoField
+export interface CheckboxField extends BaseField {
+  type: 'checkbox'
+}
+
+export type FormField = TextField | RadioField | SelectField | SignatureField | YesNoField | CheckboxField
 
 export interface FormPageDefinition {
   id: string
@@ -505,6 +509,8 @@ function mapFieldType(type: FieldType): FormFieldType | null {
       return 'signature'
     case 'YES_NO':
       return 'yes_no'
+    case 'CHECKBOX':
+      return 'checkbox'
     default:
       return null
   }
@@ -1767,7 +1773,7 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
       }]
     }
 
-    if (mappedType === 'yes_no') {
+    if (mappedType === 'yes_no' || mappedType === 'checkbox') {
       return [{
         id: field.id,
         name,
@@ -1838,6 +1844,16 @@ export function validateFormSubmission(form: PublicFormDefinition, payload: Reco
 
     if (!isVisible) {
       values[field.name] = ''
+      continue
+    }
+
+    if (field.type === 'checkbox') {
+      const rawVal = payload[field.name]
+      const isConsent = rawVal === true || rawVal === 'true' || rawVal === '1' || rawVal === 'Setuju' || rawVal === 'Ya'
+      if (field.required && !isConsent) {
+        throw new FormSubmissionError(`"${field.label}" wajib disetujui`, 400)
+      }
+      values[field.name] = isConsent ? 'true' : ''
       continue
     }
 
@@ -2665,6 +2681,8 @@ function mapFormFieldTypeToDb(type: FormFieldType): FieldType {
       return 'SIGNATURE'
     case 'yes_no':
       return 'YES_NO'
+    case 'checkbox':
+      return 'CHECKBOX'
   }
 }
 
@@ -2793,7 +2811,7 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
   const normalizedPayloadFields = payload.fields
 
   const editableFieldIds = new Set(current.fields.map((field) => field.id))
-  const allowedTypes = new Set<FormFieldType>(['text', 'textarea', 'radio', 'select', 'likert', 'signature', 'yes_no'])
+  const allowedTypes = new Set<FormFieldType>(['text', 'textarea', 'radio', 'select', 'likert', 'signature', 'yes_no', 'checkbox'])
 
   if (normalizedPayloadFields.length === 0) {
     throw new FormSubmissionError('Form harus memiliki minimal satu field', 400)

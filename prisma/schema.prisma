@@ -25,6 +25,7 @@ enum FieldType {
   SELECT
   YES_NO
   SIGNATURE
+  CHECKBOX
 }
 
 enum AdminRole {

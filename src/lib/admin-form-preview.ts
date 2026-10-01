@@ -2,7 +2,7 @@ export interface AdminPreviewField {
   id: string
   name: string
   label: string
-  type: 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature' | 'yes_no'
+  type: 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature' | 'yes_no' | 'checkbox'
   required: boolean
   placeholder: string
   pageId: string

@@ -54,6 +54,7 @@ const fieldTypeLabels: Record<EditableField['type'], string> = {
   likert: 'Likert',
   signature: 'Tanda Tangan',
   yes_no: 'Ya/Tidak',
+  checkbox: 'Persetujuan',
 }
 function createOptionsForType(type: EditableField['type'], currentOptions: EditableField['options'] = []) {
   if (type === 'radio' || type === 'select') {

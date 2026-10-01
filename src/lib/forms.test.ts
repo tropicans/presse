@@ -735,4 +735,77 @@ describe('Email, Phone, Name, and Signature format validators', () => {
     expect(validated.alamatKtp).toBe('Jl. Merdeka No. 45 Jakarta')
     expect(validated.alamatDomisili).toBe('Jl. Merdeka No. 45 Jakarta')
   })
+
+  it('validates agreement checkbox in validateFormSubmission requiring consent when required', () => {
+    const agreementForm: PublicFormDefinition = {
+      id: 'form-agreement-test',
+      slug: 'form-agreement-slug',
+      title: 'Form Pendaftaran dengan Persetujuan',
+      description: null,
+      successMessage: null,
+      submitLabel: 'Kirim',
+      fields: [
+        { id: 'f_name', name: 'namaLengkap', label: 'Nama Lengkap', type: 'text', required: true },
+        {
+          id: 'f_agree',
+          name: 'persetujuanTim',
+          label: 'Saya memahami bahwa pembentukan atau pelengkapan tim bergantung pada ketersediaan peserta',
+          type: 'checkbox',
+          required: true,
+        },
+        {
+          id: 'f_newsletter',
+          name: 'langgananInfo',
+          label: 'Kirimkan informasi berkala',
+          type: 'checkbox',
+          required: false,
+        },
+      ],
+      settings: { workflow: 'STANDARD' },
+    }
+
+    // 1. Fails when required checkbox is missing or false
+    expect(() => {
+      validateFormSubmission(agreementForm, {
+        namaLengkap: 'Budi Santoso',
+      })
+    }).toThrow('"Saya memahami bahwa pembentukan atau pelengkapan tim bergantung pada ketersediaan peserta" wajib disetujui')
+
+    expect(() => {
+      validateFormSubmission(agreementForm, {
+        namaLengkap: 'Budi Santoso',
+        persetujuanTim: false,
+      })
+    }).toThrow('"Saya memahami bahwa pembentukan atau pelengkapan tim bergantung pada ketersediaan peserta" wajib disetujui')
+
+    expect(() => {
+      validateFormSubmission(agreementForm, {
+        namaLengkap: 'Budi Santoso',
+        persetujuanTim: '',
+      })
+    }).toThrow('"Saya memahami bahwa pembentukan atau pelengkapan tim bergantung pada ketersediaan peserta" wajib disetujui')
+
+    // 2. Passes when required checkbox is truthy ('true', true, '1', 'Setuju')
+    const passed1 = validateFormSubmission(agreementForm, {
+      namaLengkap: 'Budi Santoso',
+      persetujuanTim: 'true',
+    })
+    expect(passed1.persetujuanTim).toBe('true')
+    expect(passed1.langgananInfo).toBe('')
+
+    const passed2 = validateFormSubmission(agreementForm, {
+      namaLengkap: 'Budi Santoso',
+      persetujuanTim: true,
+      langgananInfo: true,
+    })
+    expect(passed2.persetujuanTim).toBe('true')
+    expect(passed2.langgananInfo).toBe('true')
+
+    const passed3 = validateFormSubmission(agreementForm, {
+      namaLengkap: 'Budi Santoso',
+      persetujuanTim: 'Setuju',
+    })
+    expect(passed3.persetujuanTim).toBe('true')
+  })
 })
+

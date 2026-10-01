@@ -7,8 +7,8 @@
 ## Requirements
 
 ### Database & Core Domain Engine
-- [ ] **AGREE-01: Database Enum & Core Domain Definitions** — Menambahkan nilai `'CHECKBOX'` pada enum PostgreSQL `"FieldType"` melalui migrasi Prisma, memperbarui `prisma/schema.prisma`, dan menambahkan tipe `CheckboxField` serta pemetaan tipe di `src/lib/forms.ts`.
-- [ ] **AGREE-02: Server-Side Consent Validation** — Menegakkan validasi persetujuan di `validateFormSubmission` (`src/lib/forms.ts`) sehingga jika field persetujuan berstatus `required: true`, submission wajib bernilai persetujuan yang valid (`'true'` / `'Setuju'`), serta menolak submission tanpa centang dengan error HTTP 400 `"[Label] wajib disetujui"`.
+- [x] **AGREE-01: Database Enum & Core Domain Definitions** — Menambahkan nilai `'CHECKBOX'` pada enum PostgreSQL `"FieldType"` melalui migrasi Prisma, memperbarui `prisma/schema.prisma`, dan menambahkan tipe `CheckboxField` serta pemetaan tipe di `src/lib/forms.ts`.
+- [x] **AGREE-02: Server-Side Consent Validation** — Menegakkan validasi persetujuan di `validateFormSubmission` (`src/lib/forms.ts`) sehingga jika field persetujuan berstatus `required: true`, submission wajib bernilai persetujuan yang valid (`'true'` / `'Setuju'`), serta menolak submission tanpa centang dengan error HTTP 400 `"[Label] wajib disetujui"`.
 
 ### Admin Form Editor & Authoring
 - [ ] **AGREE-03: Admin Form Editor Integration** — Menambahkan opsi tipe field `Persetujuan (Checkbox)` di `AdminFormEditor.tsx`, kartu konfigurasi pernyataan persetujuan/disclaimer, toggle wajib diisi, label ringkasan kartu terlipat, dan integrasi panel outline formulir.
@@ -27,8 +27,8 @@
 
 | Requirement | Phase | Status |
 |---|---|---|
-| AGREE-01 | Phase 41 | Pending |
-| AGREE-02 | Phase 41 | Pending |
+| AGREE-01 | Phase 41 | Complete |
+| AGREE-02 | Phase 41 | Complete |
 | AGREE-03 | Phase 42 | Pending |
 | AGREE-04 | Phase 43 | Pending |
 | AGREE-05 | Phase 43 | Pending |
