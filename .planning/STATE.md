@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Agreement & Terms Checkbox Field Support
-status: in-progress
-last_updated: "2026-10-01T08:12:00.000Z"
+status: completed
+last_updated: "2026-10-01T08:15:00.000Z"
 last_activity: 2026-10-01
 progress:
   total_phases: 5
@@ -11,8 +11,8 @@ progress:
   total_plans: 5
   completed_plans: 5
   percent: 100
-current_phase: 45
-current_phase_name: Multi-Tier Verification, Automated Testing & Container Health
+current_phase: none
+current_phase_name: none
 ---
 
 # Project State: Agreement & Terms Checkbox Field Support
@@ -20,18 +20,18 @@ current_phase_name: Multi-Tier Verification, Automated Testing & Container Healt
 ## Project Reference
 
 See: [.planning/PROJECT.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/PROJECT.md) (updated 2026-10-01)  
-Requirements: [.planning/REQUIREMENTS.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/REQUIREMENTS.md)  
+Archived Requirements: [.planning/milestones/v2.2-REQUIREMENTS.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/milestones/v2.2-REQUIREMENTS.md)  
 Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/ROADMAP.md)  
 
 **Core value:** Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang compact, modern, dan bernilai guna tinggi.  
-**Milestone status:** In Progress (v2.2).
+**Milestone status:** Completed (v2.2 shipped 2026-10-01).
 
 ## Current Position
 
-Phase: Phase 45: Multi-Tier Verification, Automated Testing & Container Health  
+Phase: Milestone v2.2 Completed  
 Plan: —  
-Status: Complete  
-Last activity: 2026-10-01 — Phase 45 completed (Multi-Tier Verification, Automated Testing & Container Health)
+Status: Shipped  
+Last activity: 2026-10-01 — Milestone v2.2 completed and archived
 
 ## Phases Summary
 

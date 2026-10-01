@@ -7,20 +7,21 @@ Platform pengelolaan formulir publik, kiriman (submissions), dan dashboard admin
 Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
 
 ## Current State
-Milestone **v2.2 Agreement & Terms Checkbox Field Support** in progress.
-Previous milestone **v2.1 Admin Invitation System & Google OAuth Access Delegation** shipped (2026-09-28).
-Phases 1-40 completed across milestones v1.1 - v2.1.
+Milestone **v2.2 Agreement & Terms Checkbox Field Support** shipped (2026-10-01).
+Phases 1-45 completed across milestones v1.1 - v2.2.
 
-## Current Milestone: v2.2 Agreement & Terms Checkbox Field Support
+<details>
+<summary>Archived Milestone v2.2: Agreement & Terms Checkbox Field Support (Shipped: 2026-10-01)</summary>
 
 **Goal:** Menambahkan tipe field khusus Checkbox Persetujuan (Agreement / Terms & Conditions) end-to-end mulai dari skema database, form editor builder, public form & live preview renderer, validasi wajib centang, hingga ekspor & analitik respon.
 
-**Target features:**
-- Database & Domain Core: Menambahkan tipe `CHECKBOX` (atau pemetaan `YES_NO`/boolean checkbox) pada domain form, validasi server-side wajib centang (`required`).
-- Admin Form Editor: Menambahkan pilihan tipe field "Persetujuan / Kotak Centang" di `AdminFormEditor`, konfigurasi label klausul persetujuan, dan visual compact card header.
-- Public Form & Live Preview: Merender elemen checkbox persetujuan interaktif dengan estetika monokrom arsitektural di `AttendanceForm` dan `AdminFormPreview`, serta validasi client-side ramah pengguna.
-- Submissions, Export & Analytics: Format tampilan jawaban persetujuan di tabel kiriman, ekspor XLSX, dan visualisasi distribusi analitik.
-- Multi-tier QA: Unit testing, typecheck, lint, build standalone, dan Docker container health check.
+- **Database & Domain Core:** Menambahkan nilai `'CHECKBOX'` pada enum PostgreSQL `FieldType` dan `FormFieldType`, validasi server-side wajib centang (`required`) mengembalikan HTTP 400.
+- **Admin Form Editor:** Menambahkan pilihan tipe field `Persetujuan (Checkbox)` di `AdminFormEditor`, konfigurasi textarea disclaimer (`placeholder`), toggle persetujuan wajib diisi, dan visual compact card summary.
+- **Public Form & Live Preview:** Merender elemen checkbox persetujuan interaktif dengan estetika monokrom arsitektural di `AttendanceForm` dan `AdminFormPreview`, SVG checkmark kustom, keyboard navigation, dan auto-clear error seketika saat diklik.
+- **Submissions, Export & Analytics:** Format tampilan jawaban persetujuan dengan badge ergonomis `✓ Disetujui`, ekspor `.xlsx` sebagai `'Disetujui'`, dan distribusi persetujuan terkelompok rapi pada analitik.
+- **Multi-tier QA:** 115 unit tests passing, zero TypeScript/ESLint errors, Next.js standalone production build sukses, dan Docker containers (`app` & `worker`) sehat di port 3456 (`/api/health` ok).
+
+</details>
 
 <details>
 <summary>Archived Milestone v2.1: Admin Invitation System & Google OAuth Access Delegation (Shipped: 2026-09-28)</summary>

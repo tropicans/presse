@@ -1,65 +1,14 @@
-# Milestone v2.2: Agreement & Terms Checkbox Field Support
+# Project Roadmap
 
-**Phases:** 41-45  
-**Milestone:** v2.2  
-**Status:** In Progress  
-**Goal:** Menambahkan tipe field khusus Checkbox Persetujuan (Agreement / Terms & Conditions) end-to-end mulai dari skema database, form editor builder, public form & live preview renderer, validasi wajib centang, hingga ekspor & analitik respon.
+## Completed Milestones
 
-## Phases Summary
-
-### Phase 41: Database Schema Migration & Core Domain Engine
-- **Goal:** Menambahkan tipe field `CHECKBOX` ke enum PostgreSQL `"FieldType"`, memperbarui Prisma schema, mendefinisikan interface `CheckboxField` di domain model `src/lib/forms.ts`, serta menegakkan validasi server-side wajib centang di `validateFormSubmission`.
-- **Requirements:** AGREE-01, AGREE-02
-- **Success Criteria:**
-  1. PostgreSQL enum `"FieldType"` memiliki nilai `'CHECKBOX'` via migrasi Prisma.
-  2. `src/lib/forms.ts` mengekspor tipe `CheckboxField` dan menangani mapping dua arah DB (`mapFieldType`, `mapFormFieldTypeToDb`).
-  3. `validateFormSubmission` berhasil memvalidasi nilai `'true'` saat `required: true`, dan menolak submit dengan pesan error `"[Label] wajib disetujui"` jika belum dicentang.
-
-### Phase 42: Admin Form Editor Integration
-- **Goal:** Mengintegrasikan opsi field `Persetujuan (Checkbox)` ke dalam builder `AdminFormEditor.tsx` sehingga admin dapat menambah dan mengonfigurasi klausul persetujuan secara visual.
-- **Requirements:** AGREE-03
-- **Success Criteria:**
-  1. Admin dapat memilih tipe `Persetujuan (Checkbox)` dari daftar penambahan pertanyaan (`fieldTypeOptions`).
-  2. Kartu editor field menampilkan input klausul/disclaimer persetujuan, helper text opsional, dan toggle `Wajib diisi`.
-  3. Kartu terlipat (collapsed card) dan panel outline formulir menampilkan pill `Persetujuan` dan status wajib/opsional secara konsisten.
-
-### Phase 43: Public Form & Live Preview Renderer
-- **Goal:** Merender komponen visual checkbox persetujuan monokromatis berstandar aksesibilitas tinggi pada form publik (`AttendanceForm.tsx`) dan live preview admin (`AdminFormPreview.tsx`), lengkap dengan validasi langkah client-side dan auto-focus.
-- **Requirements:** AGREE-04, AGREE-05
-- **Success Criteria:**
-  1. Form publik menampilkan kartu checkbox persetujuan dengan layout rapi, teks klausul jelas, dan status centang yang responsif terhadap klik maupun keyboard (Spacebar).
-  2. Menekan tombol "Lanjut" (multi-step) atau "Kirim" tanpa mencentang persetujuan wajib memicu peringatan visual, auto-scroll, dan auto-focus ke kotak centang.
-  3. Memilih/mencentang kotak centang secara instan menghapus pesan error tanpa reload atau re-click tombol kirim.
-
-### Phase 44: Submissions, Excel Export & Analytics Integration
-- **Goal:** Mengintegrasikan representasi data persetujuan ke tabel submissions admin, ekspor berkas Excel (.xlsx), dan visualisasi analitik respon.
-- **Requirements:** AGREE-06
-- **Success Criteria:**
-  1. Tabel kiriman di `/admin/forms/[id]/submissions` menampilkan jawaban persetujuan dalam bentuk badge ergonomis (`✓ Disetujui`).
-  2. Ekspor Excel di `exportFormSubmissions` mencantumkan nilai `"Disetujui"` yang jelas dan mudah dianalisis.
-  3. Dashboard analitik (`/admin/forms/[id]/analytics`) menyertakan agregasi data centang persetujuan pada distribusi jawaban pertanyaan.
-
-### Phase 45: Multi-Tier Verification, Automated Testing & Container Health
-- **Goal:** Memastikan stabilitas sistem, regresi nol, dan kesiapan produksi melalui automated tests, linting, typecheck, build standalone, dan Docker container rebuild.
-- **Requirements:** AGREE-07
-- **Success Criteria:**
-  1. Seluruh unit/integration test baru dan lama lulus 100% di Vitest (`npm test`).
-  2. `npm run lint` dan `npx tsc --noEmit` bersih tanpa peringatan atau error.
-  3. Next.js 16 standalone build berhasil (`npm run build`).
-  4. Docker containers (`app` dan `worker`) berhasil di-rebuild dan status `/api/health` mengembalikan `ok`.
-
-## Traceability
-
-| Requirement | Phase | Status |
-|---|---|---|
-| AGREE-01 | Phase 41 | Pending |
-| AGREE-02 | Phase 41 | Pending |
-| AGREE-03 | Phase 42 | Pending |
-| AGREE-04 | Phase 43 | Pending |
-| AGREE-05 | Phase 43 | Pending |
-| AGREE-06 | Phase 44 | Pending |
-| AGREE-07 | Phase 45 | Pending |
-
----
-
-*Roadmap initialized: 2026-10-01*
+- [Milestone v2.2: Agreement & Terms Checkbox Field Support (Shipped: 2026-10-01)](milestones/v2.2-ROADMAP.md) — Phases 41-45
+- [Milestone v2.1: Admin Invitation System & Google OAuth Access Delegation (Shipped: 2026-09-28)](milestones/v2.1-ROADMAP.md) — Phases 37-40
+- [Milestone v2.0: UI/UX Density & Information Hierarchy Refactor (Shipped: 2026-09-27)](milestones/v2.0-ROADMAP.md) — Phases 31-36
+- [Milestone v1.9: Interactive Analytics & Submission Data Visualization (Shipped: 2026-09-27)](milestones/v1.9-ROADMAP.md) — Phases 28-30
+- [Milestone v1.8: Editorial Minimalist Monochrome Transformation (Shipped: 2026-09-27)](milestones/v1.8-ROADMAP.md) — Phases 24-27
+- [Milestone v1.7: Performance, Infrastructure Hardening & Real User Observability (Shipped: 2026-09-26)](milestones/v1.7-ROADMAP.md) — Phases 19-23
+- [Milestone v1.6: Interactive Form Live Preview with Real-Time Draft Synchronization (Shipped: 2026-09-26)](milestones/v1.6-ROADMAP.md) — Phases 14-18
+- [Milestone v1.5: Dynamic Multi-Page Forms, Likert Scales, Quiz Engine & Conditional Branching (Shipped: 2026-09-26)](milestones/v1.5-ROADMAP.md) — Phases 9-13
+- [Milestone v1.4: Universal Attendance Form Migration & Dynamic Builder (Shipped: 2026-09-25)](milestones/v1.4-ROADMAP.md) — Phases 6-8
+- [Milestone v1.3: Dynamic Form Builder MVP (Shipped: 2026-09-25)](milestones/v1.3-ROADMAP.md) — Phases 1-5

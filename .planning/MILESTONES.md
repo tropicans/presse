@@ -1,5 +1,20 @@
 # Milestones
 
+## v2.2 Agreement & Terms Checkbox Field Support (Shipped: 2026-10-01)
+
+**Phases completed:** 5 phases, 5 plans, 15 tasks
+
+**Key accomplishments:**
+
+- Added first-class `CHECKBOX` support to the database and domain layer via Prisma migration `20261001000000_add_checkbox_field_type` and updated `src/lib/forms.ts`.
+- Enforced strict server-side validation in `validateFormSubmission` requiring explicit participant consent (`'true'`, `'1'`, `'Setuju'`) when `required: true`, returning HTTP 400 with `"[Label] wajib disetujui"`.
+- Integrated `Persetujuan (Checkbox)` field builder into `AdminFormEditor.tsx` with multiline disclaimer configuration (`placeholder`), required consent toggle, and collapsible outline summary labels.
+- Implemented accessible monochrome architectural checkbox component in `AttendanceForm.tsx` and `AdminFormPreview.tsx` with custom SVG checkmarks, `:focus-visible` outlines, card click toggling, and instant client error clearing.
+- Formatted submissions views in `AdminFormSubmissions.tsx` with styled `✓ Disetujui` badge, exported `.xlsx` cells as `'Disetujui'`, and normalized analytics distribution charts to show percentage and count of consent.
+- Passed full automated quality assurance: 115 passing Vitest tests, clean ESLint, zero TypeScript errors, successful Next.js 16 standalone build, and healthy container stack verified at `/api/health`.
+
+---
+
 ## v2.1 Admin Invitation System & Google OAuth Access Delegation (Shipped: 2026-09-28)
 
 **Phases completed:** 4 phases, 4 plans, 12 tasks
