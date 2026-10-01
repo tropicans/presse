@@ -156,7 +156,14 @@ export function computeQuestionDistributions(
         const choices = answer.includes(',') ? answer.split(',').map((s) => s.trim()) : [answer]
         choices.forEach((choice) => {
           if (choice) {
-            optionCounts[choice] = (optionCounts[choice] || 0) + 1
+            let label = choice
+            if (col.type === 'checkbox') {
+              const lower = choice.toLowerCase()
+              if (choice === 'true' || choice === '1' || lower === 'setuju' || lower === 'ya') {
+                label = 'Disetujui'
+              }
+            }
+            optionCounts[label] = (optionCounts[label] || 0) + 1
           }
         })
       }

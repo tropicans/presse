@@ -205,7 +205,7 @@ interface SubmissionColumn {
   id: string
   name: string
   label: string
-  type: 'text' | 'textarea' | 'radio' | 'likert' | 'signature'
+  type: 'text' | 'textarea' | 'radio' | 'likert' | 'signature' | 'checkbox'
 }
 
 interface SubmissionItem {
@@ -282,9 +282,36 @@ function isSignatureImage(value: string | undefined) {
   return value?.startsWith('data:image/') ?? false
 }
 
-function getAnswerPreview(value: string | undefined, type: SubmissionColumn['type']) {
+function getAnswerPreview(value: string | undefined, type: SubmissionColumn['type']): React.ReactNode {
   if (type === 'signature' && isSignatureImage(value)) {
     return 'Tanda tangan tersimpan'
+  }
+
+  if (type === 'checkbox') {
+    const raw = (value ?? '').trim().toLowerCase()
+    const isApproved = raw === 'true' || raw === '1' || raw === 'setuju' || raw === 'ya'
+    if (isApproved) {
+      return (
+        <span
+          className="submissions-agreement-badge"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            fontSize: '0.825rem',
+            fontWeight: 600,
+            background: 'var(--ledger-primary, #000)',
+            color: '#fff',
+          }}
+        >
+          <span>✓</span>
+          <span>Disetujui</span>
+        </span>
+      )
+    }
+    return '-'
   }
 
   const normalized = formatAnswer(value)

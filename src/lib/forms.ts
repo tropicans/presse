@@ -3405,7 +3405,16 @@ export async function exportAdminFormSubmissionsWorkbook(
             item.meta.quiz ? (item.meta.quiz.passed ? 'Lulus' : 'Belum lulus') : '-',
           ]
         : []),
-      ...exportableColumns.map((column) => column.type === 'signature' ? '' : item.answers[column.name] ?? ''),
+      ...exportableColumns.map((column) => {
+        if (column.type === 'signature') return ''
+        const raw = item.answers[column.name] ?? ''
+        if (column.type === 'checkbox') {
+          const lower = raw.trim().toLowerCase()
+          const isApproved = raw === 'true' || raw === '1' || lower === 'setuju' || lower === 'ya'
+          return isApproved ? 'Disetujui' : (raw.trim().length > 0 ? raw : '-')
+        }
+        return raw
+      }),
     ]
     const row = sheet.addRow(rowValues)
     row.height = exportableColumns.some((column) => column.type === 'signature' && isDataImage(item.answers[column.name] ?? '')) ? 76 : 32

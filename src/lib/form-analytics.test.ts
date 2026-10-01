@@ -135,5 +135,24 @@ describe('Form Analytics Calculation Engine', () => {
     expect(dist[0].totalAnswered).toBe(0)
     expect(dist[0].options).toEqual([])
   })
+
+  it('normalizes checkbox distribution to Disetujui', () => {
+    const checkboxCol: SubmissionColumn = { id: 'c3', name: 'persetujuan', label: 'Persetujuan Ketentuan', type: 'checkbox' }
+    const items: SubmissionItem[] = [
+      { id: '1', createdAt: '2026-09-27T10:00:00.000Z', answers: { persetujuan: 'true' } },
+      { id: '2', createdAt: '2026-09-27T11:00:00.000Z', answers: { persetujuan: 'Setuju' } },
+      { id: '3', createdAt: '2026-09-27T12:00:00.000Z', answers: { persetujuan: '1' } },
+      { id: '4', createdAt: '2026-09-27T13:00:00.000Z', answers: {} },
+    ]
+
+    const dist = computeQuestionDistributions([checkboxCol], items)
+    expect(dist[0].totalAnswered).toBe(3)
+    expect(dist[0].options).toHaveLength(1)
+    expect(dist[0].options[0]).toEqual({
+      label: 'Disetujui',
+      count: 3,
+      percentage: 100,
+    })
+  })
 })
 
