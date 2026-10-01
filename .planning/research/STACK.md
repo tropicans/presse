@@ -1,37 +1,67 @@
-# Technology Stack Research
+# Stack Research: Agreement & Checkbox Field Support
 
-**Domain:** Modern Form Builder UI/UX (Admin Console)
-**Researched:** 2026-09-25
+**Milestone:** v2.2 Agreement & Terms Checkbox Field Support  
+**Domain:** Form Engine, Validation & UI Components  
 **Confidence:** HIGH
-
-## Stack Additions / Evaluation
-
-### Core Recommendation: Zero New External Dependencies
-
-For the requirements of Milestone v1.5 (Step Tabs, Collapsible Cards, Outline Panel, Duplicate & Quick Add Actions):
-- **React 19 Hooks (`useState`, `useMemo`, `useCallback`, `useRef`):** Completely adequate for managing active step filtering, accordion expansion sets (`Set<string>`), and keyboard/click navigation.
-- **Native Web Platform APIs:**
-  - `Element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })` for instant quick-jump navigation from the Outline panel.
-  - HTML `<details>`/`<summary>` or controlled state div with CSS grid animation for 60fps collapse/expand transitions without layout thrashing.
-  - Browser `crypto.randomUUID()` for robust client-side field cloning and id generation.
-- **Pure Vanilla CSS Design System:**
-  - Leverage existing design tokens in `src/app/globals.css`.
-  - Add modular CSS class scopes (`.builder-step-nav`, `.builder-outline-sidebar`, `.builder-card-collapsed`, `.builder-sticky-toolbar`) using existing CSS custom properties (`--color-surface`, `--color-border`, `--color-primary`, `--radius-md`).
-
-### Evaluated Alternatives & Why Avoided
-
-| Tool / Library | Purpose Considered | Why Avoided |
-|----------------|-------------------|-------------|
-| `@dnd-kit/core` / `react-beautiful-dnd` | Drag-and-drop field reordering | Adds 50-80KB JS runtime overhead, creates touch event conflicts with inner inputs/selects on canvas/tablets, and introduces unnecessary maintenance complexity compared to streamlined instant action buttons (Move to Step, Move Up/Down, Jump to Position). |
-| `framer-motion` | Card accordion transitions | High bundle overhead (~35KB gzipped), incompatible with pure CSS styling conventions documented in `PROJECT.md` and `CONVENTIONS.md`. |
-| `lucide-react` | Navigation icons | Project uses lightweight inline SVG icons consistent with existing admin components (`AdminFormEditor.tsx`, `AdminFormsList.tsx`). |
-
-## Platform Compatibility
-
-- Fully compatible with Next.js 16 standalone output mode (`next.config.ts`).
-- Fully compatible with React 19 Client Component architecture (`'use client'`).
-- Works seamlessly across desktop and tablet screen widths.
 
 ---
 
-*Stack research: 2026-09-25*
+## 1. Database & ORM Stack
+
+### Existing Capabilities
+- Database: PostgreSQL 16 (in Docker compose container `isian-postgres` & native adapter `pg`).
+- ORM: Prisma 7.4 with `@prisma/adapter-pg`.
+- Custom Form Engine: Tables `forms`, `form_pages`, `form_fields`, `form_field_options`, `submissions`, `submission_answers` managed via raw SQL transactions in `src/lib/forms.ts` and tracked in `prisma/schema.prisma`.
+- Current DB enum `FieldType`: `'SHORT_TEXT', 'LONG_TEXT', 'RADIO', 'SELECT', 'YES_NO', 'SIGNATURE'`.
+
+### Required Stack Additions
+- **Enum Expansion:** Add `'CHECKBOX'` to the PostgreSQL enum `"FieldType"`.
+  - Migration script: `ALTER TYPE "FieldType" ADD VALUE IF NOT EXISTS 'CHECKBOX';`
+  - Update `prisma/schema.prisma` enum `FieldType` to include `CHECKBOX`.
+- **Zero Schema Bloat:** `submission_answers` uses `value TEXT NOT NULL`. A checkbox answer stores `"true"` or `"Setuju"`, so no table column migration is needed for answers.
+
+---
+
+## 2. Validation Engine Stack
+
+### Existing Stack
+- `src/lib/form-validation.ts`: Pure, zero-dependency validators (NIP, email, phone, name, signature).
+- `validateFormSubmission` in `src/lib/forms.ts`: Server-side pipeline validating required fields, choice integrity, length limits, and scoring.
+
+### Additions
+- Export a pure validator `validateCheckboxAgreement(value: unknown, required?: boolean)`:
+  - If required: value must strictly be `"true"`, `"1"`, or `"Setuju"`. Empty string, `"false"`, or undefined triggers validation error: `"[Label] wajib disetujui"`.
+  - If optional: allows empty or truthy values.
+- Shared between client-side pre-validation (`AttendanceForm.tsx`, `AdminFormPreview.tsx`) and server route handler (`/api/public/forms/[slug]/submit`).
+
+---
+
+## 3. UI Component & Design System Stack
+
+### Existing Design Tokens
+- Monochromatic Minimalist Editorial theme in `src/app/globals.css`.
+- Google Font typography (`Inter`, `Playfair Display`, `JetBrains Mono`).
+- Custom styling for `.radio-custom`, `.form-copy-checkbox`, input focus rings, and dark/light mode surface tokens (`--bg-surface`, `--text-primary`, `--border-line`).
+
+### Additions
+- Custom checkbox component styling:
+  - `.checkbox-agreement-card` & `.checkbox-agreement-input`: High-contrast square box (18x18px or 20x20px) with custom SVG checkmark or binary inversion on `:checked`.
+  - Accessible focus ring (`:focus-visible`) adhering to the established 2px monochrome outline.
+  - Multi-line agreement label formatting allowing readable legal/disclaimer copy.
+- Admin Form Editor:
+  - New field type option in `fieldTypeOptions`: `'checkbox'` (Label: `Persetujuan (Checkbox)`).
+  - Configurable disclaimer label, helper hint, and `required` toggle.
+
+---
+
+## 4. Export & Analytics Stack
+
+### Existing Stack
+- Excel export via `exceljs` ^4.4.0 in `src/app/api/admin/forms/[id]/export/route.ts` & `src/lib/forms.ts`.
+- Submissions table in `AdminFormSubmissions.tsx`.
+- Analytics aggregation engine `getFormAnalytics` in `src/lib/forms.ts` (`/admin/forms/[id]/analytics`).
+
+### Additions
+- Submissions Table: Display boolean checkbox answers as clean monochrome badges (e.g. `✓ Disetujui` vs `- Belum disetujui`).
+- Excel Export: Output `"Disetujui"` / `"Tidak Disetujui"` for readability in spreadsheets.
+- Analytics Dashboard: Aggregated count & percentage of agreement in choice distribution breakdown.

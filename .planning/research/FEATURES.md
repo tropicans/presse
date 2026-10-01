@@ -1,55 +1,60 @@
-# Feature Research
+# Features Research: Agreement & Checkbox Field Support
 
-**Domain:** Admin Form Builder & Editor Scalability
-**Researched:** 2026-09-25
+**Milestone:** v2.2 Agreement & Terms Checkbox Field Support  
+**Domain:** Form Fields, User Consent & Legal Disclaimers  
 **Confidence:** HIGH
-
-## Feature Landscape
-
-### Table Stakes (Users Expect These)
-
-Features expected when managing complex multi-question forms:
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **Step-based Filtering (Step Tabs)** | Users cannot manage 20-40 fields stacked in one vertical list. Grouping fields by active step/page makes each step focused. | MEDIUM | Tab bar with Step 1, Step 2, ..., and "Semua Langkah" filter option. Shows field count badge per step. |
-| **Collapsible / Accordion Field Cards** | Once configured, fields should not take up 400px each. Collapsed cards show compact summary line (Title, Type badge, Required badge, Option count). | MEDIUM | Controlled expansion state (`expandedIds: Set<string>`). Click header to toggle. Include "Buka Semua" / "Tutup Semua" buttons. |
-| **Field Duplication (1-Click)** | Survey/quiz creators frequently create similar questions (e.g. Likert scale ratings or multiple-choice questions with identical options). | LOW | Clones field with new UUID, appends directly after source field in the same step, appends "(Salinan)" to label. |
-| **Active-Step Field Insertion** | Clicking "+ Teks" or "+ Pilihan" should add the field into the currently active step, not at the bottom of the entire 30-field form. | LOW | Uses `activeStepId` context when `addField(type)` is triggered. |
-| **Sticky Header & Action Bar** | When scrolling inside long lists, Save, Discard, and Step navigation remain readily accessible. | LOW | CSS `position: sticky; top: 0` with backdrop blur and high z-index. |
-
-### Differentiators (Competitive Advantage)
-
-Features that provide an exceptional, high-productivity editing experience:
-
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| **Quick Jump Outline Sidebar** | Visual tree showing all steps and fields with status indicators. Clicking any item scrolls directly to the field card and auto-expands it. | MEDIUM | Left/right docked collapsible panel showing numbered list of questions. |
-| **Field Reassignment Across Steps** | Dropdown inside the field card or outline allowing direct reassignment from "Langkah 1" to "Langkah 3" without repeated move clicks. | LOW | Select input mapped to `updateField(field.id, { pageId })`. |
-| **Search / Filter in Outline** | Quick filter input in outline to locate a specific question by label keyword in massive forms. | LOW | Instant client-side text filtering over field labels. |
-
-### Anti-Features (Avoid in this milestone)
-
-| Feature | Why Requested | Why Problematic | Better Approach |
-|---------|---------------|-----------------|-----------------|
-| Complex Drag-and-Drop canvas library | Looks flashy in demos | Breaks mobile/tablet touch gestures, causes accidental moves while scrolling on touch devices, causes focus loss in nested inputs. | Provide explicit Move Up/Down, Move to Step dropdown, and instant outline ordering buttons. |
-| Infinite nested sub-steps | Some users request sub-steps | Complicates branching logic and database schema validation drastically. | Keep clean flat steps with conditional branching routes (`FormConditionalRoute`). |
-
-## Feature Dependencies
-
-```
-[Step Tabs Navigation] 
-    └──enables──> [Active-Step Field Insertion]
-    └──enables──> [Step-Specific Card Counts]
-
-[Collapsible Field Cards]
-    └──enhanced by──> [Expand All / Collapse All Controls]
-    └──enhanced by──> [Quick Jump from Outline]
-
-[Quick Jump Outline]
-    └──requires──> [Target Field DOM Refs or Element IDs]
-```
 
 ---
 
-*Feature research: 2026-09-25*
+## 1. Feature Analysis: Table Stakes vs Differentiators
+
+### Table Stakes (Must Have for v2.2)
+1. **Single Consent / Agreement Checkbox:**
+   - A single checkbox accompanied by full disclaimer or terms text.
+   - Example use case: *"Saya memahami bahwa pembentukan atau pelengkapan tim bergantung pada ketersediaan peserta dan tidak dijamin oleh panitia."*
+2. **Mandatory Consent Enforcement (Required Validation):**
+   - If `required: true`, the user cannot navigate to the next page or submit the form without checking the box.
+   - Clear and friendly validation error copy: `"[Label/Klausul] wajib disetujui"`.
+   - Auto-scroll and focus to the checkbox container when submission is attempted without checking.
+3. **Form Editor Integration:**
+   - Admin can add a `Persetujuan (Checkbox)` field from the field palette in `AdminFormEditor.tsx`.
+   - Admin can edit the agreement statement in the question label/disclaimer area.
+   - Admin can toggle `Wajib diisi` (Required).
+   - Card collapsed summary shows badge `Persetujuan` and status `Wajib` / `Opsional`.
+4. **Public Form & Live Preview Rendering:**
+   - Crisp rendering in `AttendanceForm.tsx` and `AdminFormPreview.tsx`.
+   - Clicking either the square checkbox or the disclaimer text toggles the checkbox state.
+   - Reversible toggle (check / uncheck before submission).
+5. **Submissions & Export Representation:**
+   - Displayed in submissions detail and table as `"Disetujui"` / `"Ya"`.
+   - Exported to Excel `.xlsx` cleanly without raw JSON booleans.
+
+### Differentiators (High Value)
+1. **Highlighted Disclaimer Card Layout:**
+   - Styled inside an architectural bordered container with a subtle background surface (`var(--bg-surface-elevated)`), signaling that it is a formal declaration/disclaimer distinct from standard inputs.
+2. **Instant Error Dismissal:**
+   - When the user receives a "Wajib disetujui" validation error and clicks to check the box, the error message immediately disappears without requiring the user to press "Kirim" again.
+
+### Defer to Future Milestones (v2.3+)
+- **Multi-checkbox group (Multiple Choice with multiple selections):** Useful for survey tags or multi-select checklists, but fundamentally different from a single legal agreement checkbox.
+- **Embedded Markdown links in checkbox labels (e.g. `[Syarat & Ketentuan](/terms)`):** Could be added later if external terms pages are needed.
+
+---
+
+## 2. Expected User Journey
+
+1. **Admin Journey (Form Builder):**
+   - Admin opens `/admin/forms/[id]/edit`.
+   - In Step 1 (or final step before submit), admin clicks `+ Persetujuan (Checkbox)`.
+   - Admin pastes the text: *"Saya memahami bahwa pembentukan atau pelengkapan tim bergantung pada ketersediaan peserta dan tidak dijamin oleh panitia."*
+   - Admin switches `Wajib diisi` to ON.
+   - Admin saves or clicks `Pratinjau` to test immediately.
+2. **Public User Journey (Filling Form):**
+   - User navigates through the form steps.
+   - On the final step, user sees the prominent Agreement card with the disclaimer.
+   - If user tries to click `Kirim Formulir` without checking:
+     - Form does not submit.
+     - Viewport scrolls smoothly to the agreement card.
+     - Red validation message appears: *"Pernyataan ini wajib disetujui untuk melanjutkan."*
+   - User clicks the checkbox: error instantly clears.
+   - User submits successfully.

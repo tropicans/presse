@@ -1,83 +1,93 @@
-# Architecture Research
+# Architecture Research: Agreement & Checkbox Field Integration
 
-**Domain:** Admin Form Editor Component Architecture
-**Researched:** 2026-09-25
+**Milestone:** v2.2 Agreement & Terms Checkbox Field Support  
+**Domain:** Cross-Tier Architecture & Data Flow  
 **Confidence:** HIGH
 
-## Component Structure & State Architecture
+---
 
-### Current State
-`src/components/AdminFormEditor.tsx` currently houses ~1,260 lines of code in a single client component, managing form metadata, steps, fields, options, auto-save timers, preview synchronization, and monolithic JSX layout.
+## 1. Architectural Component Map
 
-### Target Architecture
-
-Maintain clean cohesion by structuring editor state and introducing clean sub-components or internal sub-views:
-
-```text
-┌────────────────────────────────────────────────────────────────────────┐
-│                        AdminFormEditor (Shell)                         │
-│  - Topbar: Brand, Backlink, Live Preview Toggle, Save / Discard Status │
-├──────────────────────────┬─────────────────────────────────────────────┤
-│   Left / Sidebar Column  │               Main Editor Column            │
-│  ┌────────────────────┐  │  ┌───────────────────────────────────────┐  │
-│  │ Form Info & Share  │  │  │ Step Tabs Bar (Langkah 1, 2, All)     │  │
-│  │ (Title, Slug, Mode)│  │  ├───────────────────────────────────────┤  │
-│  ├────────────────────┤  │  │ Step Toolbar (Add Field to Active)    │  │
-│  │ Quick Jump Outline │  │  ├───────────────────────────────────────┤  │
-│  │ (Field tree & jump)│  │  │ Card Actions (Expand/Collapse All)    │  │
-│  └────────────────────┘  │  ├───────────────────────────────────────┤  │
-│                          │  │ Filtered Field Cards List             │  │
-│                          │  │  - Collapsed Summary Header           │  │
-│                          │  │  - Expanded Detail Panel              │  │
-│                          │  │  - Quick Actions (Duplicate, Reorder) │  │
-│                          │  └───────────────────────────────────────┘  │
-└──────────────────────────┴─────────────────────────────────────────────┘
 ```
-
-### Key State Additions in Editor
-
-```typescript
-// Active step navigation filter: 'all' or specific page.id
-const [activeStepId, setActiveStepId] = useState<string>('all')
-
-// Set of field IDs currently expanded for editing
-const [expandedFieldIds, setExpandedFieldIds] = useState<Set<string>>(new Set())
-
-// Outline panel visibility toggle
-const [showOutline, setShowOutline] = useState<boolean>(true)
-
-// Outline search keyword
-const [outlineSearch, setOutlineSearch] = useState<string>('')
-```
-
-### Field Filtering & Sorting Logic
-
-```typescript
-const visibleFields = useMemo(() => {
-  if (!form) return []
-  if (activeStepId === 'all') return form.fields
-  return form.fields.filter((field) => field.pageId === activeStepId)
-}, [form, activeStepId])
-```
-
-### Seamless DOM Scrolling
-Each field card is given an element id `field-card-${field.id}`. Clicking an item in the outline executes:
-```typescript
-const handleJumpToField = (fieldId: string, pageId: string) => {
-  // If filtering by step and target field is on another step, switch step tab
-  if (activeStepId !== 'all' && activeStepId !== pageId) {
-    setActiveStepId(pageId)
-  }
-  // Auto-expand target card
-  setExpandedFieldIds((prev) => new Set(prev).add(fieldId))
-  // Smooth scroll
-  setTimeout(() => {
-    const el = document.getElementById(`field-card-${fieldId}`)
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, 50)
-}
+┌─────────────────────────────────────────────────────────────┐
+│                       PostgreSQL DB                         │
+│  - FieldType enum updated with 'CHECKBOX'                   │
+│  - form_fields: { type: 'CHECKBOX', required: true/false }  │
+│  - submission_answers: { value: 'true' / 'Setuju' }         │
+└──────────────────────────────▲──────────────────────────────┘
+                               │
+                Prisma Client & Raw SQL Engine
+                               │
+┌──────────────────────────────▼──────────────────────────────┐
+│                    Domain Engine (forms.ts)                 │
+│  - FormFieldType += 'checkbox'                              │
+│  - CheckboxField interface definition                       │
+│  - mapFieldType & mapFormFieldTypeToDb mapping              │
+│  - validateFormSubmission enforcement                       │
+│  - Excel export value mapping                               │
+│  - Analytics distribution aggregation                       │
+└─────────────────▲───────────────────────────▲───────────────┘
+                  │                           │
+                  │ Client State              │ Server Route
+                  ▼                           ▼
+┌─────────────────────────────────┐   ┌─────────────────────────────┐
+│       Admin Form Editor         │   │   Public Form & Preview     │
+│  - fieldTypeOptions += checkbox │   │  - AttendanceForm.tsx       │
+│  - AdminFormEditor UI card      │   │  - AdminFormPreview.tsx     │
+│  - Outline navigation           │   │  - Pure client validation   │
+│  - Compact card header          │   │  - High-contrast checkbox UI│
+└─────────────────────────────────┘   └─────────────────────────────┘
 ```
 
 ---
 
-*Architecture research: 2026-09-25*
+## 2. Component Integration Details
+
+### A. Database Layer
+1. **Migration:**
+   - Add new migration file: `prisma/migrations/20261001000000_add_checkbox_field_type/migration.sql`
+   - SQL: `ALTER TYPE "FieldType" ADD VALUE IF NOT EXISTS 'CHECKBOX';`
+   - Update `prisma/schema.prisma` with `CHECKBOX` in `enum FieldType`.
+
+### B. Core Domain Engine (`src/lib/forms.ts`)
+1. **Type Definitions:**
+   ```ts
+   export type FormFieldType = 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature' | 'yes_no' | 'checkbox'
+
+   export interface CheckboxField extends BaseField {
+     type: 'checkbox'
+   }
+
+   export type FormField = TextField | RadioField | SelectField | SignatureField | YesNoField | CheckboxField
+   ```
+2. **Type Mapping:**
+   - `mapFieldType(type: FieldType)`: handles `CHECKBOX` -> `'checkbox'`.
+   - `mapFormFieldTypeToDb(type: FormFieldType)`: maps `'checkbox'` -> `'CHECKBOX'`.
+   - `allowedTypes` Set in `updateForm`: includes `'checkbox'`.
+3. **Submission Validation (`validateFormSubmission`):**
+   - For `field.type === 'checkbox'`:
+     - If `field.required`: require value to be `'true'` or `'1'` or `'Setuju'`. If missing or falsy, throw `FormSubmissionError(`"${field.label}" wajib disetujui`, 400)`.
+     - Value is stored as normalized `'true'` or `'false'`.
+4. **Excel Export (`exportFormSubmissions`):**
+   - For `field.type === 'checkbox'`, map value `'true'` to `'Disetujui'` and `'false'`/empty to `'-'`.
+5. **Analytics (`getFormAnalytics`):**
+   - Count `'true'` (Disetujui) vs `'false'` (Belum Disetujui) in choice distributions.
+
+### C. Client Validation Module (`src/lib/form-validation.ts`)
+- Add helper `isCheckboxField(field: FormField)`.
+- Client pre-submission checks: if `field.required` and `!formData[field.name] || formData[field.name] === 'false'`, set error `"${field.label} wajib disetujui"`.
+
+### D. UI Components
+1. **Admin Form Editor (`src/components/AdminFormEditor.tsx`):**
+   - Add `'checkbox'` to `fieldTypeOptions` and `fieldTypeLabels['checkbox'] = 'Persetujuan (Checkbox)'`.
+   - Field card renders specific configuration for agreement (clean disclaimer input, helper hint, required toggle).
+2. **Public Form (`src/components/AttendanceForm.tsx`):**
+   - Render `.checkbox-agreement-wrapper`:
+     - Hidden native checkbox `<input type="checkbox">` for standard accessibility & keyboard navigation.
+     - Custom styled square box with SVG checkmark.
+     - Label containing the agreement text.
+     - Auto-dismiss error on click.
+3. **Admin Live Preview (`src/lib/admin-form-preview.ts` & `AdminFormPreview.tsx`):**
+   - Synchronize with new field type for seamless previewing before save.
+4. **Submissions Table (`src/components/AdminFormSubmissions.tsx`):**
+   - Badge display for checkbox answers (`✓ Disetujui`).
