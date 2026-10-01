@@ -1,157 +1,65 @@
-# Roadmap - isian
+# Milestone v2.2: Agreement & Terms Checkbox Field Support
 
-## Milestones
+**Phases:** 41-45  
+**Milestone:** v2.2  
+**Status:** In Progress  
+**Goal:** Menambahkan tipe field khusus Checkbox Persetujuan (Agreement / Terms & Conditions) end-to-end mulai dari skema database, form editor builder, public form & live preview renderer, validasi wajib centang, hingga ekspor & analitik respon.
 
-- ✅ **v1.3 LLM Submission Analysis** — Phases 10-11 (shipped 2026-07-16)
-- ✅ **v1.4 UI Polish & Admin Experience Enhancement** — Phases 12-13 (shipped 2026-08-28)
-- ✅ **v1.5 Admin Form Builder UX & Scalability Enhancement** — Phases 14-16 (shipped 2026-09-25)
-- ✅ **v1.6 Form Input Validation & Submission Integrity** — Phases 17-19 (shipped 2026-09-27)
-- ✅ **v1.7 Monochrome Design System Overhaul** — Phases 20-23 (shipped 2026-09-27)
-- ✅ **v1.8 Editorial Minimalist Monochrome Transformation** — Phases 24-27 (shipped 2026-09-27)
-- ✅ **v1.9 Interactive Analytics & Submission Data Visualization** — Phases 28-30 (shipped 2026-09-27)
-- ✅ **v2.0 UI/UX Density & Information Hierarchy Refactor** — Phases 31-36 (shipped 2026-09-27)
-- ✅ **v2.1 Admin Invitation System & Google OAuth Access Delegation** — Phases 37-40 (shipped 2026-09-28)
+## Phases Summary
 
-## Phases
+### Phase 41: Database Schema Migration & Core Domain Engine
+- **Goal:** Menambahkan tipe field `CHECKBOX` ke enum PostgreSQL `"FieldType"`, memperbarui Prisma schema, mendefinisikan interface `CheckboxField` di domain model `src/lib/forms.ts`, serta menegakkan validasi server-side wajib centang di `validateFormSubmission`.
+- **Requirements:** AGREE-01, AGREE-02
+- **Success Criteria:**
+  1. PostgreSQL enum `"FieldType"` memiliki nilai `'CHECKBOX'` via migrasi Prisma.
+  2. `src/lib/forms.ts` mengekspor tipe `CheckboxField` dan menangani mapping dua arah DB (`mapFieldType`, `mapFormFieldTypeToDb`).
+  3. `validateFormSubmission` berhasil memvalidasi nilai `'true'` saat `required: true`, dan menolak submit dengan pesan error `"[Label] wajib disetujui"` jika belum dicentang.
 
-<details>
-<summary>✅ v1.3 LLM Submission Analysis (Phases 10-11) — SHIPPED 2026-07-16</summary>
+### Phase 42: Admin Form Editor Integration
+- **Goal:** Mengintegrasikan opsi field `Persetujuan (Checkbox)` ke dalam builder `AdminFormEditor.tsx` sehingga admin dapat menambah dan mengonfigurasi klausul persetujuan secara visual.
+- **Requirements:** AGREE-03
+- **Success Criteria:**
+  1. Admin dapat memilih tipe `Persetujuan (Checkbox)` dari daftar penambahan pertanyaan (`fieldTypeOptions`).
+  2. Kartu editor field menampilkan input klausul/disclaimer persetujuan, helper text opsional, dan toggle `Wajib diisi`.
+  3. Kartu terlipat (collapsed card) dan panel outline formulir menampilkan pill `Persetujuan` dan status wajib/opsional secara konsisten.
 
-- [x] Phase 10: LLM API Integration & Schema Setup (1 plan) — completed 2026-07-16
-- [x] Phase 11: Frontend Integration & Markdown Rendering (1 plan) — completed 2026-07-16
+### Phase 43: Public Form & Live Preview Renderer
+- **Goal:** Merender komponen visual checkbox persetujuan monokromatis berstandar aksesibilitas tinggi pada form publik (`AttendanceForm.tsx`) dan live preview admin (`AdminFormPreview.tsx`), lengkap dengan validasi langkah client-side dan auto-focus.
+- **Requirements:** AGREE-04, AGREE-05
+- **Success Criteria:**
+  1. Form publik menampilkan kartu checkbox persetujuan dengan layout rapi, teks klausul jelas, dan status centang yang responsif terhadap klik maupun keyboard (Spacebar).
+  2. Menekan tombol "Lanjut" (multi-step) atau "Kirim" tanpa mencentang persetujuan wajib memicu peringatan visual, auto-scroll, dan auto-focus ke kotak centang.
+  3. Memilih/mencentang kotak centang secara instan menghapus pesan error tanpa reload atau re-click tombol kirim.
 
-See: [.planning/milestones/v1.3-ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/milestones/v1.3-ROADMAP.md)
+### Phase 44: Submissions, Excel Export & Analytics Integration
+- **Goal:** Mengintegrasikan representasi data persetujuan ke tabel submissions admin, ekspor berkas Excel (.xlsx), dan visualisasi analitik respon.
+- **Requirements:** AGREE-06
+- **Success Criteria:**
+  1. Tabel kiriman di `/admin/forms/[id]/submissions` menampilkan jawaban persetujuan dalam bentuk badge ergonomis (`✓ Disetujui`).
+  2. Ekspor Excel di `exportFormSubmissions` mencantumkan nilai `"Disetujui"` yang jelas dan mudah dianalisis.
+  3. Dashboard analitik (`/admin/forms/[id]/analytics`) menyertakan agregasi data centang persetujuan pada distribusi jawaban pertanyaan.
 
-</details>
+### Phase 45: Multi-Tier Verification, Automated Testing & Container Health
+- **Goal:** Memastikan stabilitas sistem, regresi nol, dan kesiapan produksi melalui automated tests, linting, typecheck, build standalone, dan Docker container rebuild.
+- **Requirements:** AGREE-07
+- **Success Criteria:**
+  1. Seluruh unit/integration test baru dan lama lulus 100% di Vitest (`npm test`).
+  2. `npm run lint` dan `npx tsc --noEmit` bersih tanpa peringatan atau error.
+  3. Next.js 16 standalone build berhasil (`npm run build`).
+  4. Docker containers (`app` dan `worker`) berhasil di-rebuild dan status `/api/health` mengembalikan `ok`.
 
-<details>
-<summary>✅ v1.4 UI Polish & Admin Experience Enhancement (Phases 12-13) — SHIPPED 2026-08-28</summary>
+## Traceability
 
-- [x] Phase 12: Sticky Table Headers & Skeleton Shimmer Loaders (1 plan) — completed 2026-08-28
-- [x] Phase 13: Enhanced Empty States & Visual CTAs (1 plan) — completed 2026-08-28
-
-See: [.planning/milestones/v1.4-ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/milestones/v1.4-ROADMAP.md)
-
-</details>
-
-<details>
-<summary>✅ v1.5 Admin Form Builder UX & Scalability Enhancement (Phases 14-16) — SHIPPED 2026-09-25</summary>
-
-- [x] Phase 14: Step Tabs Navigation & Active-Step Insertion (1 plan) — completed 2026-09-25
-- [x] Phase 15: Collapsible Field Cards & Header Summaries (1 plan) — completed 2026-09-25
-- [x] Phase 16: Outline Navigation Panel, 1-Click Duplicate & Sticky Toolbar Polish (1 plan) — completed 2026-09-25
-
-See: [.planning/milestones/v1.5-ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/milestones/v1.5-ROADMAP.md)
-
-</details>
-
-<details>
-<summary>✅ v1.6 Form Input Validation & Submission Integrity (Phases 17-19) — SHIPPED 2026-09-27</summary>
-
-- [x] **Phase 17: Core Format Validators & Server-Side Enforcement** (1 plan) — completed 2026-09-27
-- [x] **Phase 18: Client-Side Form UX & Inline Error Feedback** (1 plan) — completed 2026-09-27
-- [x] **Phase 19: Comprehensive Validation Test Suite & Regression Verification** (1 plan) — completed 2026-09-27
-
-See: [.planning/milestones/v1.6-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/milestones/v1.6-ROADMAP.md)
-
-</details>
-
-<details>
-<summary>✅ v1.7 Monochrome Design System Overhaul (Phases 20-23) — SHIPPED 2026-09-27</summary>
-
-- [x] **Phase 20: Monochrome Design Tokens & Global Visual Foundation** (1 plan) — completed 2026-09-27
-- [x] **Phase 21: Public Form & Confirmation Experience Monochrome Transformation** (1 plan) — completed 2026-09-27
-- [x] **Phase 22: Admin Dashboard & Form Builder Monochrome Overhaul** (1 plan) — completed 2026-09-27
-- [x] **Phase 23: Quality Assurance, Visual Regression & Build Verification** (1 plan) — completed 2026-09-27
-
-See: [.planning/milestones/v1.7-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/milestones/v1.7-ROADMAP.md)
-
-</details>
-
-<details>
-<summary>✅ v1.8 Editorial Minimalist Monochrome Transformation (Phases 24-27) — SHIPPED 2026-09-27</summary>
-
-- [x] **Phase 24: Editorial Serif Typography & Global Zero-Radius Tokens Foundation** (1 plan) — completed 2026-09-27
-- [x] **Phase 25: Public Form & Confirmation Experience Editorial Overhaul** (1 plan) — completed 2026-09-27
-- [x] **Phase 26: Admin Suite & Form Builder Editorial Minimalist Transformation** (1 plan) — completed 2026-09-27
-- [x] **Phase 27: Multi-Tier Verification, Visual Regression & Docker Container Up** (1 plan) — completed 2026-09-27
-
-See: [.planning/milestones/v1.8-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/milestones/v1.8-ROADMAP.md)
-
-</details>
-
-<details>
-<summary>✅ v1.9 Interactive Analytics & Submission Data Visualization (Phases 28-30) — SHIPPED 2026-09-27</summary>
-
-- [x] **Phase 28: Submission Analytics Dashboard & Distribution Visualization UI** (1 plan) — completed 2026-09-27
-- [x] **Phase 29: Dynamic Aggregation API & Advanced Range Filter Engine** (1 plan) — completed 2026-09-27
-- [x] **Phase 30: Analytics Verification, Export Integration & Docker Up** (1 plan) — completed 2026-09-27
-
-See: [.planning/milestones/v1.9-ROADMAP.md](file:///c:/Users/X1%20Carbon/Downloads/Projects/self-hosted-ai-starter-kit/Dev/presse/.planning/milestones/v1.9-ROADMAP.md)
-
-</details>
-
-<details>
-<summary>✅ v2.0 UI/UX Density & Information Hierarchy Refactor (Phases 31-36) — SHIPPED 2026-09-27</summary>
-
-- [x] **Phase 31: Design Tokens, Typography & Spacing Scale Alignment** (1 plan) — completed 2026-09-27
-- [x] **Phase 32: Shared Components & Global Container Density Refactor** (1 plan) — completed 2026-09-27
-- [x] **Phase 33: Admin Dashboard & Formulir List Density Overhaul** (1 plan) — completed 2026-09-27
-- [x] **Phase 34: Form Editor & Question Card Structure Refactor** (1 plan) — completed 2026-09-27
-- [x] **Phase 35: Responsive, Accessibility & Cross-Screen Refinements** (1 plan) — completed 2026-09-27
-- [x] **Phase 36: Multi-Tier Verification, Visual Regression & Docker Container Up** (1 plan) — completed 2026-09-27
-
-<details>
-<summary>✅ v2.1 Admin Invitation System & Google OAuth Access Delegation (Phases 37-40) — SHIPPED 2026-09-28</summary>
-
-- [x] **Phase 37: Database Schema, Migration & Core Domain Helpers for Admin Invitations** (1 plan) — completed 2026-09-28
-- [x] **Phase 38: NextAuth Integration & Admin User Management API Routes** (1 plan) — completed 2026-09-28
-- [x] **Phase 39: Admin Team UI & Public Invitation Claim Flow** (1 plan) — completed 2026-09-28
-- [x] **Phase 40: Multi-Tier Verification, Security Audit & Docker Container Up** (1 plan) — completed 2026-09-28
-
-See: [.planning/milestones/v2.1-ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/milestones/v2.1-ROADMAP.md)
-
-</details>
-
-## Progress
-
-| Phase | Milestone | Plans Complete | Status | Completed |
-|---|---|---|---|---|
-| 10. LLM API Integration & Schema Setup | v1.3 | 1/1 | Complete | 2026-07-16 |
-| 11. Frontend Integration & Markdown Rendering | v1.3 | 1/1 | Complete | 2026-07-16 |
-| 12. Sticky Table Headers & Skeleton Shimmer Loaders | v1.4 | 1/1 | Complete | 2026-08-28 |
-| 13. Enhanced Empty States & Visual CTAs | v1.4 | 1/1 | Complete | 2026-08-28 |
-| 14. Step Tabs Navigation & Active-Step Insertion | v1.5 | 1/1 | Complete | 2026-09-25 |
-| 15. Collapsible Field Cards & Header Summaries | v1.5 | 1/1 | Complete | 2026-09-25 |
-| 16. Outline Navigation Panel, 1-Click Duplicate & Sticky Toolbar Polish | v1.5 | 1/1 | Complete | 2026-09-25 |
-| 17. Core Format Validators & Server-Side Enforcement | v1.6 | 1/1 | Complete | 2026-09-27 |
-| 18. Client-Side Form UX & Inline Error Feedback | v1.6 | 1/1 | Complete | 2026-09-27 |
-| 19. Comprehensive Validation Test Suite & Regression Verification | v1.6 | 1/1 | Complete | 2026-09-27 |
-| 20. Monochrome Design Tokens & Global Visual Foundation | v1.7 | 1/1 | Complete | 2026-09-27 |
-| 21. Public Form & Confirmation Experience Monochrome Transformation | v1.7 | 1/1 | Complete | 2026-09-27 |
-| 22. Admin Dashboard & Form Builder Monochrome Overhaul | v1.7 | 1/1 | Complete | 2026-09-27 |
-| 23. Quality Assurance, Visual Regression & Build Verification | v1.7 | 1/1 | Complete | 2026-09-27 |
-| 24. Editorial Serif Typography & Global Zero-Radius Tokens Foundation | v1.8 | 1/1 | Complete | 2026-09-27 |
-| 25. Public Form & Confirmation Experience Editorial Overhaul | v1.8 | 1/1 | Complete | 2026-09-27 |
-| 26. Admin Suite & Form Builder Editorial Minimalist Transformation | v1.8 | 1/1 | Complete | 2026-09-27 |
-| 27. Multi-Tier Verification, Visual Regression & Docker Container Up | v1.8 | 1/1 | Complete | 2026-09-27 |
-| 28. Submission Analytics Dashboard & Distribution Visualization UI | v1.9 | 1/1 | Complete | 2026-09-27 |
-| 29. Dynamic Aggregation API & Advanced Range Filter Engine | v1.9 | 1/1 | Complete | 2026-09-27 |
-| 30. Analytics Verification, Export Integration & Docker Up | v1.9 | 1/1 | Complete | 2026-09-27 |
-| 31. Design Tokens, Typography & Spacing Scale Alignment | v2.0 | 1/1 | Complete | 2026-09-27 |
-| 32. Shared Components & Global Container Density Refactor | v2.0 | 1/1 | Complete | 2026-09-27 |
-| 33. Admin Dashboard & Formulir List Density Overhaul | v2.0 | 1/1 | Complete | 2026-09-27 |
-| 34. Form Editor & Question Card Structure Refactor | v2.0 | 1/1 | Complete | 2026-09-27 |
-| 35. Responsive, Accessibility & Cross-Screen Refinements | v2.0 | 1/1 | Complete | 2026-09-27 |
-| 36. Multi-Tier Verification, Visual Regression & Docker Container Up | v2.0 | 1/1 | Complete | 2026-09-27 |
-| 37. Database Schema, Migration & Core Domain Helpers for Admin Invitations | v2.1 | 1/1 | Complete | 2026-09-28 |
-| 38. NextAuth Integration & Admin User Management API Routes | v2.1 | 1/1 | Complete | 2026-09-28 |
-| 39. Admin Team UI & Public Invitation Claim Flow | v2.1 | 1/1 | Complete | 2026-09-28 |
-| 40. Multi-Tier Verification, Security Audit & Docker Container Up | v2.1 | 1/1 | Complete | 2026-09-28 |
+| Requirement | Phase | Status |
+|---|---|---|
+| AGREE-01 | Phase 41 | Pending |
+| AGREE-02 | Phase 41 | Pending |
+| AGREE-03 | Phase 42 | Pending |
+| AGREE-04 | Phase 43 | Pending |
+| AGREE-05 | Phase 43 | Pending |
+| AGREE-06 | Phase 44 | Pending |
+| AGREE-07 | Phase 45 | Pending |
 
 ---
 
-*Roadmap updated: 2026-09-28 (v2.1 Shipped)*
-
-
-
+*Roadmap initialized: 2026-10-01*

@@ -3,47 +3,51 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Agreement & Terms Checkbox Field Support
 status: planning
-last_updated: "2026-10-01T07:39:42.256Z"
+last_updated: "2026-10-01T07:44:00.000Z"
 last_activity: 2026-10-01
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
-  total_plans: 0
+  total_plans: 5
   completed_plans: 0
   percent: 0
+current_phase: 41
+current_phase_name: Database Schema Migration & Core Domain Engine
 ---
 
-# Project State: Admin Invitation System & Google OAuth Access Delegation (Completed)
+# Project State: Agreement & Terms Checkbox Field Support
 
 ## Project Reference
 
-See: [.planning/PROJECT.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/PROJECT.md) (updated 2026-09-28)  
-Archived Requirements: [.planning/milestones/v2.1-REQUIREMENTS.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/milestones/v2.1-REQUIREMENTS.md)  
+See: [.planning/PROJECT.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/PROJECT.md) (updated 2026-10-01)  
+Requirements: [.planning/REQUIREMENTS.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/REQUIREMENTS.md)  
 Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/ROADMAP.md)  
 
 **Core value:** Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang compact, modern, dan bernilai guna tinggi.  
-**Milestone status:** Completed (Shipped 2026-09-28).
+**Milestone status:** In Progress (v2.2).
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-10-01 — Milestone v2.2 started
+Phase: Phase 41: Database Schema Migration & Core Domain Engine  
+Plan: —  
+Status: Ready to plan  
+Last activity: 2026-10-01 — Roadmap initialized (5 phases, 7 requirements)
+
+## Phases Summary
+
+- [ ] Phase 41: Database Schema Migration & Core Domain Engine (AGREE-01, AGREE-02)
+- [ ] Phase 42: Admin Form Editor Integration (AGREE-03)
+- [ ] Phase 43: Public Form & Live Preview Renderer (AGREE-04, AGREE-05)
+- [ ] Phase 44: Submissions, Excel Export & Analytics Integration (AGREE-06)
+- [ ] Phase 45: Multi-Tier Verification, Automated Testing & Container Health (AGREE-07)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |---|---|---|
-| Model Undangan Berbasis Token Link (48 Jam) | Opsi B dipilih: Admin men-generate tautan undangan ber-token acak kriptografis (TTL 48 jam) untuk disalin (*copy-to-clipboard*) dan dibagikan langsung tanpa memerlukan SMTP server pihak ketiga | Selesai & Terverifikasi |
-| Autentikasi Tetap Google OAuth (Zero Password) | Pengguna yang diundang tetap masuk menggunakan akun Google resmi mereka; tidak ada penyimpanan password atau risiko kebocoran kredensial di server | Selesai & Terverifikasi |
-| Dual-Tier Roles: SUPERADMIN & ADMIN | `SUPERADMIN` ter-bootstrap dari `ADMIN_EMAILS` di `.env` (misal `tropicans@gmail.com`) dan memiliki hak mengundang/mencabut admin. `ADMIN` biasa hanya dapat mengelola form, submissions, dan melihat analitik | Selesai & Terverifikasi |
-| Two-Step Claim & Binding | Calon admin membuka tautan undangan `/admin/invite?token=...`, sistem memverifikasi validitas token, lalu mengarahkan ke Google Sign-In untuk mengikat email Google terverifikasi | Selesai & Terverifikasi |
-
-## Next Steps
-
-1. Milestone v2.1 telah selesai dan diarsip.
-2. Siap untuk inisiasi milestone berikutnya melalui `/gsd-new-milestone`.
+| First-Class `CHECKBOX` Field Type | Menambahkan nilai `'CHECKBOX'` pada enum PostgreSQL `FieldType` dan `FormFieldType` agar tipe field persetujuan/checkbox menjadi first-class citizen tanpa merusak field yang sudah ada | Direncanakan (Phase 41) |
+| Normalized Boolean Consent Value | Menyimpan nilai jawaban sebagai `'true'` / `'Setuju'`, dan mewajibkan nilai truthy saat `required: true` | Direncanakan (Phase 41) |
+| Accessible Single-Checkbox Pattern | Menggunakan hidden native input `<input type="checkbox">` dengan custom box visual dan label klik penuh untuk mematuhi standar aksesibilitas WCAG dan keyboard navigation (Tab/Space) | Direncanakan (Phase 43) |
 
 ## Quick Tasks Completed
 
