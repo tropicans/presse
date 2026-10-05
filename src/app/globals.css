@@ -9270,4 +9270,261 @@ html[data-theme='dark'] .analytics-correct-badge {
   color: var(--text-secondary, #94a3b8);
 }
 
+/* ==========================================================================
+   Form Description & Rich Formatting
+   ========================================================================== */
+
+.form-description {
+  width: 100%;
+}
+
+.form-description-paragraph {
+  margin: 0 0 10px 0;
+  line-height: 1.62;
+  text-wrap: pretty;
+}
+
+.form-description-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.form-description-fallback {
+  opacity: 0.75;
+  font-style: italic;
+}
+
+.form-description-bold {
+  font-weight: 700;
+}
+
+.form-description-italic {
+  font-style: italic;
+}
+
+.form-description-code {
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.88em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.form-description-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.form-description-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: inherit;
+  line-height: 1.55;
+  text-align: left;
+}
+
+.form-description-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 8px;
+  flex-shrink: 0;
+  background: var(--primary-500, #2563eb);
+}
+
+.form-description-number {
+  font-weight: 700;
+  font-size: 0.9em;
+  min-width: 18px;
+  flex-shrink: 0;
+  color: var(--primary-600, #1d4ed8);
+  margin-top: 1px;
+}
+
+.form-description-item-text {
+  flex: 1;
+  text-align: left;
+}
+
+/* Public Ledger Header Variant */
+.public-ledger-header .form-description {
+  max-width: 640px;
+  margin: 0 auto;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.public-ledger-header .form-description-bold {
+  color: #ffffff;
+}
+
+.public-ledger-header .form-description-code {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.public-ledger-header .form-description-list {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin: 14px auto;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.public-ledger-header .form-description-bullet {
+  background: #67e8f9;
+  box-shadow: 0 0 8px rgba(103, 232, 249, 0.6);
+}
+
+.public-ledger-header .form-description-number {
+  color: #67e8f9;
+}
+
+html[data-theme='dark'] .public-ledger-header .form-description-list {
+  background: rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Admin Preview & Admin Display Variants */
+.form-description-preview,
+.form-description-admin {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.form-description-preview .form-description-list,
+.form-description-admin .form-description-list {
+  background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.02));
+  border: 1px solid var(--border-default, #e5e7eb);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 10px 0;
+}
+
+.form-description-preview .form-description-bullet,
+.form-description-admin .form-description-bullet {
+  background: var(--primary-500, #3b82f6);
+}
+
+.form-description-preview .form-description-number,
+.form-description-admin .form-description-number {
+  color: var(--primary-500, #3b82f6);
+}
+
+/* ==========================================================================
+   Admin Form Editor: Enhanced Description Input & Toolbar
+   ========================================================================== */
+
+.admin-builder-description-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-builder-description-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-builder-field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+}
+
+.admin-builder-desc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-builder-desc-toolbar {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.03));
+  border: 1px solid var(--border-default, #e5e7eb);
+  border-radius: var(--radius-sm, 6px);
+  padding: 2px;
+  gap: 2px;
+}
+
+.admin-desc-tool-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.76rem;
+  font-family: var(--font-family);
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.admin-desc-tool-btn:hover {
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.admin-desc-tabs {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.03));
+  border: 1px solid var(--border-default, #e5e7eb);
+  border-radius: var(--radius-sm, 6px);
+  padding: 2px;
+}
+
+.admin-desc-tab {
+  background: transparent;
+  border: none;
+  font-size: 0.76rem;
+  font-family: var(--font-family);
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-desc-tab.active {
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.editorial-form-editor-shell .admin-builder-description-textarea {
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.55;
+  font-size: 0.85rem;
+}
+
+.admin-builder-description-preview-box {
+  min-height: 140px;
+  padding: 14px 16px;
+  border: 1px dashed var(--border-default, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-surface-subtle, rgba(0, 0, 0, 0.02));
+}
+
 

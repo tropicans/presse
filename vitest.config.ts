@@ -9,7 +9,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
     env: {
       DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/himpun',
     },

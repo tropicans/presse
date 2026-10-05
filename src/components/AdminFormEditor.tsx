@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import FormDescription from '@/components/FormDescription'
 import { getAdminFormStatusLabel } from '@/lib/admin-display'
 import { getAdminPreviewStorageKey, type AdminPreviewField, type AdminPreviewForm, type AdminPreviewPage } from '@/lib/admin-form-preview'
 import HimpunLogo from '@/components/HimpunLogo'
@@ -150,6 +151,71 @@ export default function AdminFormEditor({ formId }: Props) {
   const [showOutline, setShowOutline] = useState(false)
   const [highlightedFieldId, setHighlightedFieldId] = useState<string | null>(null)
   const [autoNewStepOnAdd, setAutoNewStepOnAdd] = useState(false)
+  const [descriptionTab, setDescriptionTab] = useState<'edit' | 'preview'>('edit')
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const handleInsertDescriptionFormatting = (format: 'bold' | 'list' | 'ordered') => {
+    const textarea = descriptionTextareaRef.current
+    const currentVal = form?.description ?? ''
+
+    if (!textarea) {
+      if (format === 'bold') {
+        setForm((prev) => (prev ? { ...prev, description: currentVal + '**teks tebal**' } : prev))
+      } else if (format === 'list') {
+        setForm((prev) => (prev ? { ...prev, description: currentVal + '\n- Poin ketentuan' } : prev))
+      } else if (format === 'ordered') {
+        setForm((prev) => (prev ? { ...prev, description: currentVal + '\n1. Langkah pertama' } : prev))
+      }
+      return
+    }
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selected = currentVal.substring(start, end)
+
+    let replacement = ''
+    let newCursorPos = start
+
+    if (format === 'bold') {
+      if (selected) {
+        replacement = `**${selected}**`
+        newCursorPos = start + replacement.length
+      } else {
+        replacement = '**teks tebal**'
+        newCursorPos = start + 2
+      }
+    } else if (format === 'list') {
+      if (selected) {
+        const lines = selected.split('\n')
+        replacement = lines.map((line) => (line.startsWith('- ') ? line : `- ${line}`)).join('\n')
+        newCursorPos = start + replacement.length
+      } else {
+        const needsNewlineBefore = start > 0 && currentVal[start - 1] !== '\n'
+        replacement = `${needsNewlineBefore ? '\n' : ''}- Poin ketentuan\n`
+        newCursorPos = start + replacement.length
+      }
+    } else if (format === 'ordered') {
+      if (selected) {
+        const lines = selected.split('\n')
+        replacement = lines
+          .map((line, idx) => (line.match(/^\d+[.)]\s/) ? line : `${idx + 1}. ${line}`))
+          .join('\n')
+        newCursorPos = start + replacement.length
+      } else {
+        const needsNewlineBefore = start > 0 && currentVal[start - 1] !== '\n'
+        replacement = `${needsNewlineBefore ? '\n' : ''}1. Langkah ketentuan\n`
+        newCursorPos = start + replacement.length
+      }
+    }
+
+    const nextVal = currentVal.substring(0, start) + replacement + currentVal.substring(end)
+    setForm((prev) => (prev ? { ...prev, description: nextVal } : prev))
+
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(newCursorPos, newCursorPos)
+    }, 0)
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -980,15 +1046,79 @@ export default function AdminFormEditor({ formId }: Props) {
               placeholder="Judul formulir"
             />
           </label>
-          <label className="admin-builder-field">
-            <span>Deskripsi</span>
-            <textarea
-              value={form.description ?? ''}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="admin-builder-textarea"
-              rows={4}
-            />
-          </label>
+          <div className="admin-builder-field admin-builder-description-field">
+            <div className="admin-builder-description-header">
+              <span className="admin-builder-field-label">Deskripsi</span>
+              <div className="admin-builder-desc-actions">
+                <div className="admin-builder-desc-toolbar" role="toolbar" aria-label="Format deskripsi">
+                  <button
+                    type="button"
+                    className="admin-desc-tool-btn"
+                    onClick={() => handleInsertDescriptionFormatting('bold')}
+                    title="Teks Tebal (**teks**)"
+                  >
+                    <strong>B</strong>
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-desc-tool-btn"
+                    onClick={() => handleInsertDescriptionFormatting('list')}
+                    title="Daftar Poin (- poin)"
+                  >
+                    • List
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-desc-tool-btn"
+                    onClick={() => handleInsertDescriptionFormatting('ordered')}
+                    title="Daftar Nomor (1. poin)"
+                  >
+                    1. Angka
+                  </button>
+                </div>
+                <div className="admin-desc-tabs">
+                  <button
+                    type="button"
+                    className={`admin-desc-tab ${descriptionTab === 'edit' ? 'active' : ''}`}
+                    onClick={() => setDescriptionTab('edit')}
+                  >
+                    Tulis
+                  </button>
+                  <button
+                    type="button"
+                    className={`admin-desc-tab ${descriptionTab === 'preview' ? 'active' : ''}`}
+                    onClick={() => setDescriptionTab('preview')}
+                  >
+                    Pratinjau
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {descriptionTab === 'edit' ? (
+              <>
+                <textarea
+                  ref={descriptionTextareaRef}
+                  value={form.description ?? ''}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="admin-builder-textarea admin-builder-description-textarea"
+                  rows={6}
+                  placeholder={`Contoh:\nFormulir ini digunakan untuk pendaftaran seleksi e-sport KORPRI.\n\nKetentuan:\n- Mobile Legends: tim 5-6 orang\n- eFootball: tim 2 orang\n\nPendaftaran dibuka sampai 19 Oktober 2026.`}
+                />
+                <p className="admin-builder-field-hint">
+                  Mendukung baris baru, daftar list (<code>-</code> atau <code>1.</code>), dan teks tebal (<code>**teks**</code>).
+                </p>
+              </>
+            ) : (
+              <div className="admin-builder-description-preview-box">
+                <FormDescription
+                  description={form.description}
+                  fallback="Belum ada deskripsi yang ditulis."
+                  variant="admin"
+                />
+              </div>
+            )}
+          </div>
           <label className="admin-builder-field">
             <span>Pesan sukses</span>
             <textarea

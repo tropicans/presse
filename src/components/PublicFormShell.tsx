@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import AttendanceForm from '@/components/AttendanceForm'
+import FormDescription from '@/components/FormDescription'
 import HimpunLogo from '@/components/HimpunLogo'
 import type { PublicFormDefinition } from '@/lib/forms'
 
@@ -23,9 +24,12 @@ export default function PublicFormShell({ form }: PublicFormShellProps) {
             priority
           />
           <h1 className="header-title">{form.title}</h1>
-          <p className="header-subtitle">
-            {form.description || 'Lengkapi form berikut dengan data yang benar sebelum dikirim.'}
-          </p>
+          <FormDescription
+            description={form.description}
+            fallback="Lengkapi form berikut dengan data yang benar sebelum dikirim."
+            className="header-subtitle"
+            variant="public"
+          />
         </div>
         <div className="form-body public-ledger-body">
           <AttendanceForm form={form} />

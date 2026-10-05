@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import FormDescription from './FormDescription'
 import SearchableSelect from './SearchableSelect'
 import HimpunLogo from '@/components/HimpunLogo'
 import type { AdminPreviewField, AdminPreviewForm, AdminPreviewPage } from '@/lib/admin-form-preview'
@@ -292,7 +293,11 @@ function PreviewSession({ form }: Props) {
       <div className="admin-preview-card">
         <div className="admin-preview-head">
           <h3>{form.title || 'Tanpa Judul'}</h3>
-          <p>{form.description || 'Deskripsi form akan tampil di sini.'}</p>
+          <FormDescription
+            description={form.description}
+            fallback="Deskripsi form akan tampil di sini."
+            variant="preview"
+          />
         </div>
 
         <div className="admin-preview-body">
