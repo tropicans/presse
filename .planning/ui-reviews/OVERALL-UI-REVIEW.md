@@ -36,6 +36,22 @@
    - **Masalah:** Kotak indikator kustom radio (`.radio-custom`) pada state belum terpilih memiliki outline tipis yang sangat halus di latar belakang hitam.  
    - **Solusi:** Berikan kontras border default sebesar `rgba(255, 255, 255, 0.25)` pada mode gelap untuk memperjelas area klik radio bagi pengguna layar beresolusi rendah.
 
+4. **Perbaikan Layout & Overflow Kartu pada Pratinjau / Layar Mobile (RESOLVED)** — *Spacing & Visuals*  
+   - **Masalah:** Pada tampilan mobile pratinjau form (`AdminFormPreview` dan `@media (max-width: 640px)`), kotak pilihan radio (`.radio-label`), tombol navigasi (`.submit-btn`), dan tombol kembali ke atas (`.scroll-top-btn`) melebar keluar dari batas kartu form ("kotaknya keluar2").
+   - **Penyebab Akar Masalah:**
+     1. `.editorial-preview-device-stage.mobile .scroll-top-btn` memiliki aturan `width: 100%` yang dikombinasikan dengan `position: fixed` dan `right: 16px/20px`, merentang keluar batas kartu dan menutupi navigasi.
+     2. `.form-navigation-shell` pada `@media (max-width: 640px)` memiliki `margin-inline: -16px; margin-bottom: -24px;` yang memaksanya keluar melewati border kartu.
+     3. `.form-step-dots` pada 21 langkah tidak memiliki `flex-wrap: wrap`, memaksa lebar minimal baris melebihi lebar layar sempit ponsel.
+     4. Selektor CSS `.editorial-preview-device-stage.mobile` didefinisikan sebelum styling umum `.editorial-preview-device-stage`, sehingga padding mobile tertimpa kembali oleh padding desktop (28px).
+     5. `.admin-preview-body` dan `.radio-group` belum memiliki `grid-template-columns: minmax(0, 1fr)` dan `min-width: 0`, sehingga kolom grid melar mengikuti isi teks.
+   - **Solusi & Verifikasi:**
+     - Ditulis tes reproduksi otomatis pada `src/app/mobile-preview-overflow.test.ts` (5 pengujian).
+     - Menghapus `width: 100%` pada `.scroll-top-btn` dan mengembalikan posisi fixed di pojok kanan bawah.
+     - Menormalkan `margin-inline: 0` pada `.form-navigation-shell` mobile.
+     - Mengaktifkan `flex-wrap: wrap` pada `.form-step-dots` dan membatasi grid kolom dengan `minmax(0, 1fr)`.
+     - Memindahkan dan memperkuat spesifisitas aturan CSS `.editorial-preview-device-stage.mobile`.
+     - Semua 135 tes Vitest dan build container Docker lulus dan sehat (`/api/health -> ok`).
+
 ---
 
 ## Detailed Findings
