@@ -28,7 +28,7 @@ export default function ThemeToggle() {
       return
     }
 
-    syncTheme('dark')
+    syncTheme(mediaQuery.matches ? 'dark' : 'light')
 
     const handleMediaChange = (event: MediaQueryListEvent) => {
       if (window.localStorage.getItem(STORAGE_KEY)) {

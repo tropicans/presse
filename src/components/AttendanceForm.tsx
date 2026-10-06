@@ -288,8 +288,12 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
   }, [steps.length])
 
   useEffect(() => {
+    if (currentStepIndex === 0) {
+      return
+    }
+
     const timeout = window.setTimeout(() => {
-      focusStepField(firstCurrentStepFieldName, currentStepIndex > 0)
+      focusStepField(firstCurrentStepFieldName, true)
     }, 0)
 
     return () => window.clearTimeout(timeout)

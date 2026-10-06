@@ -29,7 +29,7 @@ const themeScript = `(() => {
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
     const theme = storedTheme === 'dark' || storedTheme === 'light'
       ? storedTheme
-      : 'dark'
+      : (systemPrefersDark ? 'dark' : 'light')
 
     document.documentElement.dataset.theme = theme
     document.documentElement.style.colorScheme = theme
