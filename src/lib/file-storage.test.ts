@@ -15,6 +15,12 @@ vi.mock('@/lib/prisma', () => ({
 import {
   recordFileUpload,
   getFileForServing,
+  assertValidFileStatusTransition,
+  InvalidFileStatusTransitionError,
+  linkFilesToSubmission,
+  getFilesBySubmissionId,
+  insertFileUploadJob,
+  readFileUploadPayload,
 } from './file-storage'
 
 describe('file-storage', () => {
@@ -167,6 +173,198 @@ describe('file-storage', () => {
       expect(result?.payload).toBeNull()
       expect(result?.bucket).toBe('form-uploads')
       expect(result?.objectKey).toBe('files/receipt.pdf')
+    })
+  })
+
+  describe('assertValidFileStatusTransition', () => {
+    it('allows valid transitions according to D-03 lifecycle rules', () => {
+      // PENDING_UPLOAD -> QUEUED
+      expect(() => assertValidFileStatusTransition('PENDING_UPLOAD', 'QUEUED')).not.toThrow()
+      // PENDING_UPLOAD -> ORPHANED
+      expect(() => assertValidFileStatusTransition('PENDING_UPLOAD', 'ORPHANED')).not.toThrow()
+      // QUEUED -> SYNCED
+      expect(() => assertValidFileStatusTransition('QUEUED', 'SYNCED')).not.toThrow()
+      // QUEUED -> FAILED
+      expect(() => assertValidFileStatusTransition('QUEUED', 'FAILED')).not.toThrow()
+    })
+
+    it('rejects illegal transitions with InvalidFileStatusTransitionError', () => {
+      // Cannot rewind SYNCED -> PENDING_UPLOAD
+      expect(() => assertValidFileStatusTransition('SYNCED', 'PENDING_UPLOAD')).toThrow(
+        InvalidFileStatusTransitionError,
+      )
+      // Cannot transition FAILED -> QUEUED
+      expect(() => assertValidFileStatusTransition('FAILED', 'QUEUED')).toThrow(
+        InvalidFileStatusTransitionError,
+      )
+      // Cannot transition ORPHANED -> SYNCED
+      expect(() => assertValidFileStatusTransition('ORPHANED', 'SYNCED')).toThrow(
+        InvalidFileStatusTransitionError,
+      )
+      // Cannot skip QUEUED directly from PENDING_UPLOAD to SYNCED
+      expect(() => assertValidFileStatusTransition('PENDING_UPLOAD', 'SYNCED')).toThrow(
+        InvalidFileStatusTransitionError,
+      )
+      // Cannot rewind QUEUED to PENDING_UPLOAD
+      expect(() => assertValidFileStatusTransition('QUEUED', 'PENDING_UPLOAD')).toThrow(
+        InvalidFileStatusTransitionError,
+      )
+    })
+  })
+
+  describe('linkFilesToSubmission', () => {
+    it('returns 0 if fileIds is empty without executing query', async () => {
+      const count = await linkFilesToSubmission({
+        submissionId: 'sub_123',
+        fieldId: 'field_abc',
+        fileIds: [],
+      })
+
+      expect(count).toBe(0)
+      expect(executeRawMock).not.toHaveBeenCalled()
+    })
+
+    it('atomically updates submission_files from PENDING_UPLOAD to QUEUED and returns updated count', async () => {
+      executeRawMock.mockResolvedValue(2)
+
+      const count = await linkFilesToSubmission({
+        submissionId: 'sub_123',
+        fieldId: 'field_abc',
+        fileIds: ['file_1', 'file_2'],
+      })
+
+      expect(count).toBe(2)
+      expect(executeRawMock).toHaveBeenCalledTimes(1)
+
+      const [strings, ...values] = executeRawMock.mock.calls[0] as [TemplateStringsArray, ...unknown[]]
+      const sql = strings.join('?')
+      expect(sql).toContain('UPDATE "submission_files"')
+      expect(sql).toContain("status = 'QUEUED'")
+      expect(sql).toContain("status = 'PENDING_UPLOAD'")
+      expect(sql).toContain("NOW() AT TIME ZONE 'UTC'")
+      expect(values).toContain('sub_123')
+      expect(values).toContain('field_abc')
+    })
+
+    it('throws InvalidFileStatusTransitionError if not all fileIds could be transitioned from PENDING_UPLOAD', async () => {
+      // Only 1 updated out of 2 requested
+      executeRawMock.mockResolvedValue(1)
+
+      await expect(
+        linkFilesToSubmission({
+          submissionId: 'sub_123',
+          fieldId: 'field_abc',
+          fileIds: ['file_1', 'file_2'],
+        }),
+      ).rejects.toThrow(InvalidFileStatusTransitionError)
+    })
+  })
+
+  describe('getFilesBySubmissionId', () => {
+    it('returns empty array when no files exist for submission', async () => {
+      queryRawMock.mockResolvedValue([])
+
+      const files = await getFilesBySubmissionId('sub_empty')
+      expect(files).toEqual([])
+    })
+
+    it('maps database rows to SubmissionFileRecord sorted by created_at', async () => {
+      const date1 = new Date('2026-11-16T10:00:00Z')
+      const date2 = new Date('2026-11-16T10:01:00Z')
+
+      queryRawMock.mockResolvedValue([
+        {
+          id: 'file_1',
+          submission_id: 'sub_123',
+          field_id: 'field_1',
+          original_filename: 'doc1.pdf',
+          sanitized_filename: 'doc1.pdf',
+          mime: 'application/pdf',
+          size: 1024,
+          checksum: 'sha256:111',
+          status: 'QUEUED',
+          bucket: 'form-uploads',
+          object_key: null,
+          last_error: null,
+          created_at: date1,
+          updated_at: date1,
+        },
+        {
+          id: 'file_2',
+          submission_id: 'sub_123',
+          field_id: 'field_2',
+          original_filename: 'doc2.pdf',
+          sanitized_filename: 'doc2.pdf',
+          mime: 'application/pdf',
+          size: 2048,
+          checksum: null,
+          status: 'SYNCED',
+          bucket: 'form-uploads',
+          object_key: 'files/doc2.pdf',
+          last_error: null,
+          created_at: date2,
+          updated_at: date2,
+        },
+      ])
+
+      const files = await getFilesBySubmissionId('sub_123')
+      expect(files).toHaveLength(2)
+      expect(files[0]).toEqual({
+        id: 'file_1',
+        submissionId: 'sub_123',
+        fieldId: 'field_1',
+        originalFilename: 'doc1.pdf',
+        sanitizedFilename: 'doc1.pdf',
+        mime: 'application/pdf',
+        size: 1024,
+        checksum: 'sha256:111',
+        status: 'QUEUED',
+        bucket: 'form-uploads',
+        objectKey: null,
+        lastError: null,
+        createdAt: date1,
+        updatedAt: date1,
+      })
+
+      const [strings, ...values] = queryRawMock.mock.calls[0] as [TemplateStringsArray, ...unknown[]]
+      const sql = strings.join('?')
+      expect(sql).toContain('FROM "submission_files"')
+      expect(sql).toContain('WHERE submission_id = ?')
+      expect(sql).toContain('ORDER BY created_at ASC')
+      expect(values).toContain('sub_123')
+    })
+  })
+
+  describe('insertFileUploadJob and readFileUploadPayload (spool delegates)', () => {
+    it('insertFileUploadJob executes raw SQL inserting job with Buffer payload', async () => {
+      executeRawMock.mockResolvedValue(1)
+      const payload = Buffer.from('test spool')
+
+      await insertFileUploadJob({
+        id: 'job_spool_1',
+        fileId: 'file_spool_1',
+        payload,
+        payloadMime: 'text/plain',
+        payloadSize: payload.byteLength,
+      })
+
+      expect(executeRawMock).toHaveBeenCalledTimes(1)
+      const [strings, ...values] = executeRawMock.mock.calls[0] as [TemplateStringsArray, ...unknown[]]
+      const sql = strings.join('?')
+      expect(sql).toContain('INSERT INTO "file_upload_jobs"')
+      expect(sql).toMatch(/CURRENT_TIMESTAMP/)
+      expect(values).toContain('job_spool_1')
+      expect(values).toContain('file_spool_1')
+    })
+
+    it('readFileUploadPayload normalizes Uint8Array to Buffer', async () => {
+      const rawBytes = new Uint8Array([1, 2, 3])
+      queryRawMock.mockResolvedValue([{ payload: rawBytes, mime: 'text/plain', size: 3 }])
+
+      const result = await readFileUploadPayload('job_spool_1')
+      expect(result).not.toBeNull()
+      expect(result?.payload).toBeInstanceOf(Buffer)
+      expect(Buffer.compare(result!.payload!, Buffer.from(rawBytes))).toBe(0)
     })
   })
 })
