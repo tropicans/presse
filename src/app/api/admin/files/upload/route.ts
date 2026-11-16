@@ -4,8 +4,14 @@ import { getAdminSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { recordFileUpload } from '@/lib/file-storage'
 import { validateUploadFile, MAX_GLOBAL_FILE_SIZE_MB } from '@/lib/file-upload-validation'
+import { stripImageMetadata } from '@/lib/image-exif'
 
 export async function POST(request: Request): Promise<Response> {
+  const contentLength = request.headers.get('content-length')
+  if (contentLength && Number(contentLength) > 12 * 1024 * 1024) {
+    return NextResponse.json({ error: 'Ukuran payload melebihi batas 10 MB' }, { status: 413 })
+  }
+
   const session = await getAdminSession()
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -63,15 +69,18 @@ export async function POST(request: Request): Promise<Response> {
   const sanitizedFilename = validation.sanitizedFilename ?? originalFilename
   const mime = validation.detectedMime ?? 'application/octet-stream'
 
+  // FILE-27: Strip EXIF/GPS/comments metadata before storage
+  const cleanBuffer = stripImageMetadata(buffer, mime)
+
   // Spool in local Postgres and queue for sync
   await recordFileUpload({
     fileId,
     originalFilename,
     sanitizedFilename,
     mime,
-    size: buffer.byteLength,
+    size: cleanBuffer.byteLength,
     checksum: validation.checksum,
-    payload: buffer,
+    payload: cleanBuffer,
   })
 
   // Link file directly to submission with field_id = NULL (marking it as admin origin)

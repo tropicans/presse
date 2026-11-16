@@ -191,7 +191,9 @@ Plans:
   3. Unit tests cover a valid PNG, a valid PDF, a spoofed extension, an oversize file, storage-down → spool → sync, retry with no duplication, and GC TTL — and `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build` all pass
   4. `app` and `worker` rebuild per the AGENTS.md protocol (including the new `minio` service with a persisted volume) and `/api/health` returns `status: ok` with the feature live
 
-**Plans**: TBD
+**Plans:** 1/1 plan complete
+Plans:
+- [x] 53-01-PLAN.md — Hardening, EXIF Stripping, Payload Limiting & Full QA
 **Research flag**: no — cross-cutting verification pass.
 **Threats closed**: full W1-W10 re-verification, especially W2 (memory under parallel load) and W7 (EXIF).
 
@@ -207,9 +209,9 @@ Phases execute in numeric order: 46 → 47 ∥ 48 → 49 → 50 → 51 → 52 �
 | 48. Storage Abstraction & Postgres bytea Spool Layer | 2/2 | Complete | 2026-11-16 |
 | 49. Public Upload API & Client Upload Component | 2/2 | Complete | 2026-11-16 |
 | 50. Sync Worker, Queue Processing, Retry & Orphan GC | 1/1 | Complete | 2026-11-16 |
-| 51. Private File Serving Route | 0/TBD | Not started | - |
-| 52. Admin Surfaces & Export Integration | 0/TBD | Not started | - |
-| 53. Hardening, GC Tuning & QA | 0/TBD | Not started | - |
+| 51. Private File Serving Route | 1/1 | Complete | 2026-11-16 |
+| 52. Admin Surfaces & Export Integration | 1/1 | Complete | 2026-11-16 |
+| 53. Hardening, GC Tuning & QA | 1/1 | Complete | 2026-11-16 |
 
 ## Coverage
 

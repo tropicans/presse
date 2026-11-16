@@ -4,11 +4,17 @@ import { getClientIp, rateLimit } from '@/lib/rate-limit'
 import { getPublicFormBySlug } from '@/lib/forms'
 import { validateUploadFile, MAX_GLOBAL_FILE_SIZE_MB } from '@/lib/file-upload-validation'
 import { recordFileUpload } from '@/lib/file-storage'
+import { stripImageMetadata } from '@/lib/image-exif'
 
 const UPLOAD_RATE_LIMIT = { limit: 30, windowMs: 600_000 } // 30 uploads per 10 minutes per IP
 
 export async function POST(request: NextRequest) {
   try {
+    const contentLength = request.headers.get('content-length')
+    if (contentLength && Number(contentLength) > 12 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Ukuran payload melebihi batas 10 MB' }, { status: 413 })
+    }
+
     const ip = getClientIp(request.headers)
     const rl = rateLimit(`public-file-upload:${ip}`, UPLOAD_RATE_LIMIT)
 
@@ -86,15 +92,18 @@ export async function POST(request: NextRequest) {
     const sanitizedFilename = validation.sanitizedFilename ?? originalFilename
     const mime = validation.detectedMime ?? 'application/octet-stream'
 
+    // FILE-27: Strip EXIF/GPS/comments metadata before storage
+    const cleanBuffer = stripImageMetadata(buffer, mime)
+
     // Spool file to Postgres. Even if MinIO is degraded/down, this succeeds.
     await recordFileUpload({
       fileId,
       originalFilename,
       sanitizedFilename,
       mime,
-      size: buffer.byteLength,
+      size: cleanBuffer.byteLength,
       checksum: validation.checksum,
-      payload: buffer,
+      payload: cleanBuffer,
     })
 
     return NextResponse.json(
@@ -102,7 +111,7 @@ export async function POST(request: NextRequest) {
         fileId,
         originalFilename,
         sanitizedFilename,
-        size: buffer.byteLength,
+        size: cleanBuffer.byteLength,
         mime,
       },
       { status: 200 },

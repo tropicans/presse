@@ -1,0 +1,53 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": "v2.3",
+  "phases": [
+    {
+      "number": "46",
+      "name": "Foundation - Schema, Field Plumbing, MinIO Client & Credentials",
+      "status": "complete"
+    },
+    {
+      "number": "47",
+      "name": "File Field Config, Builder, Editor & Renderer",
+      "status": "complete"
+    },
+    {
+      "number": "48",
+      "name": "Storage Abstraction & Postgres bytea Spool Layer",
+      "status": "pending"
+    },
+    {
+      "number": "49",
+      "name": "Public Upload API & Client Upload Component",
+      "status": "pending"
+    },
+    {
+      "number": "50",
+      "name": "Sync Worker, Queue Processing, Retry & Orphan GC",
+      "status": "pending"
+    },
+    {
+      "number": "51",
+      "name": "Private File Serving Route",
+      "status": "pending"
+    },
+    {
+      "number": "52",
+      "name": "Admin Surfaces & Export Integration",
+      "status": "pending"
+    },
+    {
+      "number": "53",
+      "name": "Hardening, GC Tuning & QA",
+      "status": "pending"
+    }
+  ],
+  "next": {
+    "command": "/gsd-progress --next",
+    "label": "Advance to the next step (plan phase 48)",
+    "reason": "Phase 3 of 8 — needs a plan"
+  },
+  "updated_at": "2026-11-16T08:01:49.242Z"
+}
