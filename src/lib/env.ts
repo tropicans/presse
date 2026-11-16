@@ -17,29 +17,38 @@ export function readRequiredEnvList(env: EnvSource, name: string): string[] {
     .filter(Boolean)
 }
 
-export interface DriveConfig {
-  clientEmail: string
-  privateKey: string
-  folderId: string
+const STORAGE_BUCKET_PATTERN = /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/
+
+export interface StorageConfig {
+  endpoint: string
+  port: number
+  useSSL: boolean
+  accessKey: string
+  secretKey: string
+  bucket: string
 }
 
-const DRIVE_FOLDER_ID_PATTERN = /^[A-Za-z0-9_-]{10,}$/
+export function getStorageConfig(env: EnvSource = process.env): StorageConfig {
+  const endpoint = readRequiredEnv(env, 'MINIO_ENDPOINT')
 
-export function getDriveConfig(env: EnvSource = process.env): DriveConfig {
-  const clientEmail = readRequiredEnv(env, 'GOOGLE_SERVICE_ACCOUNT_EMAIL')
-
-  const rawPrivateKey = readRequiredEnv(env, 'GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY')
-  const privateKey = rawPrivateKey.replace(/\\n/g, '\n')
-  if (!privateKey.includes('BEGIN PRIVATE KEY')) {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY tidak valid')
+  const rawPort = readRequiredEnv(env, 'MINIO_PORT')
+  const port = Number.parseInt(rawPort, 10)
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error('MINIO_PORT tidak valid')
   }
 
-  const folderId = readRequiredEnv(env, 'GOOGLE_DRIVE_FOLDER_ID')
-  if (!DRIVE_FOLDER_ID_PATTERN.test(folderId)) {
-    throw new Error('GOOGLE_DRIVE_FOLDER_ID tidak valid')
+  const rawUseSSL = (env.MINIO_USE_SSL ?? '').trim().toLowerCase()
+  const useSSL = rawUseSSL === 'true' || rawUseSSL === '1'
+
+  const accessKey = readRequiredEnv(env, 'MINIO_ACCESS_KEY')
+  const secretKey = readRequiredEnv(env, 'MINIO_SECRET_KEY')
+
+  const bucket = readRequiredEnv(env, 'MINIO_BUCKET')
+  if (!STORAGE_BUCKET_PATTERN.test(bucket)) {
+    throw new Error('MINIO_BUCKET tidak valid')
   }
 
-  return { clientEmail, privateKey, folderId }
+  return { endpoint, port, useSSL, accessKey, secretKey, bucket }
 }
 
 interface RequestLike {

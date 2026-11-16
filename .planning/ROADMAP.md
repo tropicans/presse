@@ -15,50 +15,54 @@
 
 ## Current Milestone
 
-**Milestone v2.3: File Upload & Google Drive Storage** — Phases 46-53 (planning)
+**Milestone v2.3: File Upload & MinIO Object Storage** — Phases 46-53 (planning)
 
-**Milestone Goal:** Memungkinkan peserta form publik dan admin mengunggah file (gambar/PDF, maks 10 MB) yang tersimpan di Google Drive via service account, dengan antrian lokal + sinkronisasi otomatis ketika Drive gagal, dan akses file yang private melalui aplikasi.
+**Milestone Goal:** Memungkinkan peserta form publik dan admin mengunggah file (gambar/PDF, maks 10 MB) yang tersimpan di object storage S3-compatible (MinIO, self-hosted di compose yang sama), dengan akses file private melalui aplikasi saja.
 
 **Granularity:** standard — phases derive from `research/SUMMARY.md` F1-F8, which already reflected three independent build orders.
 
-**Critical constraint:** Phase 46 MUST prove Google Drive works via a real smoke test (file appears in a **Shared Drive**) before any UI work. A service account has no My-Drive quota (W1); a My-Drive folder means every upload 403s and the system silently degrades to permanent spool fallback.
+**Critical constraint:** Object storage MUST be reachable at boot, but an outage MUST NOT block submissions — bytes land in the Postgres `bytea` spool first, then sync to MinIO asynchronously. Bucket stays private; no public URLs, no presigned links handed to clients.
+
+**Architecture revision (2026-11-16):** The original plan targeted Google Drive via service account into a Shared Drive. Proven infeasible: the operator has no Google Workspace tenant, service accounts cannot create Shared Drives, and a service account has zero My-Drive quota (`storageQuota.limit: "0"`), so My-Drive uploads 403. Phase 46-03's live proof caught this before any feature code shipped. Storage backend replaced with MinIO (S3-compatible); the Drive client, credentials, probe, and packages are removed.
+
 
 ## Phases
 
-- [ ] **Phase 46: Foundation — Schema, Field Plumbing, Drive Client & Credentials** - Prove Shared Drive upload works end-to-end with service account before any feature code
+- [x] **Phase 46: Foundation - Schema, Field Plumbing, MinIO Client & Credentials** - Prove real MinIO upload works end-to-end before any feature code
 - [ ] **Phase 47: File Field Config, Builder, Editor & Renderer** - Admin can add and configure a file field; it renders in editor, preview, and public form
 - [ ] **Phase 48: Storage Abstraction & Postgres bytea Spool Layer** - Raw-SQL domain module owns file records, queue records, and bytea spool lifecycle
-- [ ] **Phase 49: Public Upload API & Client Upload Component** - Anonymous participants upload files on `/f/[slug]` without blocking on Drive availability
-- [ ] **Phase 50: Sync Worker, Queue Processing, Retry & Orphan GC** - Queued files sync to Drive idempotently with capped retry; orphans expire
-- [ ] **Phase 51: Private File Serving Route** - Authenticated admins download files through the app only, never via Drive links
+- [ ] **Phase 49: Public Upload API & Client Upload Component** - Anonymous participants upload files on `/f/[slug]` without blocking on storage availability
+- [ ] **Phase 50: Sync Worker, Queue Processing, Retry & Orphan GC** - Queued files sync to MinIO idempotently with capped retry; orphans expire
+- [ ] **Phase 51: Private File Serving Route** - Authenticated admins download files through the app only, never via storage links
 - [ ] **Phase 52: Admin Surfaces & Export Integration** - Attachment panel, extra admin uploads, submissions table, and Excel export use app URLs
 - [ ] **Phase 53: Hardening, GC Tuning & QA** - OOM-safe limits, EXIF stripping, full test suite, and container rebuild verified
 
 ## Phase Details
 
-### Phase 46: Foundation — Schema, Field Plumbing, Drive Client & Credentials
+### Phase 46: Foundation — Schema, Field Plumbing, MinIO Client & Credentials
 
-**Goal**: The feature's storage backbone is real and proven: `FILE` field type exists in PostgreSQL and TypeScript, both file tables exist via migration, and a service-account client demonstrably uploads a real file into a **Shared Drive** folder.
+**Goal**: The feature's storage backbone is real and proven: `FILE` field type exists in PostgreSQL and TypeScript, both file tables exist via migration, and an S3-compatible client demonstrably uploads a real file into a private MinIO bucket and reads it back byte-identical.
 **Depends on**: Nothing (first phase of v2.3; builds on Phase 45 state)
 **UI hint**: no
 **Requirements**: FILE-01, FILE-02, FILE-03, FILE-04, FILE-05
 **Success Criteria** (what must be TRUE):
 
-  1. A migration creates `submission_files` (id, submission_id nullable, field_id nullable, original/sanitized filename, mime, size, checksum, storage status, drive_file_id, timestamps) and `file_upload_jobs` (`payload bytea`, status PENDING/CLAIMED/DONE/FAILED, attempt counter, next_attempt_at), and `ALTER TYPE "FieldType" ADD VALUE 'FILE'` applies cleanly on an existing database
+  1. A migration creates `submission_files` (id, submission_id nullable, field_id nullable, original/sanitized filename, mime, size, checksum, storage status, object_key, bucket, timestamps) and `file_upload_jobs` (`payload bytea`, status PENDING/CLAIMED/DONE/FAILED, attempt counter, next_attempt_at), and `ALTER TYPE "FieldType" ADD VALUE 'FILE'` applies cleanly on an existing database
   2. `FILE` is recognized end-to-end in `src/lib/forms.ts` unions, mappers, and the domain form-field model, alongside the Prisma schema parity models
-  3. A smoke test uploads a real file through the Drive client and the file actually appears in the configured **Shared Drive** folder (created with `supportsAllDrives: true` + `driveId`), not merely returns HTTP 200
-  4. Startup probe fails hard and loudly when `GOOGLE_DRIVE_FOLDER_ID` points at a non-Shared-Drive folder or credentials are invalid — the app does not boot into a permanent silent-spool state
-  5. New env vars (`GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`) are documented in `.env.example` and validated at boot; the service-account key is never reachable from the client bundle or logs
+  3. A smoke test uploads a real file through the storage client, reads it back byte-identical, and proves the bucket rejects anonymous access — not merely returns HTTP 200
+  4. A connectivity probe runs at boot and reports degraded state (never a silent failure) when MinIO is unreachable, without preventing the app from booting into spool-only mode
+  5. New env vars (`MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`) are documented in `.env.example` and validated at boot; the secret key is never reachable from the client bundle or logs
 
-**Plans:** 2/3 plans executed
+**Plans:** 4/4 plans executed (46-01, 46-02, 46-04); 46-03 closed as blocked, superseded by the MinIO architecture revision
 Plans:
 
 - [x] 46-01-PLAN.md — Migration (FILE enum + submission_files + file_upload_jobs + bytea spool), Prisma parity, `FILE` field plumbing in `src/lib/forms.ts`, `src/lib/file-jobs.ts` bytea helpers; live-DB `prisma migrate deploy` proof
-- [x] 46-02-PLAN.md — Package legitimacy checkpoint, `getDriveConfig` + `.env.example`, `src/lib/drive.ts` (probe, classifier, re-probe timer), degraded health branch, `src/instrumentation.ts` boot wire, standalone build/boot smoke
-- [ ] 46-03-PLAN.md — Shared Drive prerequisites checkpoint, `scripts/ci-drive-smoke.mjs` (contractual exit codes), real live upload proof inside Shared Drive (W1)
+- [x] 46-02-PLAN.md — ~~Drive client, credentials, probe, health branch, instrumentation wire~~ **superseded**: the Drive client, credentials, probe, health branch and instrumentation wire were removed in the MinIO revision; only the `FILE`-independent build/boot lessons carry forward
+- [ ] 46-03-PLAN.md — ~~Shared Drive prerequisites + live upload proof~~ **blocked and closed**: live API probe returned `NOT_SHARED_DRIVE` (folder `1JFVg1xu4jfFj3ZnOJgP3ShFFiT8dc6r0` has no `driveId`, owned by `kelehhadari@gmail.com`, `drives.list` empty, `canCreateDrives: false`, `storageQuota.limit: "0"`). No Workspace tenant exists, so the requirement cannot be met as written.
+- [x] 46-04-PLAN.md - **MinIO replacement** (complete): Drive client/credentials/probe/packages removed; `src/lib/storage.ts` (S3 client, path-style, private bucket, put/get/delete/head, deterministic `buildObjectKey`), `src/lib/storage-probe.ts` + boot wire with degrade-never-crash 60 s re-probe, `/api/health` storage branch, in-place column swap migration, `minio` compose service (digest-pinned, no host port) with a persisted `minio_data` volume, and `scripts/ci-storage-smoke.mjs` — live round-trip byte-identical, anonymous GET refused (`SMOKE_EXIT=0`)
 
-**Research flag**: yes — Shared Drive provisioning, service-account membership, and `supportsAllDrives`/`driveId`/`appProperties` specifics must be confirmed against live Google Workspace before coding (SUMMARY.md Research Flags: F1).
-**Threats closed**: W1 (Shared Drive proof — non-negotiable), W10 (credential leak).
+**Research flag**: yes — MinIO container pinning, S3 client package choice (`@aws-sdk/client-s3` + presigner), path-style addressing requirement, and the private-bucket ACL model must be confirmed against a live container before coding (SUMMARY.md Research Flags: F1, rewritten).
+**Threats closed**: W1 (real storage round-trip proof — non-negotiable), W10 (credential leak: secret key server-only, never in client bundle or image layers).
 
 ### Phase 47: File Field Config, Builder, Editor & Renderer
 
@@ -93,14 +97,14 @@ Plans:
 
 ### Phase 49: Public Upload API & Client Upload Component
 
-**Goal**: An anonymous participant can upload a file on `/f/[slug]`, see progress and a preview, remove it before submitting, and still complete their submission when Google Drive is down.
+**Goal**: An anonymous participant can upload a file on `/f/[slug]`, see progress and a preview, remove it before submitting, and still complete their submission when object storage is down.
 **Depends on**: Phase 46, Phase 47, Phase 48
 **Requirements**: FILE-08, FILE-09, FILE-10, FILE-11, FILE-12
 **Success Criteria** (what must be TRUE):
 
   1. Participant can drag-and-drop or use the file picker on `/f/[slug]`, see upload progress, view an image/PDF preview, and remove a file before submitting — no external drag-and-drop library used
   2. `POST /api/public/files/upload` returns HTTP 400 with a clear message for a file whose bytes contradict its extension (magic-byte mismatch), for size over the configured cap, and for count over the field's maximum — and returns `{fileId}` on success
-  3. Upload returns HTTP 200 and a usable `{fileId}` even when Google Drive is failing; the submission still goes through and the file lands in the local queue
+  3. Upload returns HTTP 200 and a usable `{fileId}` even when MinIO is unreachable; the submission still goes through and the file lands in the local spool queue
   4. Server-side submit validation rejects a submission whose required file field is empty and rejects a `fileId` that does not belong to that upload session
   5. Upload is limited by rate and by bytes-per-window per client IP, and a spoofed `X-Forwarded-For` does not grant a fresh allowance
 
@@ -111,20 +115,20 @@ Plans:
 
 ### Phase 50: Sync Worker, Queue Processing, Retry & Orphan GC
 
-**Goal**: Files that landed in the local queue reach Google Drive automatically, survive crashes and retries without duplicating, and abandoned uploads stop consuming storage.
+**Goal**: Files that landed in the local spool reach MinIO automatically, survive crashes and retries without duplicating, and abandoned uploads stop consuming storage.
 **Depends on**: Phase 48, Phase 49
 **Requirements**: FILE-13, FILE-14, FILE-15, FILE-16, FILE-25
 **Success Criteria** (what must be TRUE):
 
-  1. A queued file is claimed with `FOR UPDATE SKIP LOCKED` and pushed to Drive exactly once; a crash after Drive upload but before the SYNCED marker does not create a second Drive file on the next attempt
+  1. A queued file is claimed with `FOR UPDATE SKIP LOCKED` and pushed to MinIO exactly once; a crash after the object upload but before the SYNCED marker does not create a duplicate object on the next attempt (deterministic `object_key` + idempotent PUT)
   2. A failing job retries with exponential backoff, gives up at 5 attempts and becomes `FAILED`, and a permanently failing job does not starve other queued jobs
   3. The existing `scripts/submission-worker.mjs` drives file sync automatically alongside submission processing using the same `x-worker-token` — no new container or compose service added
   4. After a file reaches `SYNCED`, its `bytea` payload is nulled so database size stays bounded
-  5. A file uploaded but never attached to a submission is swept to `ORPHANED` after its TTL, and its Drive blob and spool bytes are cleaned up
+  5. A file uploaded but never attached to a submission is swept to `ORPHANED` after its TTL, and its MinIO object and spool bytes are cleaned up
 
 **Plans**: TBD
 **Research flag**: no — mirrors the proven `submission_jobs` claim loop while keeping tables separate.
-**Threats closed**: W9 (no duplicate Drive files, no starvation), W8 (orphan/TTL sweep).
+**Threats closed**: W9 (no duplicate objects, no starvation), W8 (orphan/TTL sweep).
 
 ### Phase 51: Private File Serving Route
 
@@ -133,10 +137,10 @@ Plans:
 **Requirements**: FILE-17, FILE-18, FILE-19
 **Success Criteria** (what must be TRUE):
 
-  1. `GET /api/files/[id]` serves the file for a valid admin session, streaming from Drive when synced and from the spool when still pending — both paths behind one route
+  1. `GET /api/files/[id]` serves the file for a valid admin session, streaming from MinIO when synced and from the spool when still pending — both paths behind one route
   2. Responses always carry `Content-Disposition: attachment` with a sanitized filename and `X-Content-Type-Options: nosniff`, so an uploaded HTML/SVG cannot execute in the admin origin
   3. A request without a session, with a nonexistent ID, with an ID belonging to a file outside the admin's scope, or with a traversal attempt (`../`) is rejected
-  4. No file URL ever points at Google Drive; files remain private in the Drive and are reachable only through the app
+  4. No file URL ever points at MinIO or any storage host; the bucket stays private and files are reachable only through the app
 
 **Plans**: TBD
 **Research flag**: no — auth-gated route + `Content-Disposition` recipe is documented in PITFALLS.md.
@@ -144,16 +148,16 @@ Plans:
 
 ### Phase 52: Admin Surfaces & Export Integration
 
-**Goal**: Admins see, download, and add attachments on a submission, and exported spreadsheets carry filename plus app URL — never a Drive link, never a live formula.
+**Goal**: Admins see, download, and add attachments on a submission, and exported spreadsheets carry filename plus app URL — never a storage link, never a live formula.
 **Depends on**: Phase 51 (working serving route), Phase 50 (synced and unsynced states)
 **Requirements**: FILE-20, FILE-21, FILE-22, FILE-23, FILE-24
 **Success Criteria** (what must be TRUE):
 
   1. The submission detail attachment panel lists each file with name, type, size, an origin tag (participant / admin), a status badge (`Menunggu sinkronisasi` / `Tersinkron`), and a download that goes through `/api/files/[id]`
   2. Admin can add an extra attachment via `POST /api/admin/files/upload` without altering any participant answer
-  3. The submissions table shows a file answer as a clickable filename pointing at the app URL, not raw JSON and not a Drive URL
+  3. The submissions table shows a file answer as a clickable filename pointing at the app URL, not raw JSON and not a storage URL
   4. Excel export writes `filename + app URL`, prefixes filenames starting with `=`, `+`, `-`, or `@` to defuse formula injection, and the existing 500-row split still holds
-  5. Deleting a submission or form removes its file records, spool payloads, and Drive blobs
+  5. Deleting a submission or form removes its file records, spool payloads, and MinIO objects
 
 **Plans**: TBD
 **Research flag**: no — export/table formatting follows existing `forms.ts` formatter patterns.
@@ -169,8 +173,8 @@ Plans:
 
   1. Concurrent large uploads do not OOM the app: body size is bounded explicitly in the route handler and in Nginx, and a parallel-load memory check stays within budget
   2. EXIF/GPS metadata is absent from stored images
-  3. Unit tests cover a valid PNG, a valid PDF, a spoofed extension, an oversize file, Drive-down → spool → sync, retry with no duplication, and GC TTL — and `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build` all pass
-  4. `app` and `worker` rebuild per the AGENTS.md protocol and `/api/health` returns `status: ok` with the feature live
+  3. Unit tests cover a valid PNG, a valid PDF, a spoofed extension, an oversize file, storage-down → spool → sync, retry with no duplication, and GC TTL — and `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build` all pass
+  4. `app` and `worker` rebuild per the AGENTS.md protocol (including the new `minio` service with a persisted volume) and `/api/health` returns `status: ok` with the feature live
 
 **Plans**: TBD
 **Research flag**: no — cross-cutting verification pass.
@@ -183,7 +187,7 @@ Phases execute in numeric order: 46 → 47 ∥ 48 → 49 → 50 → 51 → 52 �
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 46. Foundation — Schema, Field Plumbing, Drive Client & Credentials | 2/3 | In Progress|  |
+| 46. Foundation - Schema, Field Plumbing, MinIO Client & Credentials | 4/4 | Complete (46-03 closed; 46-04 delivered MinIO) |  |
 | 47. File Field Config, Builder, Editor & Renderer | 0/TBD | Not started | - |
 | 48. Storage Abstraction & Postgres bytea Spool Layer | 0/TBD | Not started | - |
 | 49. Public Upload API & Client Upload Component | 0/TBD | Not started | - |

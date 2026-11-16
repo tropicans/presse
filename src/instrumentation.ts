@@ -3,7 +3,7 @@ export async function register(): Promise<void> {
     return
   }
 
-  const { startDriveProbe } = await import('./lib/drive')
-  await startDriveProbe()
-  console.debug('[instrumentation] drive probe started')
+  const { startStorageProbe } = await import('./lib/storage-probe')
+  await startStorageProbe()
+  console.debug('[instrumentation] storage probe started')
 }

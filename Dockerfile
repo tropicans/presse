@@ -28,9 +28,12 @@ ENV GOOGLE_CLIENT_ID="build-time-placeholder.apps.googleusercontent.com"
 ENV GOOGLE_CLIENT_SECRET="build-time-placeholder-secret"
 ENV ADMIN_EMAILS="admin@example.com"
 ENV INTERNAL_WORKER_TOKEN="build-time-placeholder-token"
-ENV GOOGLE_SERVICE_ACCOUNT_EMAIL="build-time-placeholder@build.iam.gserviceaccount.com"
-ENV GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="build-time-placeholder"
-ENV GOOGLE_DRIVE_FOLDER_ID="build-time-placeholder"
+ENV MINIO_ENDPOINT="build-time-placeholder"
+ENV MINIO_PORT="9000"
+ENV MINIO_USE_SSL="false"
+ENV MINIO_ACCESS_KEY="build-time-placeholder"
+ENV MINIO_SECRET_KEY="build-time-placeholder"
+ENV MINIO_BUCKET="form-uploads"
 
 # Build Next.js standalone output
 RUN npm run build

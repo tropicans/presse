@@ -10,24 +10,25 @@ Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepa
 Milestone **v2.2 Agreement & Terms Checkbox Field Support** shipped (2026-10-01).
 Phases 1-45 completed across milestones v1.1 - v2.2.
 
-## Current Milestone: v2.3 File Upload & Google Drive Storage
+## Current Milestone: v2.3 File Upload & MinIO Object Storage
 
-**Goal:** Memungkinkan peserta form publik dan admin mengunggah file (gambar/PDF, maks 10 MB) yang tersimpan di Google Drive via service account, dengan antrian lokal + sinkronisasi otomatis ketika Drive gagal, dan akses file yang private melalui aplikasi.
+**Goal:** Memungkinkan peserta form publik dan admin mengunggah file (gambar/PDF, maks 10 MB) yang tersimpan di object storage S3-compatible (MinIO self-hosted di compose yang sama), dengan antrian lokal + sinkronisasi otomatis ketika storage gagal, dan akses file yang private melalui aplikasi.
 
 **Target features:**
 - Field tipe `FILE` pada form builder: konfigurasi label, wajib/tidak, batas ukuran, tipe file yang diizinkan, jumlah file
 - Halaman/komponen upload pada form publik `/f/[slug]` (drag-drop + tombol pilih file, progres, preview, hapus sebelum submit)
-- API upload publik yang memvalidasi tipe & ukuran file, lalu menyimpan ke Google Drive (service account) atau ke antrian lokal bila Drive gagal
+- API upload publik yang memvalidasi tipe & ukuran file, lalu menyimpan ke MinIO atau ke antrian lokal bila storage gagal
 - Panel lampiran pada detail submission admin: lihat daftar file, unduh lewat redirect terproteksi sesi admin, dan unggah lampiran tambahan
-- Halaman `/api/files/[id]` (atau setara) yang menyajikan file private hanya untuk admin terautentikasi, dengan fallback lokal bila Drive belum tersinkron
-- Worker/proses antrian yang menyinkronkan file pending ke Google Drive secara otomatis dan memperbarui status di database
-- Integrasi ekspor Excel dan tampilan submissions: kolom file menampilkan nama file dan URL aplikasi, bukan URL Drive
+- Halaman `/api/files/[id]` (atau setara) yang menyajikan file private hanya untuk admin terautentikasi, dengan fallback lokal bila file belum tersinkron
+- Worker/proses antrian yang menyinkronkan file pending ke MinIO secara otomatis dan memperbarui status di database
+- Integrasi ekspor Excel dan tampilan submissions: kolom file menampilkan nama file dan URL aplikasi, bukan URL storage
 
 **Key context:**
-- Storage: Google Drive API via service account; `GOOGLE_DRIVE_FOLDER_ID` + kredensial service account dari env
-- Kegagalan Drive tidak boleh memblokir submission — file masuk antrian lokal lalu disinkronkan otomatis
-- File private: tidak ada "anyone with link"; akses hanya via aplikasi (redirect terproteksi)
+- Storage: MinIO (S3-compatible) via `@aws-sdk/client-s3`; env `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`; bucket private, path-style addressing
+- Kegagalan storage tidak boleh memblokir submission — file masuk antrian lokal (`file_upload_jobs` bytea) lalu disinkronkan otomatis
+- File private: tidak ada URL storage/presigned link ke klien; akses hanya via aplikasi (streaming terproteksi sesi admin)
 - Form publik tetap tanpa login (konsisten dengan alur `/f/[slug]` sekarang); andalkan rate limit + validasi tipe/ukuran server-side
+- **Revisi arsitektur (2026-11-16):** backend awal Google Drive dicabut — tanpa tenant Workspace, service account tidak bisa membuat Shared Drive dan kuotanya `0` sehingga selalu 403. Kode, kredensial, probe, dan paket Drive dihapus; fase 46 diganti plan 46-04 (MinIO)
 
 <details>
 <summary>Archived Milestone v2.2: Agreement & Terms Checkbox Field Support (Shipped: 2026-10-01)</summary>
@@ -169,7 +170,7 @@ Phases 1-45 completed across milestones v1.1 - v2.2.
 - ✓ **BUILDER-10**: Sticky Workspace Header & Toolbar — Sticky action header dan toolbar yang menjaga tombol kontrol tetap dalam jangkauan (Validated in Phase 16)
 
 ### Active
-- [ ] **FILE-01** s/d **FILE-07**: File Upload & Google Drive Storage (v2.3 — dirumuskan di REQUIREMENTS.md)
+- [ ] **FILE-01** s/d **FILE-07**: File Upload & MinIO Object Storage (v2.3 - dirumuskan di REQUIREMENTS.md)
 - [ ] **AGREE-01**: Skema DB dan model domain untuk tipe field `CHECKBOX` / persetujuan, termasuk validasi server-side wajib centang saat `required: true`.
 - [ ] **AGREE-02**: Antarmuka konfigurasi tipe field Checkbox Persetujuan pada Form Editor (`AdminFormEditor.tsx`) dengan teks klausul dan toggle wajib.
 - [ ] **AGREE-03**: Rendering elemen checkbox persetujuan interaktif pada `AttendanceForm.tsx` dan `AdminFormPreview.tsx` dengan validasi client-side auto-scroll/focus saat belum dicentang.

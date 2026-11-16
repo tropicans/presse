@@ -1,21 +1,21 @@
 import { prisma } from './prisma'
-import { getDriveState } from './drive'
+import { getStorageState } from './storage-probe'
 
 export type HealthResult =
   | { status: 'ok' }
-  | { status: 'degraded'; drive: { state: 'degraded'; reason: string } }
+  | { status: 'degraded'; storage: { state: 'degraded'; reason: string } }
 
 export async function checkHealth(): Promise<HealthResult> {
   await prisma.$queryRaw`SELECT 1`
 
-  const drive = getDriveState()
+  const storage = getStorageState()
 
-  if (drive.state === 'ok') {
+  if (storage.state === 'ok') {
     return { status: 'ok' }
   }
 
   return {
     status: 'degraded',
-    drive: { state: 'degraded', reason: drive.reason },
+    storage: { state: 'degraded', reason: storage.reason },
   }
 }

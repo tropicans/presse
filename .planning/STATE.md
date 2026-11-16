@@ -1,26 +1,26 @@
 ---
 gsd_state_version: 1.0
 milestone: v2.3
-milestone_name: File Upload & Google Drive Storage
-current_phase: 46
-current_phase_name: Foundation — Schema, Field Plumbing, Drive Client & Credentials
-status: executing
-stopped_at: Completed 46-02-PLAN.md
-last_updated: "2026-11-16T04:20:46.469Z"
+milestone_name: File Upload & MinIO Object Storage
+current_phase: 47
+current_phase_name: File Field Builder Configuration
+status: ready_to_plan
+stopped_at: Completed 46-04-PLAN.md (phase 46 closed)
+last_updated: "2026-11-16T12:45:00.000Z"
 last_activity: 2026-11-16
-last_activity_desc: Phase 46 plan 01 executed (3 tasks, commits 32d54e2, d5802e5, 6f45b91)
+last_activity_desc: Phase 46 plan 04 executed - Drive replaced by MinIO, live smoke PASS, phase 46 closed
 progress:
-  total_phases: 1
-  completed_phases: 0
-  total_plans: 3
-  completed_plans: 2
+  total_phases: 8
+  completed_phases: 1
+  total_plans: 4
+  completed_plans: 4
 ---
 
-# Project State: Agreement & Terms Checkbox Field Support
+# Project State: Form — File Upload & MinIO Object Storage
 
 ## Project Reference
 
-See: [.planning/PROJECT.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/PROJECT.md) (updated 2026-10-01)  
+See: [.planning/PROJECT.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/PROJECT.md) (updated 2026-11-16)  
 Archived Requirements: [.planning/milestones/v2.2-REQUIREMENTS.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/milestones/v2.2-REQUIREMENTS.md)  
 Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jott/.planning/ROADMAP.md)  
 
@@ -29,10 +29,10 @@ Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jot
 
 ## Current Position
 
-Phase: 46 — Foundation — Schema, Field Plumbing, Drive Client & Credentials
-Plan: 2 complete (of 03)
-Status: Executing — plan 01 done, plan 02 next
-Last activity: 2026-11-16 — Phase 46 plan 01 executed (3 tasks, commits 32d54e2, d5802e5, 6f45b91)
+Phase: 47 — File Field Builder Configuration
+Plan: —
+Status: Ready to plan — phase 46 closed (4/4 plans)
+Last activity: 2026-11-16 — Phase 46 plan 04 executed: Drive removed, MinIO delivered, live smoke `PASS` / exit 0, `/api/health` = `{"status":"ok"}`
 
 ## Phases Summary
 
@@ -41,16 +41,22 @@ Last activity: 2026-11-16 — Phase 46 plan 01 executed (3 tasks, commits 32d54e
 - [x] Phase 43: Public Form & Live Preview Renderer (AGREE-04, AGREE-05) (Completed 2026-10-01)
 - [x] Phase 44: Submissions, Excel Export & Analytics Integration (AGREE-06) (Completed 2026-10-01)
 - [x] Phase 45: Multi-Tier Verification, Automated Testing & Container Health (AGREE-07) (Completed 2026-10-01)
+- [x] Phase 46: Foundation — Schema, Field Plumbing, MinIO Client & Credentials (FILE-01..FILE-05) (Completed 2026-11-16)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |---|---|---|
-| First-Class `CHECKBOX` Field Type | Menambahkan nilai `'CHECKBOX'` pada enum PostgreSQL `FieldType` dan `FormFieldType` agar tipe field persetujuan/checkbox menjadi first-class citizen tanpa merusak field yang sudah ada | Direncanakan (Phase 41) |
-| Normalized Boolean Consent Value | Menyimpan nilai jawaban sebagai `'true'` / `'Setuju'`, dan mewajibkan nilai truthy saat `required: true` | Direncanakan (Phase 41) |
-| Accessible Single-Checkbox Pattern | Menggunakan hidden native input `<input type="checkbox">` dengan custom box visual dan label klik penuh untuk mematuhi standar aksesibilitas WCAG dan keyboard navigation (Tab/Space) | Direncanakan (Phase 43) |
+| First-Class `CHECKBOX` Field Type | Menambahkan nilai `'CHECKBOX'` pada enum PostgreSQL `FieldType` dan `FormFieldType` agar tipe field persetujuan/checkbox menjadi first-class citizen tanpa merusak field yang sudah ada | Diterapkan (Phase 41) |
+| Normalized Boolean Consent Value | Menyimpan nilai jawaban sebagai `'true'` / `'Setuju'`, dan mewajibkan nilai truthy saat `required: true` | Diterapkan (Phase 41) |
+| Accessible Single-Checkbox Pattern | Menggunakan hidden native input `<input type="checkbox">` dengan custom box visual dan label klik penuh untuk mematuhi standar aksesibilitas WCAG dan keyboard navigation (Tab/Space) | Diterapkan (Phase 43) |
 | Single-Folder Migration (D-11) | Satu folder `20261116000000_add_file_upload_tables` berisi `ALTER TYPE FieldType ADD VALUE 'FILE'` + 2 `CREATE TABLE IF NOT EXISTS`; `prisma migrate deploy` menerima keduanya dalam satu transaksi | Risiko OQ-3 tidak terjadi, contingency split-folder tidak dipakai (Phase 46-01) |
 | BYTEA Read Normalized to Buffer | `@prisma/adapter-pg` mengembalikan BYTEA sebagai `Uint8Array`, bukan `Buffer`; `readFileUploadPayload` menormalkan via `Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength)` di batas helper | Diterapkan (Phase 46-01) |
+| **Drive → MinIO (revisi arsitektur)** | Google Drive terbukti mustahil: tidak ada tenant Workspace, `canCreateDrives: false`, `drives.list: []`, folder My Drive dengan `storageQuota.limit: "0"`, `files.get` @ `drive.file` → 404. Klien/kredensial/probe/paket Drive dicabut; MinIO self-hosted di compose stack yang sama | Diterapkan (Phase 46-04) |
+| Degraded-Only Storage Probe (D-01 revisi) | MinIO hidup di stack yang sama, jadi tidak ada kelas kegagalan boot yang layak membuat proses crash. Kredensial invalid atau bucket absen → degraded + re-probe 60 detik; spool `file_upload_jobs` menyerap submission | Diterapkan (Phase 46-04) |
+| Deterministic Object Key (D-13) | `buildObjectKey(fileId)` = `files/<fileId>`, tanpa timestamp atau suffix acak; PUT S3 idempoten per key, retry menimpa objek yang sama sehingga rekonsiliasi duplikat tidak pernah diperlukan | Diterapkan (Phase 46-04) |
+| Object Identity = `(bucket, object_key)` (D-14) | Unique index parsial `submission_files_bucket_object_key_key` mencerminkan identitas objek sebenarnya, bukan key saja | Diterapkan (Phase 46-04) |
+| MinIO Tanpa Port Host | Console dan API tidak boleh publik; service `minio` tidak punya `ports:` mapping dan hanya terjangkau di network compose | Diterapkan (Phase 46-04) |
 
 ## Quick Tasks Completed
 
@@ -61,23 +67,29 @@ Last activity: 2026-11-16 — Phase 46 plan 01 executed (3 tasks, commits 32d54e
 | `20260928-fix-canonical-invite-url-origin` | 2026-09-28 | Perbaikan origin URL tautan undangan admin agar memprioritaskan domain kanonikal (NEXTAUTH_URL/form.ppkasn.id) dan menyaring host 0.0.0.0 | Complete ✓ |
 | `20260928-form-field-copy-from-feature` | 2026-09-28 | Fitur salin nilai pertanyaan (Checkbox 'Sama dengan...') pada Form Builder, Public Form, dan Live Preview | Complete ✓ |
 | `261116-d2w-ganti-dari-himpun-menjadi-form` | 2026-11-16 | Hapus sisa identitas Himpun di kode runtime: rename `HimpunLogo` → `FormLogo` di 12 konsumen, buang class `himpun-logo-*`, bersihkan nama DB default `himpun` di `vitest.config.ts` | Complete ✓ |
-| `261116-cfn-ganti-jangan-jadi-himpun-tapi-form-kemud` | 2026-11-16 | Finalisasi perubahan nama `HIMPUN` → `Form` di `package.json`, `README.md`, `AGENTS.md` serta analisis arsitektur fitur upload file ke Google Drive | Complete ✓ |
+| `261116-cfn-ganti-jangan-jadi-himpun-tapi-form-kemud` | 2026-11-16 | Finalisasi perubahan nama `HIMPUN` → `Form` di `package.json`, `README.md`, `AGENTS.md` serta analisis arsitektur fitur upload file | Complete ✓ |
 
 ## Performance Metrics
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 46 P01 | 1h 10m | 3 tasks | 8 files |
-| Phase 46-foundation-schema-field-plumbing-drive-client-credentials P02 | 65min | 6 tasks | 13 files |
+| Phase 46 P02 (superseded) | 65min | 6 tasks | 13 files |
+| Phase 46 P04 | ~2h 30m | 6 tasks | 21 files |
 
 ## Decisions
 
-- [Phase ?]: OQ-4 NO: no serverExternalPackages entry needed; standalone boot proved it
-- [Phase ?]: A3 proven: instrumentation fires under output:standalone
-- [Phase ?]: Docker boot deferred to 46-03; local standalone boot proved D-04/D-05
+- [Phase 46]: OQ-4 NO: no serverExternalPackages entry needed; standalone boot proved it
+- [Phase 46]: A3 proven: instrumentation fires under output:standalone
+- [Phase 46]: `@prisma/adapter-pg` returns BYTEA as `Uint8Array` — normalise at the helper boundary
+- [Phase 46]: `vitest.config.ts` pins a stub `DATABASE_URL`; live-DB tests must use `LIVE_DB=1` + `LIVE_DATABASE_URL`
+- [Phase 46]: `server-only` throws under vitest — `vi.mock('server-only', () => ({}))` first
+- [Phase 46]: MinIO image pinned by digest `sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e`
+- [Phase 46]: host port 9000 is owned by another MinIO (`titan-minio`); smoke runs inside `jott_default` network
+- [Phase 46]: `file-type@22.3.0` is ESM-only — `import` only
 
 ## Session
 
-**Last session:** 2026-11-16T04:20:46.459Z
-**Stopped at:** Completed 46-02-PLAN.md
+**Last session:** 2026-11-16T12:45:00.000Z
+**Stopped at:** Completed 46-04-PLAN.md — phase 46 closed
 **Resume file:** None

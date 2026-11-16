@@ -182,15 +182,15 @@ model SubmissionFile {
   size              Int
   checksum          String?
   status            String   @default("PENDING")
-  driveFileId       String?  @map("drive_file_id")
-  driveId           String?  @map("drive_id")
+  objectKey         String?  @map("object_key")
+  bucket            String?
   lastError         String?  @map("last_error") @db.Text
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @map("updated_at")
 
   @@index([submissionId], map: "submission_files_submission_id_idx")
   @@index([status, createdAt], map: "submission_files_status_created_idx")
-  @@index([driveFileId], map: "submission_files_drive_file_id_key")
+  @@index([bucket, objectKey], map: "submission_files_bucket_object_key_key")
   @@map("submission_files")
 }
 
@@ -204,7 +204,7 @@ model FileUploadJob {
   attempts      Int       @default(0)
   nextAttemptAt DateTime  @default(now()) @map("next_attempt_at")
   lastError     String?   @map("last_error") @db.Text
-  driveFileId   String?   @map("drive_file_id")
+  objectKey     String?   @map("object_key")
   processedAt   DateTime? @map("processed_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @default(now()) @map("updated_at")

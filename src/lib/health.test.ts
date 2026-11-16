@@ -4,37 +4,37 @@ vi.mock('@/lib/prisma', () => ({
   prisma: { $queryRaw: vi.fn() },
 }))
 
-vi.mock('@/lib/drive', () => ({
-  getDriveState: vi.fn(),
+vi.mock('@/lib/storage-probe', () => ({
+  getStorageState: vi.fn(),
 }))
 
 const { prisma } = await import('@/lib/prisma')
-const { getDriveState } = await import('@/lib/drive')
+const { getStorageState } = await import('@/lib/storage-probe')
 const { checkHealth } = await import('./health')
 
 describe('checkHealth', () => {
   beforeEach(() => {
     vi.mocked(prisma.$queryRaw).mockReset()
     vi.mocked(prisma.$queryRaw).mockResolvedValue([{ '?column?': 1 }])
-    vi.mocked(getDriveState).mockReset()
+    vi.mocked(getStorageState).mockReset()
   })
 
-  it('returns the byte-exact {"status":"ok"} when the drive probe is healthy', async () => {
-    vi.mocked(getDriveState).mockReturnValue({ state: 'ok', driveId: 'sd-1' })
+  it('returns the byte-exact {"status":"ok"} when the storage probe is healthy', async () => {
+    vi.mocked(getStorageState).mockReturnValue({ state: 'ok', bucket: 'form-uploads' })
 
     const result = await checkHealth()
 
     expect(JSON.stringify(result)).toBe('{"status":"ok"}')
   })
 
-  it('returns the degraded shape when the drive probe is degraded', async () => {
-    vi.mocked(getDriveState).mockReturnValue({ state: 'degraded', reason: 'HTTP 429' })
+  it('returns the degraded shape when the storage probe is degraded', async () => {
+    vi.mocked(getStorageState).mockReturnValue({ state: 'degraded', reason: 'ECONNREFUSED' })
 
     const result = await checkHealth()
 
     expect(result).toEqual({
       status: 'degraded',
-      drive: { state: 'degraded', reason: 'HTTP 429' },
+      storage: { state: 'degraded', reason: 'ECONNREFUSED' },
     })
   })
 
@@ -44,8 +44,8 @@ describe('checkHealth', () => {
     await expect(checkHealth()).rejects.toThrow('db down')
   })
 
-  it('does not throw on drive degradation (proves degraded is HTTP 200)', async () => {
-    vi.mocked(getDriveState).mockReturnValue({ state: 'degraded', reason: 'HTTP 429' })
+  it('does not throw on storage degradation (proves degraded is HTTP 200)', async () => {
+    vi.mocked(getStorageState).mockReturnValue({ state: 'degraded', reason: 'ECONNREFUSED' })
 
     await expect(checkHealth()).resolves.toBeDefined()
   })
