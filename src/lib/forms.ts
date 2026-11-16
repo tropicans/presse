@@ -3,6 +3,7 @@ import type { JsonValue, Sql } from '@prisma/client/runtime/client'
 import { PrismaClientKnownRequestError, join, sqltag as sql } from '@prisma/client/runtime/client'
 import ExcelJS from 'exceljs'
 import { prisma } from '@/lib/prisma'
+import type { AdminPreviewField } from '@/lib/admin-form-preview'
 import {
   computeAnalyticsKPIs,
   computeDailyVolume,
@@ -75,8 +76,13 @@ export interface CheckboxField extends BaseField {
   placeholder?: string | null
 }
 
+export type FileFieldPreset = 'images' | 'pdf' | 'images_and_pdf' | 'all'
+
 export interface FileField extends BaseField {
   type: 'file'
+  maxSizeMB?: number
+  allowedPreset?: FileFieldPreset
+  maxFiles?: number
 }
 
 export type FormField = TextField | RadioField | SelectField | SignatureField | YesNoField | CheckboxField | FileField
@@ -98,6 +104,13 @@ export interface FormFieldCopyRule {
   checkboxLabel?: string
 }
 
+export interface FileFieldConfig {
+  fieldId: string
+  maxSizeMB?: number
+  allowedPreset?: FileFieldPreset
+  maxFiles?: number
+}
+
 export interface FormSettings {
   workflow: FormWorkflow
   uniqueFields?: string[]
@@ -107,6 +120,7 @@ export interface FormSettings {
   pages?: FormPageDefinition[]
   conditionalRoutes?: FormConditionalRoute[]
   copyRules?: FormFieldCopyRule[]
+  fileConfigs?: FileFieldConfig[]
 }
 
 export interface QuizSettings {
@@ -173,6 +187,9 @@ export interface AdminEditableField {
   options: AdminEditableFieldOption[]
   copyFromFieldId?: string
   copyFromLabel?: string
+  maxSizeMB?: number
+  allowedPreset?: FileFieldPreset
+  maxFiles?: number
 }
 
 export interface AdminFormPage {
@@ -565,6 +582,80 @@ function createConditionalRouteKey(fieldId: string, optionLabel: string) {
   return `${fieldId}::${normalizeLabel(optionLabel)}`
 }
 
+export function getFilePresetLabel(preset?: string): string {
+  switch (preset) {
+    case 'images':
+      return 'Gambar saja (PNG, JPG, WEBP)'
+    case 'pdf':
+      return 'Dokumen PDF saja (PDF)'
+    case 'all':
+      return 'Semua format didukung (Maks 10 MB)'
+    case 'images_and_pdf':
+    default:
+      return 'Gambar & Dokumen PDF (PNG, JPG, WEBP, PDF)'
+  }
+}
+
+export function getFilePresetShortLabel(preset?: string): string {
+  switch (preset) {
+    case 'images':
+      return 'Gambar saja'
+    case 'pdf':
+      return 'PDF saja'
+    case 'all':
+      return 'Semua format'
+    case 'images_and_pdf':
+    default:
+      return 'Gambar + PDF'
+  }
+}
+
+export function getFileConstraintText(maxSizeMB?: number, maxFiles?: number): string {
+  const size = maxSizeMB ?? 5
+  const files = maxFiles ?? 1
+  return `Maks ${size} MB • ${files} berkas`
+}
+
+export function fieldToAdminPreviewField(field: FormField | AdminEditableField): AdminPreviewField {
+  const isEditable = 'pageId' in field && Array.isArray((field as AdminEditableField).options) && typeof (field as AdminEditableField).options[0] === 'object'
+
+  let options: AdminPreviewField['options'] = []
+  if (isEditable) {
+    options = ((field as AdminEditableField).options || []).map((opt) => ({
+      label: opt.label,
+      isCorrect: opt.isCorrect,
+      points: opt.points,
+      nextPageId: opt.nextPageId,
+    }))
+  } else if ('options' in field && Array.isArray((field as { options: string[] }).options)) {
+    options = (field as { options: string[] }).options.map((opt) => ({
+      label: opt,
+      isCorrect: false,
+      points: 0,
+    }))
+  }
+
+  const fileProps = field.type === 'file' ? {
+    maxSizeMB: (field as FileField | AdminEditableField).maxSizeMB ?? 5,
+    allowedPreset: (field as FileField | AdminEditableField).allowedPreset ?? 'images_and_pdf',
+    maxFiles: (field as FileField | AdminEditableField).maxFiles ?? 1,
+  } : {}
+
+  return {
+    id: field.id,
+    name: field.name,
+    label: field.label,
+    type: field.type,
+    required: field.required ?? false,
+    placeholder: ('placeholder' in field && typeof field.placeholder === 'string') ? field.placeholder : '',
+    pageId: ('pageId' in field && typeof field.pageId === 'string') ? field.pageId : 'page-1',
+    options,
+    copyFromFieldId: field.copyFromFieldId,
+    copyFromLabel: field.copyFromLabel,
+    ...fileProps,
+  }
+}
+
 function normalizePassingPercentage(value: unknown) {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return DEFAULT_QUIZ_PASS_PERCENTAGE
@@ -783,12 +874,84 @@ function readFormCopyRules(
   })
 }
 
-function serializeFormSettings(
+export function readFormFileConfigs(
+  settingsJson: JsonValue | null,
+  availableFieldIds?: string[]
+): FileFieldConfig[] {
+  let settings = settingsJson
+  if (typeof settingsJson === 'string') {
+    try {
+      settings = JSON.parse(settingsJson)
+    } catch {
+      return []
+    }
+  }
+
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+    return []
+  }
+
+  const rawConfigs = (settings as Record<string, unknown>).fileConfigs
+
+  if (!Array.isArray(rawConfigs) || rawConfigs.length === 0) {
+    return []
+  }
+
+  const validFieldIds = availableFieldIds ? new Set(availableFieldIds) : null
+  const seenFieldIds = new Set<string>()
+
+  return rawConfigs.flatMap<FileFieldConfig>((rawConfig) => {
+    if (!rawConfig || typeof rawConfig !== 'object' || Array.isArray(rawConfig)) {
+      return []
+    }
+
+    const item = rawConfig as Record<string, unknown>
+    const fieldId = typeof item.fieldId === 'string' ? item.fieldId.trim() : ''
+    if (!fieldId) {
+      return []
+    }
+
+    if (validFieldIds && !validFieldIds.has(fieldId)) {
+      return []
+    }
+
+    if (seenFieldIds.has(fieldId)) {
+      return []
+    }
+    seenFieldIds.add(fieldId)
+
+    const rawSize = typeof item.maxSizeMB === 'number' ? item.maxSizeMB : 5
+    const maxSizeMB = Math.max(1, Math.min(10, Math.round(rawSize)))
+
+    let allowedPreset: FileFieldPreset = 'images_and_pdf'
+    if (
+      item.allowedPreset === 'images' ||
+      item.allowedPreset === 'pdf' ||
+      item.allowedPreset === 'images_and_pdf' ||
+      item.allowedPreset === 'all'
+    ) {
+      allowedPreset = item.allowedPreset
+    }
+
+    const rawCount = typeof item.maxFiles === 'number' ? item.maxFiles : 1
+    const maxFiles = Math.max(1, Math.min(5, Math.round(rawCount)))
+
+    return [{
+      fieldId,
+      maxSizeMB,
+      allowedPreset,
+      maxFiles,
+    }]
+  })
+}
+
+export function serializeFormSettings(
   workflow: FormWorkflow,
   quizSettings: QuizSettings,
   pages?: FormPageDefinition[],
   conditionalRoutes?: FormConditionalRoute[],
-  copyRules?: FormFieldCopyRule[]
+  copyRules?: FormFieldCopyRule[],
+  fileConfigs?: FileFieldConfig[]
 ) {
   return JSON.stringify({
     workflow,
@@ -809,6 +972,14 @@ function serializeFormSettings(
           targetFieldId: rule.targetFieldId,
           sourceFieldId: rule.sourceFieldId,
           checkboxLabel: rule.checkboxLabel || undefined,
+        }))
+      : undefined,
+    fileConfigs: fileConfigs && fileConfigs.length > 0
+      ? fileConfigs.map((cfg) => ({
+          fieldId: cfg.fieldId,
+          maxSizeMB: cfg.maxSizeMB ?? 5,
+          allowedPreset: cfg.allowedPreset ?? 'images_and_pdf',
+          maxFiles: cfg.maxFiles ?? 1,
         }))
       : undefined,
   })
@@ -1100,6 +1271,7 @@ function buildFormSettings(form: Pick<FormRow, 'slug' | 'settingsJson'>, fields:
     : undefined
 
   const copyRules = readFormCopyRules(form.settingsJson ?? null, fields.map((field) => field.id))
+  const fileConfigs = readFormFileConfigs(form.settingsJson ?? null, fields.map((field) => field.id))
 
   const hasQuizFields = fields.some((field) => field.isQuizQuestion)
   const settings: FormSettings = {
@@ -1116,6 +1288,7 @@ function buildFormSettings(form: Pick<FormRow, 'slug' | 'settingsJson'>, fields:
         )
       : undefined,
     copyRules: copyRules.length > 0 ? copyRules : undefined,
+    fileConfigs: fileConfigs.length > 0 ? fileConfigs : undefined,
   }
 
   if (hasQuizFields) {
@@ -1738,6 +1911,8 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
   const optionsByField = buildPublicOptionsByField(rows.options)
   const copyRules = readFormCopyRules(rows.form.settingsJson ?? null, rows.fields.map((f) => f.id))
   const copyRuleByTargetId = new Map(copyRules.map((rule) => [rule.targetFieldId, rule]))
+  const fileConfigs = readFormFileConfigs(rows.form.settingsJson ?? null, rows.fields.map((f) => f.id))
+  const fileConfigByFieldId = new Map(fileConfigs.map((cfg) => [cfg.fieldId, cfg]))
 
   const fields = rows.fields.flatMap<FormField>((field) => {
     const fieldOptions = rows.options.filter((option) => option.fieldId === field.id)
@@ -1803,12 +1978,16 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
     }
 
     if (mappedType === 'file') {
+      const config = fileConfigByFieldId.get(field.id)
       return [{
         id: field.id,
         name,
         label: field.label,
         type: mappedType,
         required: field.required,
+        maxSizeMB: config?.maxSizeMB ?? 5,
+        allowedPreset: config?.allowedPreset ?? 'images_and_pdf',
+        maxFiles: config?.maxFiles ?? 1,
         ...copyProps,
       }]
     }
@@ -2607,6 +2786,8 @@ export async function getAdminFormDetail(id: string): Promise<AdminFormDetail | 
   )
   const copyRules = readFormCopyRules(rows.form.settingsJson ?? null, fieldIds)
   const copyRuleByTargetId = new Map(copyRules.map((rule) => [rule.targetFieldId, rule]))
+  const fileConfigs = readFormFileConfigs(rows.form.settingsJson ?? null, fieldIds)
+  const fileConfigByFieldId = new Map(fileConfigs.map((cfg) => [cfg.fieldId, cfg]))
   const pageIdByFieldId = new Map<string, string>()
   const nextPageIdByOptionKey = new Map<string, string>()
 
@@ -2658,6 +2839,9 @@ export async function getAdminFormDetail(id: string): Promise<AdminFormDetail | 
         })),
         copyFromFieldId: copyRule?.sourceFieldId,
         copyFromLabel: copyRule?.checkboxLabel,
+        maxSizeMB: type === 'file' ? (fileConfigByFieldId.get(field.id)?.maxSizeMB ?? 5) : undefined,
+        allowedPreset: type === 'file' ? (fileConfigByFieldId.get(field.id)?.allowedPreset ?? 'images_and_pdf') : undefined,
+        maxFiles: type === 'file' ? (fileConfigByFieldId.get(field.id)?.maxFiles ?? 1) : undefined,
       }]
     }),
   }
@@ -2681,6 +2865,9 @@ interface UpdateAdminFormPayload {
     options?: AdminEditableFieldOption[]
     copyFromFieldId?: string
     copyFromLabel?: string
+    maxSizeMB?: number
+    allowedPreset?: FileFieldPreset
+    maxFiles?: number
   }>
 }
 
@@ -2864,6 +3051,32 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
 
   const formPages = normalizeAdminFormPages(payload.pages, normalizedPayloadFields)
   const conditionalRoutes = normalizeAdminConditionalRoutes(normalizedPayloadFields, formPages)
+  const fileConfigs: FileFieldConfig[] = normalizedPayloadFields
+    .filter((f) => f.type === 'file')
+    .map((f) => {
+      const rawSize = typeof f.maxSizeMB === 'number' ? f.maxSizeMB : 5
+      const maxSizeMB = Math.max(1, Math.min(10, Math.round(rawSize)))
+
+      let allowedPreset: FileFieldPreset = 'images_and_pdf'
+      if (
+        f.allowedPreset === 'images' ||
+        f.allowedPreset === 'pdf' ||
+        f.allowedPreset === 'images_and_pdf' ||
+        f.allowedPreset === 'all'
+      ) {
+        allowedPreset = f.allowedPreset
+      }
+
+      const rawCount = typeof f.maxFiles === 'number' ? f.maxFiles : 1
+      const maxFiles = Math.max(1, Math.min(5, Math.round(rawCount)))
+
+      return {
+        fieldId: f.id,
+        maxSizeMB,
+        allowedPreset,
+        maxFiles,
+      }
+    })
 
   if (formPages.some((page) => page.fieldIds.length === 0)) {
     throw new FormSubmissionError('Setiap langkah harus memiliki minimal satu field', 400)
@@ -2901,7 +3114,8 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
           quizSettings,
           formPages,
           conditionalRoutes,
-          copyRules
+          copyRules,
+          fileConfigs
         )}::jsonb,
         updated_at = NOW()
       WHERE id = ${id}

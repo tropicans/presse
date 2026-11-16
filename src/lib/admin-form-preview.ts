@@ -1,3 +1,5 @@
+export type FileFieldPreset = 'images' | 'pdf' | 'images_and_pdf' | 'all'
+
 export interface AdminPreviewField {
   id: string
   name: string
@@ -14,6 +16,9 @@ export interface AdminPreviewField {
   }>
   copyFromFieldId?: string
   copyFromLabel?: string
+  maxSizeMB?: number
+  allowedPreset?: FileFieldPreset
+  maxFiles?: number
 }
 
 export interface AdminPreviewPage {
