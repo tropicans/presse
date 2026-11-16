@@ -26,6 +26,7 @@ enum FieldType {
   YES_NO
   SIGNATURE
   CHECKBOX
+  FILE
 }
 
 enum AdminRole {
@@ -169,6 +170,48 @@ model SubmissionJob {
 
   @@index([status, availableAt, createdAt], map: "submission_jobs_status_available_idx")
   @@map("submission_jobs")
+}
+
+model SubmissionFile {
+  id                String   @id
+  submissionId      String?  @map("submission_id")
+  fieldId           String?  @map("field_id")
+  originalFilename  String   @map("original_filename")
+  sanitizedFilename String   @map("sanitized_filename")
+  mime              String
+  size              Int
+  checksum          String?
+  status            String   @default("PENDING")
+  driveFileId       String?  @map("drive_file_id")
+  driveId           String?  @map("drive_id")
+  lastError         String?  @map("last_error") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @map("updated_at")
+
+  @@index([submissionId], map: "submission_files_submission_id_idx")
+  @@index([status, createdAt], map: "submission_files_status_created_idx")
+  @@index([driveFileId], map: "submission_files_drive_file_id_key")
+  @@map("submission_files")
+}
+
+model FileUploadJob {
+  id            String    @id
+  fileId        String    @map("file_id")
+  payload       Bytes     @map("payload")
+  payloadMime   String    @map("payload_mime")
+  payloadSize   Int       @map("payload_size")
+  status        String    @default("PENDING")
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at")
+  lastError     String?   @map("last_error") @db.Text
+  driveFileId   String?   @map("drive_file_id")
+  processedAt   DateTime? @map("processed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @map("updated_at")
+
+  @@index([status, nextAttemptAt, createdAt], map: "file_upload_jobs_status_next_idx")
+  @@index([fileId], map: "file_upload_jobs_file_id_idx")
+  @@map("file_upload_jobs")
 }
 
 model AdminUser {
