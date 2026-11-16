@@ -5,5 +5,5 @@ export async function register(): Promise<void> {
 
   const { startDriveProbe } = await import('./lib/drive')
   await startDriveProbe()
-  console.info('[instrumentation] drive probe started')
+  console.debug('[instrumentation] drive probe started')
 }
