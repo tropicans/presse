@@ -6,6 +6,10 @@ import SignaturePad from './SignaturePad'
 import SearchableSelect from './SearchableSelect'
 import type { PublicFormDefinition, FormField, FormStepDefinition } from '@/lib/forms'
 import {
+  getFilePresetLabel,
+  getFileConstraintText,
+} from '@/lib/admin-form-preview'
+import {
   filterNipInput,
   validateNipNrp,
   isNipNrpField,
@@ -314,6 +318,11 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     const nextErrors: Record<string, string> = {}
 
     for (const field of fieldsToValidate) {
+      if (field.type === 'file') {
+        // Inert in Phase 47; actual file upload activation in Phase 49
+        continue
+      }
+
       if (field.type === 'checkbox') {
         const isChecked = formData[field.name] === 'true' || formData[field.name] === '1' || formData[field.name] === 'Setuju'
         if (field.required && !isChecked) {
@@ -991,6 +1000,54 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
                   {fieldErrors[field.name]}
                 </p>
               )}
+            </div>
+          )
+        }
+
+        if (field.type === 'file') {
+          const presetLabel = getFilePresetLabel(field.allowedPreset)
+          const constraintText = getFileConstraintText(field.maxSizeMB, field.maxFiles)
+
+          return (
+            <div key={field.id} className="form-group public-file-dropzone">
+              <label className="form-label">
+                {label}
+                {field.required ? ' *' : ''}
+              </label>
+              <div className="public-file-dropzone-box" role="region" aria-label={label}>
+                <div className="public-file-dropzone-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                </div>
+                <div className="public-file-dropzone-label">
+                  {presetLabel}
+                </div>
+                <div className="public-file-dropzone-constraints">
+                  {constraintText}
+                </div>
+                <button
+                  type="button"
+                  disabled
+                  tabIndex={-1}
+                  className="public-file-dropzone-btn"
+                  aria-disabled="true"
+                >
+                  Pilih Berkas
+                </button>
+                <div className="public-file-dropzone-notice">
+                  Pengunggahan berkas aktif pada pengisian formulir
+                </div>
+              </div>
             </div>
           )
         }

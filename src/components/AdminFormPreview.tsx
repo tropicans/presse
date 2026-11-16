@@ -4,7 +4,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import FormDescription from './FormDescription'
 import SearchableSelect from './SearchableSelect'
 import FormLogo from '@/components/FormLogo'
-import type { AdminPreviewField, AdminPreviewForm, AdminPreviewPage } from '@/lib/admin-form-preview'
+import {
+  getFilePresetLabel,
+  getFileConstraintText,
+  type AdminPreviewField,
+  type AdminPreviewForm,
+  type AdminPreviewPage,
+} from '@/lib/admin-form-preview'
 import {
   sanitizeNipNrp,
   isNipNrpField,
@@ -206,9 +212,9 @@ function PreviewSession({ form }: Props) {
   const isMultiStep = steps.length > 1
   const isLastStep = safeCurrentStepIndex >= steps.length - 1
   const hasWebinarBranching = form.workflow === 'WEBINAR'
-  const requiredFieldCount = activeFields.filter((field) => field.required).length
+  const requiredFieldCount = activeFields.filter((field) => field.required && field.type !== 'file').length
   const completedRequiredFieldCount = activeFields
-    .filter((field) => field.required)
+    .filter((field) => field.required && field.type !== 'file')
     .filter((field) => hasMeaningfulValue(formData[field.name]))
     .length
   const answeredFieldCount = activeFields.filter((field) => hasMeaningfulValue(formData[field.name])).length
@@ -639,6 +645,54 @@ function PreviewSession({ form }: Props) {
                       )}
                     </div>
                   </label>
+                </div>
+              )
+            }
+
+            if (field.type === 'file') {
+              const presetLabel = getFilePresetLabel(field.allowedPreset)
+              const constraintText = getFileConstraintText(field.maxSizeMB, field.maxFiles)
+
+              return (
+                <div key={field.id} className="form-group public-file-dropzone">
+                  <label className="form-label">
+                    {label}
+                    {field.required ? ' *' : ''}
+                  </label>
+                  <div className="public-file-dropzone-box" role="region" aria-label={label}>
+                    <div className="public-file-dropzone-icon" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                    </div>
+                    <div className="public-file-dropzone-label">
+                      {presetLabel}
+                    </div>
+                    <div className="public-file-dropzone-constraints">
+                      {constraintText}
+                    </div>
+                    <button
+                      type="button"
+                      disabled
+                      tabIndex={-1}
+                      className="public-file-dropzone-btn"
+                      aria-disabled="true"
+                    >
+                      Pilih Berkas
+                    </button>
+                    <div className="public-file-dropzone-notice">
+                      Pengunggahan berkas aktif pada pengisian formulir
+                    </div>
+                  </div>
                 </div>
               )
             }
