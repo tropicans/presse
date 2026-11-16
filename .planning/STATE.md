@@ -4,7 +4,7 @@ milestone: v2.2
 milestone_name: Agreement & Terms Checkbox Field Support
 status: completed
 last_updated: "2026-10-01T08:15:00.000Z"
-last_activity: 2026-10-01
+last_activity: 2026-11-16
 progress:
   total_phases: 5
   completed_phases: 5
@@ -31,7 +31,7 @@ Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jot
 Phase: Milestone v2.2 Completed  
 Plan: —  
 Status: Shipped  
-Last activity: 2026-10-01 — Milestone v2.2 completed and archived
+Last activity: 2026-11-16 — Completed quick task 261116-d2w: ganti dari Himpun menjadi Form
 
 ## Phases Summary
 
@@ -57,3 +57,4 @@ Last activity: 2026-10-01 — Milestone v2.2 completed and archived
 | `20260928-rename-to-form-and-set-icon` | 2026-09-28 | Mengganti nama aplikasi menjadi Form dan memperbarui icon web app & favicon dengan icon baru | Complete ✓ |
 | `20260928-fix-canonical-invite-url-origin` | 2026-09-28 | Perbaikan origin URL tautan undangan admin agar memprioritaskan domain kanonikal (NEXTAUTH_URL/form.ppkasn.id) dan menyaring host 0.0.0.0 | Complete ✓ |
 | `20260928-form-field-copy-from-feature` | 2026-09-28 | Fitur salin nilai pertanyaan (Checkbox 'Sama dengan...') pada Form Builder, Public Form, dan Live Preview | Complete ✓ |
+| `261116-d2w-ganti-dari-himpun-menjadi-form` | 2026-11-16 | Hapus sisa identitas Himpun di kode runtime: rename `HimpunLogo` → `FormLogo` di 12 konsumen, buang class `himpun-logo-*`, bersihkan nama DB default `himpun` di `vitest.config.ts` | Complete ✓ |
