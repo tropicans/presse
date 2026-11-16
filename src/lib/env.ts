@@ -17,6 +17,31 @@ export function readRequiredEnvList(env: EnvSource, name: string): string[] {
     .filter(Boolean)
 }
 
+export interface DriveConfig {
+  clientEmail: string
+  privateKey: string
+  folderId: string
+}
+
+const DRIVE_FOLDER_ID_PATTERN = /^[A-Za-z0-9_-]{10,}$/
+
+export function getDriveConfig(env: EnvSource = process.env): DriveConfig {
+  const clientEmail = readRequiredEnv(env, 'GOOGLE_SERVICE_ACCOUNT_EMAIL')
+
+  const rawPrivateKey = readRequiredEnv(env, 'GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY')
+  const privateKey = rawPrivateKey.replace(/\\n/g, '\n')
+  if (!privateKey.includes('BEGIN PRIVATE KEY')) {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY tidak valid')
+  }
+
+  const folderId = readRequiredEnv(env, 'GOOGLE_DRIVE_FOLDER_ID')
+  if (!DRIVE_FOLDER_ID_PATTERN.test(folderId)) {
+    throw new Error('GOOGLE_DRIVE_FOLDER_ID tidak valid')
+  }
+
+  return { clientEmail, privateKey, folderId }
+}
+
 interface RequestLike {
   nextUrl?: { origin?: string }
   headers?: { get(name: string): string | null }
