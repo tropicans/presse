@@ -76,7 +76,10 @@ Plans:
   3. The collapsed field card and outline panel show a coherent summary (type pill, required badge, file-count and size-limit hints)
   4. Field config round-trips through the existing field-JSON/settings path (CHECKBOX precedent) — saved, reloaded, and previewed without data loss
 
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 47-01-PLAN.md — Domain model, serialization parity, and Admin Form Editor builder controls
+- [ ] 47-02-PLAN.md — Monochrome inert dropzone renderer in live preview, public form, and automated tests
 **Research flag**: no — mirrors the proven v2.2 `CHECKBOX` enum + editor-config pattern.
 
 ### Phase 48: Storage Abstraction & Postgres bytea Spool Layer
@@ -188,7 +191,7 @@ Phases execute in numeric order: 46 → 47 ∥ 48 → 49 → 50 → 51 → 52 �
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 46. Foundation - Schema, Field Plumbing, MinIO Client & Credentials | 4/4 | Complete (46-03 closed; 46-04 delivered MinIO) | 2026-11-16 |
-| 47. File Field Config, Builder, Editor & Renderer | 0/TBD | Not started | - |
+| 47. File Field Config, Builder, Editor & Renderer | 0/2 | Planned | - |
 | 48. Storage Abstraction & Postgres bytea Spool Layer | 0/TBD | Not started | - |
 | 49. Public Upload API & Client Upload Component | 0/TBD | Not started | - |
 | 50. Sync Worker, Queue Processing, Retry & Orphan GC | 0/TBD | Not started | - |
