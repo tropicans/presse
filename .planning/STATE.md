@@ -3,12 +3,12 @@ gsd_state_version: "1.0"
 milestone: v2.3
 current_phase: 47
 current_phase_name: File Field Builder Configuration
-status: ready_to_plan
-stopped_at: Completed 46-04-PLAN.md (phase 46 closed)
-last_updated: "2026-11-16T06:06:13.340Z"
+status: in_progress
+stopped_at: Completed 47-01-PLAN.md
+last_updated: "2026-11-16T07:38:00.000Z"
 last_activity: 2026-11-16
-last_activity_desc: Phase 46 plan 04 executed - Drive replaced by MinIO, live smoke PASS, phase 46 closed
-state_head: 98d75ea83178b2e6602b35ede6450d9980aae03c
+last_activity_desc: Phase 47 plan 01 executed - FileField domain model, serialization parity, and AdminFormEditor controls
+state_head: bcd122e065b61a6ea8429906714f98767d719dbc
 progress:
   total_phases: 8
   completed_phases: 1
@@ -32,9 +32,9 @@ Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jot
 ## Current Position
 
 Phase: 47 — File Field Builder Configuration
-Plan: —
-Status: Ready to plan — phase 46 closed (4/4 plans)
-Last activity: 2026-11-16 — Phase 46 plan 04 executed: Drive removed, MinIO delivered, live smoke `PASS` / exit 0, `/api/health` = `{"status":"ok"}`
+Plan: 47-01-PLAN.md
+Status: In progress — 47-01 executed (1/2 plans complete)
+Last activity: 2026-11-16 — Phase 47 plan 01 executed: FileField domain model, serialization parity, and AdminFormEditor controls delivered and tested
 
 ## Phases Summary
 
@@ -59,6 +59,8 @@ Last activity: 2026-11-16 — Phase 46 plan 04 executed: Drive removed, MinIO de
 | Deterministic Object Key (D-13) | `buildObjectKey(fileId)` = `files/<fileId>`, tanpa timestamp atau suffix acak; PUT S3 idempoten per key, retry menimpa objek yang sama sehingga rekonsiliasi duplikat tidak pernah diperlukan | Diterapkan (Phase 46-04) |
 | Object Identity = `(bucket, object_key)` (D-14) | Unique index parsial `submission_files_bucket_object_key_key` mencerminkan identitas objek sebenarnya, bukan key saja | Diterapkan (Phase 46-04) |
 | MinIO Tanpa Port Host | Console dan API tidak boleh publik; service `minio` tidak punya `ports:` mapping dan hanya terjangkau di network compose | Diterapkan (Phase 46-04) |
+| FileField Lossless Settings (D-01..D-08) | `fileConfigs` disimpan di `settings_json` dengan batas `maxSizeMB` 10 MB, 4 preset format, dan mapping preview parity | Diterapkan (Phase 47-01) |
+| Decoupled Preset Helper Exports | `getFilePresetLabel`, `getFilePresetShortLabel`, dan `getFileConstraintText` ditempatkan di `admin-form-preview.ts` dan dire-export di `forms.ts` untuk mencegah bundel browser mengimpor dependensi server Node.js | Diterapkan (Phase 47-01) |
 
 ## Quick Tasks Completed
 
@@ -78,6 +80,7 @@ Last activity: 2026-11-16 — Phase 46 plan 04 executed: Drive removed, MinIO de
 | Phase 46 P01 | 1h 10m | 3 tasks | 8 files |
 | Phase 46 P02 (superseded) | 65min | 6 tasks | 13 files |
 | Phase 46 P04 | ~2h 30m | 6 tasks | 21 files |
+| Phase 47 P01 | 45m | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -89,9 +92,10 @@ Last activity: 2026-11-16 — Phase 46 plan 04 executed: Drive removed, MinIO de
 - [Phase 46]: MinIO image pinned by digest `sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e`
 - [Phase 46]: host port 9000 is owned by another MinIO (`titan-minio`); smoke runs inside `jott_default` network
 - [Phase 46]: `file-type@22.3.0` is ESM-only — `import` only
+- [Phase 47]: Decouple preset formatting helpers to `admin-form-preview.ts` so client components do not pull server modules into browser bundle
 
 ## Session
 
-**Last session:** 2026-11-16T12:45:00.000Z
-**Stopped at:** Completed 46-04-PLAN.md — phase 46 closed
+**Last session:** 2026-11-16T14:35:00.000Z
+**Stopped at:** Completed 47-01-PLAN.md
 **Resume file:** None
