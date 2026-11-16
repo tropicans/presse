@@ -619,3 +619,39 @@ export async function readFileUploadPayload(jobId: string): Promise<FileUploadPa
     size: Number(row.size),
   }
 }
+
+export async function deleteSubmissionFiles(submissionId: string): Promise<{ deletedCount: number }> {
+  const files = await prisma.$queryRaw<Array<{ id: string; object_key: string | null }>>`
+    SELECT id, object_key
+    FROM "submission_files"
+    WHERE submission_id = ${submissionId}
+  `
+
+  if (files.length === 0) {
+    return { deletedCount: 0 }
+  }
+
+  // Best-effort delete from MinIO storage
+  for (const file of files) {
+    if (file.object_key) {
+      try {
+        const { deleteObject } = await import('./storage')
+        await deleteObject(file.object_key)
+      } catch (err) {
+        console.warn(`[deleteSubmissionFiles] Gagal menghapus objek MinIO ${file.object_key}:`, err)
+      }
+    }
+  }
+
+  const fileIds = files.map((f) => f.id)
+  await prisma.$executeRaw`
+    DELETE FROM "file_upload_jobs"
+    WHERE file_id = ANY(${fileIds})
+  `
+  await prisma.$executeRaw`
+    DELETE FROM "submission_files"
+    WHERE id = ANY(${fileIds})
+  `
+
+  return { deletedCount: files.length }
+}

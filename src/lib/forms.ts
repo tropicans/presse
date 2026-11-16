@@ -3,7 +3,11 @@ import type { JsonValue, Sql } from '@prisma/client/runtime/client'
 import { PrismaClientKnownRequestError, join, sqltag as sql } from '@prisma/client/runtime/client'
 import ExcelJS from 'exceljs'
 import { prisma } from '@/lib/prisma'
-import { linkFilesToSubmission, InvalidFileStatusTransitionError } from '@/lib/file-storage'
+import {
+  linkFilesToSubmission,
+  InvalidFileStatusTransitionError,
+  deleteSubmissionFiles,
+} from '@/lib/file-storage'
 import type { AdminPreviewField } from '@/lib/admin-form-preview'
 import {
   computeAnalyticsKPIs,
@@ -211,10 +215,24 @@ export interface AdminFormDetail {
   fields: AdminEditableField[]
 }
 
+export interface AdminSubmissionFileItem {
+  id: string
+  submissionId: string
+  fieldId: string | null
+  originalFilename: string
+  sanitizedFilename: string
+  mime: string
+  size: number
+  status: 'PENDING_UPLOAD' | 'QUEUED' | 'SYNCED' | 'FAILED' | 'ORPHANED'
+  origin: 'participant' | 'admin'
+  createdAt: string
+}
+
 export interface AdminFormSubmissionItem {
   id: string
   createdAt: string
   answers: Record<string, string>
+  files?: AdminSubmissionFileItem[]
   meta: {
     participantType: 'internal' | 'external' | null
     quiz: {
@@ -3514,7 +3532,69 @@ export async function listAdminFormSubmissions(
       label: field.label,
       type: field.type,
     })),
-    items: paginateAdminSubmissions(filteredItems, safePagination, normalizedPagination.pageSize),
+    items: await (async () => {
+      const pagedItems = paginateAdminSubmissions(filteredItems, safePagination, normalizedPagination.pageSize)
+      const pageSubmissionIds = pagedItems.map((item) => item.id)
+
+      if (pageSubmissionIds.length > 0) {
+        try {
+          const fileRows = await prisma.$queryRaw<Array<{
+            id: string
+            submissionId: string
+            fieldId: string | null
+            originalFilename: string
+            sanitizedFilename: string
+            mime: string
+            size: number
+            status: string
+            createdAt: Date
+          }>>`
+            SELECT
+              id,
+              submission_id AS "submissionId",
+              field_id AS "fieldId",
+              original_filename AS "originalFilename",
+              sanitized_filename AS "sanitizedFilename",
+              mime,
+              size,
+              status,
+              created_at AS "createdAt"
+            FROM "submission_files"
+            WHERE submission_id = ANY(${pageSubmissionIds})
+            ORDER BY created_at ASC
+          `
+
+          const filesBySubId = new Map<string, AdminSubmissionFileItem[]>()
+          for (const row of fileRows) {
+            const list = filesBySubId.get(row.submissionId) ?? []
+            list.push({
+              id: row.id,
+              submissionId: row.submissionId,
+              fieldId: row.fieldId,
+              originalFilename: row.originalFilename,
+              sanitizedFilename: row.sanitizedFilename,
+              mime: row.mime,
+              size: Number(row.size),
+              status: row.status as AdminSubmissionFileItem['status'],
+              origin: row.fieldId ? 'participant' : 'admin',
+              createdAt: row.createdAt.toISOString(),
+            })
+            filesBySubId.set(row.submissionId, list)
+          }
+
+          for (const item of pagedItems) {
+            item.files = filesBySubId.get(item.id) ?? []
+          }
+        } catch (err) {
+          console.warn('[listAdminFormSubmissions] Gagal mengambil relasi berkas submission:', err)
+          for (const item of pagedItems) {
+            item.files = []
+          }
+        }
+      }
+
+      return pagedItems
+    })(),
     filteredItems: filteredItems.length,
     page: safePagination.page,
     pageSize: safePagination.pageSize,
@@ -3553,6 +3633,9 @@ export async function deleteAdminFormSubmission(formId: string, submissionId: st
     ? answers.find((answer) => answer.fieldId === nipField.id)?.valueText?.trim() ?? ''
     : ''
 
+  // Cascade cleanup for attached files (MinIO objects, jobs, and submission_files)
+  await deleteSubmissionFiles(submissionId)
+
   await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`
       DELETE FROM submission_jobs
@@ -3584,6 +3667,15 @@ function getExcelImageExtension(value: string): 'png' | 'jpeg' {
 
 function getDataImageBase64(value: string) {
   return value.replace(/^data:image\/(png|jpeg|jpg);base64,/i, '')
+}
+
+export function escapeExcelFormula(value: string): string {
+  if (!value) return ''
+  const trimmed = value.trim()
+  if (trimmed.startsWith('=') || trimmed.startsWith('+') || trimmed.startsWith('-') || trimmed.startsWith('@')) {
+    return `'${value}`
+  }
+  return value
 }
 
 export async function exportAdminFormSubmissionsWorkbook(
@@ -3654,9 +3746,16 @@ export async function exportAdminFormSubmissionsWorkbook(
         if (column.type === 'checkbox') {
           const lower = raw.trim().toLowerCase()
           const isApproved = raw === 'true' || raw === '1' || lower === 'setuju' || lower === 'ya'
-          return isApproved ? 'Disetujui' : (raw.trim().length > 0 ? raw : '-')
+          return isApproved ? 'Disetujui' : (raw.trim().length > 0 ? escapeExcelFormula(raw) : '-')
         }
-        return raw
+        if (column.type === 'file') {
+          const fileId = raw.trim()
+          if (!fileId) return '-'
+          const matchingFile = (item.files ?? []).find((f) => f.id === fileId || f.fieldId === column.id)
+          const fileName = matchingFile ? matchingFile.originalFilename : fileId
+          return `${escapeExcelFormula(fileName)} (URL: /api/files/${encodeURIComponent(fileId)})`
+        }
+        return escapeExcelFormula(raw)
       }),
     ]
     const row = sheet.addRow(rowValues)
@@ -3664,6 +3763,21 @@ export async function exportAdminFormSubmissionsWorkbook(
 
     exportableColumns.forEach((column, index) => {
       const value = item.answers[column.name] ?? ''
+      const cellIndex = 1 + metaHeaders.length + index + 1
+
+      if (column.type === 'file') {
+        const fileId = value.trim()
+        if (fileId) {
+          const matchingFile = (item.files ?? []).find((f) => f.id === fileId || f.fieldId === column.id)
+          const fileName = matchingFile ? matchingFile.originalFilename : fileId
+          const cell = row.getCell(cellIndex)
+          cell.value = {
+            text: `${escapeExcelFormula(fileName)} (URL: /api/files/${encodeURIComponent(fileId)})`,
+            hyperlink: `/api/files/${encodeURIComponent(fileId)}`,
+          }
+        }
+        return
+      }
 
       if (column.type !== 'signature' || !isDataImage(value)) {
         return
@@ -3680,7 +3794,7 @@ export async function exportAdminFormSubmissionsWorkbook(
           ext: { width: 170, height: 64 },
         })
       } catch {
-        row.getCell(1 + metaHeaders.length + index + 1).value = 'Tanda tangan tidak dapat dirender'
+        row.getCell(cellIndex).value = 'Tanda tangan tidak dapat dirender'
       }
     })
   })

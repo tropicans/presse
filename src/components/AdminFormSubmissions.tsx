@@ -201,17 +201,31 @@ function MarkdownRenderer({ content }: { content: string }) {
   return <div className="markdown-body" style={{ color: 'var(--ledger-primary-text)' }}>{elements}</div>
 }
 
+export interface SubmissionFileMeta {
+  id: string
+  submissionId: string
+  fieldId: string | null
+  originalFilename: string
+  sanitizedFilename: string
+  mime: string
+  size: number
+  status: 'PENDING_UPLOAD' | 'QUEUED' | 'SYNCED' | 'FAILED' | 'ORPHANED'
+  origin: 'participant' | 'admin'
+  createdAt: string
+}
+
 interface SubmissionColumn {
   id: string
   name: string
   label: string
-  type: 'text' | 'textarea' | 'radio' | 'likert' | 'signature' | 'checkbox'
+  type: 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature' | 'yes_no' | 'checkbox' | 'file'
 }
 
 interface SubmissionItem {
   id: string
   createdAt: string
   answers: Record<string, string>
+  files?: SubmissionFileMeta[]
   meta: {
     participantType: 'internal' | 'external' | null
     quiz: {
@@ -282,9 +296,51 @@ function isSignatureImage(value: string | undefined) {
   return value?.startsWith('data:image/') ?? false
 }
 
-function getAnswerPreview(value: string | undefined, type: SubmissionColumn['type']): React.ReactNode {
+function formatFileSize(bytes: number): string {
+  if (!bytes || bytes <= 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`
+}
+
+function getAnswerPreview(
+  value: string | undefined,
+  type: SubmissionColumn['type'],
+  files?: SubmissionFileMeta[],
+): React.ReactNode {
   if (type === 'signature' && isSignatureImage(value)) {
     return 'Tanda tangan tersimpan'
+  }
+
+  if (type === 'file') {
+    const fileId = (value ?? '').trim()
+    if (!fileId) return '-'
+    const matching = files?.find((f) => f.id === fileId)
+    const label = matching?.originalFilename || 'Unduh Berkas'
+    return (
+      <a
+        href={`/api/files/${encodeURIComponent(fileId)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        download
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          color: 'var(--ledger-primary, #000)',
+          textDecoration: 'underline',
+          fontSize: '0.85rem',
+          fontWeight: 600,
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        <span>{label}</span>
+      </a>
+    )
   }
 
   if (type === 'checkbox') {
@@ -357,6 +413,49 @@ export default function AdminFormSubmissions({ formId }: Props) {
   const [generatingAnalysis, setGeneratingAnalysis] = useState(false)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [copiedPublicUrl, setCopiedPublicUrl] = useState(false)
+  const [uploadingSubmissionId, setUploadingSubmissionId] = useState<string | null>(null)
+
+  const handleAdminUploadFile = async (submissionId: string, file: File) => {
+    setUploadingSubmissionId(submissionId)
+    setFeedback(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('submissionId', submissionId)
+
+      const res = await fetch('/api/admin/files/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json.error || 'Gagal mengunggah berkas lampiran')
+      }
+
+      setFeedback({ type: 'success', message: 'Lampiran berhasil ditambahkan' })
+
+      if (data && json.file) {
+        setData({
+          ...data,
+          items: data.items.map((item) => {
+            if (item.id === submissionId) {
+              return {
+                ...item,
+                files: [...(item.files ?? []), json.file],
+              }
+            }
+            return item
+          }),
+        })
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Gagal mengunggah berkas lampiran'
+      setFeedback({ type: 'error', message })
+    } finally {
+      setUploadingSubmissionId(null)
+    }
+  }
 
   const handleCopyPublicUrl = async () => {
     if (!data?.form.slug) return
@@ -1354,7 +1453,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
                                   className="submissions-dashboard-signature-image"
                                 />
                               ) : (
-                                getAnswerPreview(item.answers[column.name], column.type)
+                                getAnswerPreview(item.answers[column.name], column.type, item.files)
                               )}
                             </dd>
                           </div>
@@ -1379,7 +1478,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
                                       className="submissions-dashboard-signature-image"
                                     />
                                   ) : (
-                                    getAnswerPreview(item.answers[column.name], column.type)
+                                    getAnswerPreview(item.answers[column.name], column.type, item.files)
                                   )}
                                 </dd>
                               </div>
@@ -1387,6 +1486,139 @@ export default function AdminFormSubmissions({ formId }: Props) {
                           </dl>
                         </details>
                       )}
+
+                      {/* Attachments Section (FILE-20, FILE-21, FILE-22) */}
+                      <div
+                        className="submissions-dashboard-attachments"
+                        style={{
+                          marginTop: '16px',
+                          padding: '12px 16px',
+                          background: 'rgba(0,0,0,0.02)',
+                          borderRadius: '8px',
+                          border: '1px solid var(--ledger-border, #e5e7eb)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: item.files && item.files.length > 0 ? '10px' : '4px',
+                          }}
+                        >
+                          <strong style={{ fontSize: '0.85rem', color: 'var(--ledger-primary-text, #111827)' }}>
+                            Lampiran Berkas ({item.files?.length ?? 0})
+                          </strong>
+                          <label
+                            className="forms-dashboard-action-link"
+                            style={{
+                              cursor: uploadingSubmissionId === item.id ? 'not-allowed' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                            }}
+                          >
+                            <input
+                              type="file"
+                              style={{ display: 'none' }}
+                              disabled={uploadingSubmissionId === item.id}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) {
+                                  void handleAdminUploadFile(item.id, file)
+                                  e.target.value = ''
+                                }
+                              }}
+                            />
+                            {uploadingSubmissionId === item.id ? 'Mengunggah...' : '+ Unggah Lampiran'}
+                          </label>
+                        </div>
+
+                        {item.files && item.files.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {item.files.map((file) => (
+                              <div
+                                key={file.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  background: '#fff',
+                                  padding: '8px 12px',
+                                  borderRadius: '6px',
+                                  border: '1px solid rgba(0,0,0,0.08)',
+                                  fontSize: '0.85rem',
+                                  gap: '12px',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                                  <span
+                                    style={{
+                                      fontSize: '0.725rem',
+                                      fontWeight: 600,
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      background: file.origin === 'admin' ? '#f3e8ff' : '#e0f2fe',
+                                      color: file.origin === 'admin' ? '#6b21a8' : '#0369a1',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {file.origin === 'admin' ? 'Admin' : 'Peserta'}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: '0.725rem',
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      background: file.status === 'SYNCED' ? '#dcfce7' : '#fef3c7',
+                                      color: file.status === 'SYNCED' ? '#15803d' : '#b45309',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {file.status === 'SYNCED' ? 'Tersinkron' : 'Menunggu sinkronisasi'}
+                                  </span>
+                                  <span
+                                    style={{
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      fontWeight: 500,
+                                      color: 'var(--ledger-primary-text, #1f2937)',
+                                    }}
+                                    title={file.originalFilename}
+                                  >
+                                    {file.originalFilename}
+                                  </span>
+                                  <span style={{ color: 'var(--ledger-secondary, #6b7280)', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                                    ({formatFileSize(file.size)})
+                                  </span>
+                                </div>
+                                <a
+                                  href={`/api/files/${encodeURIComponent(file.id)}`}
+                                  download
+                                  className="forms-dashboard-action-link"
+                                  style={{
+                                    fontSize: '0.8rem',
+                                    padding: '4px 8px',
+                                    whiteSpace: 'nowrap',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                >
+                                  Unduh
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--ledger-secondary, #6b7280)' }}>
+                            Belum ada berkas terlampir pada kiriman ini.
+                          </p>
+                        )}
+                      </div>
 
                       {hasQuiz && item.meta.quiz && (
                         <div className="submissions-dashboard-quiz-card">

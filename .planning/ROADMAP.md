@@ -172,7 +172,9 @@ Plans:
   4. Excel export writes `filename + app URL`, prefixes filenames starting with `=`, `+`, `-`, or `@` to defuse formula injection, and the existing 500-row split still holds
   5. Deleting a submission or form removes its file records, spool payloads, and MinIO objects
 
-**Plans**: TBD
+**Plans:** 1/1 plan complete
+Plans:
+- [x] 52-01-PLAN.md — Admin Surfaces, Attachment Upload & Export Integration
 **Research flag**: no — export/table formatting follows existing `forms.ts` formatter patterns.
 **Threats closed**: W5 (app URLs only, formula sanitize, 500-row split), W8 (delete purges blobs).
 **UI hint**: yes
