@@ -11,7 +11,7 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
     env: {
-      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/himpun',
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/form',
     },
   },
 })
