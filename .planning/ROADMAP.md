@@ -94,9 +94,9 @@ Plans:
   3. File bytes live in `file_upload_jobs.payload bytea` only — no filesystem path, no volume mount, and a record survives a container recreate because the bytes are in Postgres
   4. All timestamps are stored and compared in a single UTC/TIMESTAMPTZ convention, so expiry and GC decisions do not drift by a day
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans complete
 Plans:
-- [ ] 48-01-PLAN.md — Core persistence, state machine, submission linking, and serving lookup
+- [x] 48-01-PLAN.md — Core persistence, state machine, submission linking, and serving lookup
 - [ ] 48-02-PLAN.md — Queue primitives, payload nulling on sync, retry backoff, orphan GC, and live DB test
 **Research flag**: no — raw-SQL module mirrors the existing `src/lib/forms.ts` pattern.
 **Threats closed**: W3 (Postgres is the fallback store — no volume), W7 (single UTC convention).

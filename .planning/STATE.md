@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v2.3
 current_phase: 48
 current_phase_name: Storage Abstraction & Postgres bytea Spool Layer
-status: planning
-stopped_at: Phase 47 complete, ready to plan Phase 48
-last_updated: "2026-11-16T08:01:49.168Z"
+status: in_progress
+stopped_at: Completed 48-01-PLAN.md
+last_updated: "2026-11-16T08:29:00.000Z"
 last_activity: 2026-11-16
-last_activity_desc: Phase 47 complete, transitioned to Phase 48
-state_head: ec4b74cecce4d16028f01c00b0691157281c4709
+last_activity_desc: Plan 48-01 complete - raw-SQL file persistence, state machine, and submission linking
+state_head: 7d6a87bd9c7ab544d832073e76bf1915297bab7b
 progress:
   total_phases: 8
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 25
+  total_plans: 6
+  completed_plans: 5
+  percent: 31
 milestone_name: File Upload & MinIO Object Storage
 ---
 
@@ -32,9 +32,9 @@ Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jot
 ## Current Position
 
 Phase: 48 — Storage Abstraction & Postgres bytea Spool Layer
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-11-16 — Phase 47 complete, transitioned to Phase 48
+Plan: 48-01 complete (ready for 48-02)
+Status: in_progress
+Last activity: 2026-11-16 — Plan 48-01 complete: raw-SQL file persistence domain module, state machine, and submission linking
 
 ## Phases Summary
 
@@ -83,6 +83,7 @@ Last activity: 2026-11-16 — Phase 47 complete, transitioned to Phase 48
 | Phase 46 P02 (superseded) | 65min | 6 tasks | 13 files |
 | Phase 46 P04 | ~2h 30m | 6 tasks | 21 files |
 | Phase 47 P01 | 45m | 3 tasks | 4 files |
+| Phase 48 P01 | 15m | 2 tasks | 5 files |
 
 ## Decisions
 
@@ -95,9 +96,13 @@ Last activity: 2026-11-16 — Phase 47 complete, transitioned to Phase 48
 - [Phase 46]: host port 9000 is owned by another MinIO (`titan-minio`); smoke runs inside `jott_default` network
 - [Phase 46]: `file-type@22.3.0` is ESM-only — `import` only
 - [Phase 47]: Decouple preset formatting helpers to `admin-form-preview.ts` so client components do not pull server modules into browser bundle
+- [Phase 48]: Nullable bytea payload in `file_upload_jobs` allows zero-bloat spool release upon sync
+- [Phase 48]: `submission_files` default status set to `PENDING_UPLOAD` with strict forward transitions (`QUEUED`, `SYNCED`, `FAILED`, `ORPHANED`)
+- [Phase 48]: Atomic raw-SQL transaction links `submission_files` to `submission_id` and advances status to `QUEUED`
+- [Phase 48]: `src/lib/file-jobs.ts` acts as a backward-compatible wrapper delegating to `src/lib/file-storage.ts`
 
 ## Session
 
-**Last session:** 2026-11-16T14:35:00.000Z
-**Stopped at:** Phase 47 complete, ready to plan Phase 48
-**Resume file:** None
+**Last session:** 2026-11-16T15:29:00.000Z
+**Stopped at:** Completed 48-01-PLAN.md
+**Resume file:** .planning/phases/48-storage-abstraction-postgres-bytea-spool-layer/48-02-PLAN.md
