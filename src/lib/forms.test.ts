@@ -22,6 +22,13 @@ import {
   validateSignatureValue,
   getFieldInputMode,
   getFieldFormatHint,
+  serializeFormSettings,
+  readFormFileConfigs,
+  fieldToAdminPreviewField,
+  getFilePresetLabel,
+  getFilePresetShortLabel,
+  getFileConstraintText,
+  type FileField,
 } from './forms'
 
 vi.mock('next/cache', () => ({
@@ -943,6 +950,140 @@ describe('Email, Phone, Name, and Signature format validators', () => {
       persetujuanTim: 'Setuju',
     })
     expect(passed3.persetujuanTim).toBe('true')
+  })
+})
+
+describe('FileField configuration, serialization, and preview parity', () => {
+  it('round-trips custom fileConfigs losslessly through serializeFormSettings and readFormFileConfigs', () => {
+    const fileConfigs = [{
+      fieldId: 'field_file_1',
+      maxSizeMB: 10,
+      allowedPreset: 'pdf' as const,
+      maxFiles: 3,
+    }]
+
+    const serialized = serializeFormSettings(
+      'STANDARD',
+      { passingPercentage: 70 },
+      [{ id: 'page-1', fieldIds: ['field_file_1'] }],
+      undefined,
+      undefined,
+      fileConfigs
+    )
+
+    const read = readFormFileConfigs(serialized, ['field_file_1'])
+    expect(read).toEqual([{
+      fieldId: 'field_file_1',
+      maxSizeMB: 10,
+      allowedPreset: 'pdf',
+      maxFiles: 3,
+    }])
+  })
+
+  it('applies secure defaults when file configuration properties are missing or undefined', () => {
+    const rawJson = {
+      fileConfigs: [{
+        fieldId: 'field_file_default',
+      }],
+    }
+
+    const readDefaults = readFormFileConfigs(rawJson as never, ['field_file_default'])
+    expect(readDefaults).toEqual([{
+      fieldId: 'field_file_default',
+      maxSizeMB: 5,
+      allowedPreset: 'images_and_pdf',
+      maxFiles: 1,
+    }])
+  })
+
+  it('enforces preset whitelist and falls back to images_and_pdf for unwhitelisted preset', () => {
+    const invalidPresetJson = {
+      fileConfigs: [{
+        fieldId: 'field_file_sec',
+        allowedPreset: 'executable_sh',
+      }],
+    }
+
+    const readPreset = readFormFileConfigs(invalidPresetJson as never, ['field_file_sec'])
+    expect(readPreset[0].allowedPreset).toBe('images_and_pdf')
+  })
+
+  it('bounds fieldConfigs to valid field IDs only (DoS prevention)', () => {
+    const ghostFieldJson = {
+      fileConfigs: [
+        { fieldId: 'valid_field', maxSizeMB: 5 },
+        { fieldId: 'ghost_field', maxSizeMB: 10 },
+      ],
+    }
+
+    const bounded = readFormFileConfigs(ghostFieldJson as never, ['valid_field'])
+    expect(bounded).toHaveLength(1)
+    expect(bounded[0].fieldId).toBe('valid_field')
+  })
+
+  it('clamps maxSizeMB to [1..10] and maxFiles to [1..5] boundaries', () => {
+    const oversizeJson = {
+      fileConfigs: [{
+        fieldId: 'field_file_clamped',
+        maxSizeMB: 100,
+        maxFiles: 50,
+      }],
+    }
+
+    const clampedMax = readFormFileConfigs(oversizeJson as never, ['field_file_clamped'])
+    expect(clampedMax[0].maxSizeMB).toBe(10)
+    expect(clampedMax[0].maxFiles).toBe(5)
+
+    const undersizeJson = {
+      fileConfigs: [{
+        fieldId: 'field_file_min',
+        maxSizeMB: -5,
+        maxFiles: 0,
+      }],
+    }
+
+    const clampedMin = readFormFileConfigs(undersizeJson as never, ['field_file_min'])
+    expect(clampedMin[0].maxSizeMB).toBe(1)
+    expect(clampedMin[0].maxFiles).toBe(1)
+  })
+
+  it('converts FileField to AdminPreviewField preserving all configuration attributes', () => {
+    const domainField: FileField = {
+      id: 'field_doc_upload',
+      name: 'dokumenPendukung',
+      label: 'Unggah Portofolio (PDF)',
+      type: 'file',
+      required: true,
+      maxSizeMB: 10,
+      allowedPreset: 'pdf',
+      maxFiles: 4,
+    }
+
+    const preview = fieldToAdminPreviewField(domainField)
+    expect(preview.id).toBe('field_doc_upload')
+    expect(preview.name).toBe('dokumenPendukung')
+    expect(preview.label).toBe('Unggah Portofolio (PDF)')
+    expect(preview.type).toBe('file')
+    expect(preview.required).toBe(true)
+    expect(preview.maxSizeMB).toBe(10)
+    expect(preview.allowedPreset).toBe('pdf')
+    expect(preview.maxFiles).toBe(4)
+  })
+
+  it('formats preset labels and constraint text consistently', () => {
+    expect(getFilePresetLabel('images_and_pdf')).toContain('Gambar & Dokumen PDF')
+    expect(getFilePresetLabel('images')).toContain('Gambar saja')
+    expect(getFilePresetLabel('pdf')).toContain('Dokumen PDF saja')
+    expect(getFilePresetLabel('all')).toContain('Semua format didukung')
+    expect(getFilePresetLabel('unknown')).toContain('Gambar & Dokumen PDF')
+
+    expect(getFilePresetShortLabel('images_and_pdf')).toBe('Gambar + PDF')
+    expect(getFilePresetShortLabel('images')).toBe('Gambar saja')
+    expect(getFilePresetShortLabel('pdf')).toBe('PDF saja')
+    expect(getFilePresetShortLabel('all')).toBe('Semua format')
+
+    expect(getFileConstraintText(5, 1)).toBe('Maks 5 MB • 1 berkas')
+    expect(getFileConstraintText(10, 3)).toBe('Maks 10 MB • 3 berkas')
   })
 })
 
