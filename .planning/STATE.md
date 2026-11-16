@@ -56,3 +56,4 @@ Last activity: 2026-11-16 — Phase 46 discussion complete (CONTEXT.md + DISCUSS
 | `20260928-fix-canonical-invite-url-origin` | 2026-09-28 | Perbaikan origin URL tautan undangan admin agar memprioritaskan domain kanonikal (NEXTAUTH_URL/form.ppkasn.id) dan menyaring host 0.0.0.0 | Complete ✓ |
 | `20260928-form-field-copy-from-feature` | 2026-09-28 | Fitur salin nilai pertanyaan (Checkbox 'Sama dengan...') pada Form Builder, Public Form, dan Live Preview | Complete ✓ |
 | `261116-d2w-ganti-dari-himpun-menjadi-form` | 2026-11-16 | Hapus sisa identitas Himpun di kode runtime: rename `HimpunLogo` → `FormLogo` di 12 konsumen, buang class `himpun-logo-*`, bersihkan nama DB default `himpun` di `vitest.config.ts` | Complete ✓ |
+| `261116-cfn-ganti-jangan-jadi-himpun-tapi-form-kemud` | 2026-11-16 | Finalisasi perubahan nama `HIMPUN` → `Form` di `package.json`, `README.md`, `AGENTS.md` serta analisis arsitektur fitur upload file ke Google Drive | Complete ✓ |
