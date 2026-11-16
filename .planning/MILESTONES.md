@@ -1,5 +1,22 @@
 # Milestones
 
+## v2.3 File Upload & MinIO Object Storage (Shipped: 2026-11-16)
+
+**Phases completed:** 8 phases, 14 plans, 42 tasks
+
+**Key accomplishments:**
+
+- Architected and deployed end-to-end file upload subsystem with MinIO S3-compatible self-hosted object storage and PostgreSQL resilient spooling layer (`submission_files` and `file_upload_jobs` tables via SQL migrations).
+- Introduced first-class `FILE` field type into PostgreSQL enum, domain engine mappers, `AdminFormEditor` (with format presets, 10MB limits, max files count), and monochrome dropzone components in `AttendanceForm.tsx` and `AdminFormPreview.tsx`.
+- Implemented native drag-and-drop public upload flow on `/f/[slug]` with interactive upload progress, client-side preview, server-side magic-byte sniffing (`file-type`), IP rate-limiting, and lossless JPEG/PNG EXIF/GPS metadata stripping for privacy.
+- Engineered offline-first spool fallback ensuring public form submissions succeed (HTTP 200) even during MinIO outages, absorbing payloads into PostgreSQL `bytea`.
+- Integrated asynchronous synchronization into `submission-worker.mjs` using `FOR UPDATE SKIP LOCKED`, deterministic object keys (`files/${fileId}`), idempotent PUTs, exponential retry backoff, orphan garbage collection (24h TTL), and automatic spool `bytea` nulling upon sync.
+- Created secure private file serving endpoint `GET /api/files/[id]` with admin session protection, regex ID validation, traversal defense, and dual-source streaming (Postgres spool vs MinIO) with RFC 5987 `Content-Disposition` and `nosniff`.
+- Built admin submissions attachments drawer with sync/origin badges, supplementary admin uploads without mutating participant answers, hyperlinked submission tables, and Excel export with formula injection escaping (`=`, `+`, `-`, `@`).
+- Verified full system reliability: 246 unit tests passing across 28 test suites in Vitest, clean ESLint, zero TypeScript errors, and production Docker container stack healthy at `/api/health`.
+
+---
+
 ## v2.2 Agreement & Terms Checkbox Field Support (Shipped: 2026-10-01)
 
 **Phases completed:** 5 phases, 5 plans, 15 tasks

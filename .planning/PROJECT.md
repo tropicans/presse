@@ -7,28 +7,26 @@ Platform pengelolaan formulir publik, kiriman (submissions), dan dashboard admin
 Memungkinkan pembuatan dan pengisian formulir publik secara dinamis, andal, cepat, dan aman dengan dukungan visual yang premium.
 
 ## Current State
-Milestone **v2.2 Agreement & Terms Checkbox Field Support** shipped (2026-10-01).
-Phases 1-45 completed across milestones v1.1 - v2.2.
+Milestone **v2.3 File Upload & MinIO Object Storage** shipped (2026-11-16).
+Phases 1-53 completed across milestones v1.1 - v2.3.
 
-## Current Milestone: v2.3 File Upload & MinIO Object Storage
+## Next Milestone Goals
+Planning next milestone.
 
-**Goal:** Memungkinkan peserta form publik dan admin mengunggah file (gambar/PDF, maks 10 MB) yang tersimpan di object storage S3-compatible (MinIO self-hosted di compose yang sama), dengan antrian lokal + sinkronisasi otomatis ketika storage gagal, dan akses file yang private melalui aplikasi.
+<details>
+<summary>Archived Milestone v2.3: File Upload & MinIO Object Storage (Shipped: 2026-11-16)</summary>
 
-**Target features:**
-- Field tipe `FILE` pada form builder: konfigurasi label, wajib/tidak, batas ukuran, tipe file yang diizinkan, jumlah file
-- Halaman/komponen upload pada form publik `/f/[slug]` (drag-drop + tombol pilih file, progres, preview, hapus sebelum submit)
-- API upload publik yang memvalidasi tipe & ukuran file, lalu menyimpan ke MinIO atau ke antrian lokal bila storage gagal
-- Panel lampiran pada detail submission admin: lihat daftar file, unduh lewat redirect terproteksi sesi admin, dan unggah lampiran tambahan
-- Halaman `/api/files/[id]` (atau setara) yang menyajikan file private hanya untuk admin terautentikasi, dengan fallback lokal bila file belum tersinkron
-- Worker/proses antrian yang menyinkronkan file pending ke MinIO secara otomatis dan memperbarui status di database
-- Integrasi ekspor Excel dan tampilan submissions: kolom file menampilkan nama file dan URL aplikasi, bukan URL storage
+**Goal:** Memungkinkan peserta form publik dan admin mengunggah file (gambar/PDF, maks 10 MB) yang tersimpan di object storage S3-compatible (MinIO self-hosted di compose yang sama), dengan antrian lokal + sinkronisasi otomatis ketika storage gagal, dan akses file private melalui aplikasi.
 
-**Key context:**
-- Storage: MinIO (S3-compatible) via `@aws-sdk/client-s3`; env `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`; bucket private, path-style addressing
-- Kegagalan storage tidak boleh memblokir submission — file masuk antrian lokal (`file_upload_jobs` bytea) lalu disinkronkan otomatis
-- File private: tidak ada URL storage/presigned link ke klien; akses hanya via aplikasi (streaming terproteksi sesi admin)
-- Form publik tetap tanpa login (konsisten dengan alur `/f/[slug]` sekarang); andalkan rate limit + validasi tipe/ukuran server-side
-- **Revisi arsitektur (2026-11-16):** backend awal Google Drive dicabut — tanpa tenant Workspace, service account tidak bisa membuat Shared Drive dan kuotanya `0` sehingga selalu 403. Kode, kredensial, probe, dan paket Drive dihapus; fase 46 diganti plan 46-04 (MinIO)
+- **Foundation & Storage Core:** FieldType `FILE` pada PostgreSQL enum & TypeScript unions, migrasi tabel `submission_files` & `file_upload_jobs`, klien storage S3 MinIO terisolasi, env configuration & non-fatal degraded probe.
+- **Form Builder & Renderers:** Konfigurasi field File Upload di `AdminFormEditor` (label, wajib, batas 10MB, format preset, max files) serta dropzone monokrom di form publik (`AttendanceForm.tsx`) dan live preview.
+- **Public Upload Flow & Offline Spool:** Drag-and-drop uploader interaktif dengan progres, validasi magic-byte (`file-type`), lossless EXIF/GPS stripping, rate limiting, dan absorpsi ke spool PostgreSQL `bytea` (HTTP 200) bila MinIO downtime.
+- **Sync Worker Engine & GC:** Asynchronous processing via `scripts/submission-worker.mjs` menggunakan `FOR UPDATE SKIP LOCKED`, deterministic object keys, idempotent PUTs, exponential backoff (hingga 5 attempts), auto-nulling `bytea` payload upon `SYNCED`, dan orphan TTL cleaner (24h).
+- **Private File Serving & Admin Surfaces:** Rute `GET /api/files/[id]` terproteksi sesi admin dengan dual-source streaming (MinIO vs spool) dan RFC 5987 `Content-Disposition`; panel lampiran submissions admin dengan sync/origin badges dan unggah berkas susulan tanpa merusak jawaban peserta.
+- **Export & Deletion Lifecycle:** Ekspor Excel (.xlsx) dengan tautan aplikasi internal dan mitigasi formula injection (`=`, `+`, `-`, `@`); cascading deletion saat submission/form dihapus (MinIO objects, jobs, dan database records).
+- **Hardening & QA:** Batas body size 12MB di route handlers dan Nginx (mencegah OOM), 246 unit tests passing across 28 test suites, clean lint/typecheck, dan production Docker containers verified healthy.
+
+</details>
 
 <details>
 <summary>Archived Milestone v2.2: Agreement & Terms Checkbox Field Support (Shipped: 2026-10-01)</summary>

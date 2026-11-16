@@ -69,6 +69,39 @@
 
 ---
 
+## Milestone: v2.3 — File Upload & MinIO Object Storage
+
+**Shipped:** 2026-11-16
+**Phases:** 8 | **Plans:** 14 | **Sessions:** 1
+
+### What Was Built
+- End-to-end file upload ecosystem with MinIO S3-compatible self-hosted container and resilient PostgreSQL `bytea` spool queue (`submission_files` and `file_upload_jobs`).
+- First-class `FILE` field in `AdminFormEditor` with format presets (images/PDFs), 10MB limit enforcement, and monochrome drag-and-drop dropzones in `AttendanceForm.tsx` and `AdminFormPreview.tsx`.
+- Magic-byte MIME sniffing with `file-type`, lossless JPEG (APP1/COM) & PNG (eXIf/tEXt/zTXt/iTXt) metadata stripping for privacy, and 12MB body bounding to prevent OOM.
+- Offline-first resilient upload returning HTTP 200 and local spooling during storage downtime.
+- Background worker synchronization via `submission-worker.mjs` using `FOR UPDATE SKIP LOCKED`, deterministic object keys, idempotent PUTs, exponential retry backoff, orphan GC (24h TTL), and spool `bytea` nulling upon sync.
+- Private file serving route `GET /api/files/[id]` with admin auth gating, dual-source streaming, and RFC 5987 `Content-Disposition`.
+- Admin attachments drawer with origin & sync status badges, supplementary uploads, clickable table URLs, and formula injection defusing in Excel exports.
+
+### What Worked
+- Replacing the initial Google Drive requirement with self-hosted MinIO early in Phase 46-03 after proving that service accounts have 0 quota on personal Google Drives without a Workspace tenant.
+- Spooling uploads into PostgreSQL `bytea` first decoupled public submissions from external storage uptime.
+- In-memory binary parsing for EXIF/metadata stripping avoided heavy native dependencies (like `sharp`/`vips`), keeping Node.js 22 Alpine containers lightweight.
+
+### What Was Inefficient
+- Attempting to use Google Drive as a backend without first checking whether the service account had a Google Workspace Shared Drive license. The Phase 46-03 live probe quickly surfaced this limitation before feature code was written.
+
+### Patterns Established
+- **Deterministic Object Key**: S3 keys formatted as `files/${fileId}` make storage uploads strictly idempotent, eliminating duplicate objects across retries.
+- **Dual-Source Streaming**: Serving endpoint checks storage status to stream seamlessly from DB bytea or MinIO without exposing storage details to clients.
+- **Excel Formula Defusing**: Sanitize string values beginning with `=`, `+`, `-`, or `@` with a leading apostrophe (`'`) to defuse spreadsheet formula execution.
+
+### Key Lessons
+1. Always prove third-party cloud prerequisites with a minimal live probe before designing multi-phase architectures around them.
+2. Binary buffer parsing for image privacy (EXIF stripping) is faster, safer, and much lighter than pulling native image manipulation libraries into container runtimes.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
