@@ -181,7 +181,7 @@ model SubmissionFile {
   mime              String
   size              Int
   checksum          String?
-  status            String   @default("PENDING")
+  status            String   @default("PENDING_UPLOAD")
   objectKey         String?  @map("object_key")
   bucket            String?
   lastError         String?  @map("last_error") @db.Text
@@ -197,7 +197,7 @@ model SubmissionFile {
 model FileUploadJob {
   id            String    @id
   fileId        String    @map("file_id")
-  payload       Bytes     @map("payload")
+  payload       Bytes?    @map("payload")
   payloadMime   String    @map("payload_mime")
   payloadSize   Int       @map("payload_size")
   status        String    @default("PENDING")
