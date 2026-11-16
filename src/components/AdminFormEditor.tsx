@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import FormDescription from '@/components/FormDescription'
 import { getAdminFormStatusLabel } from '@/lib/admin-display'
 import { getAdminPreviewStorageKey, type AdminPreviewField, type AdminPreviewForm, type AdminPreviewPage } from '@/lib/admin-form-preview'
+import { getFileConstraintText, getFilePresetShortLabel } from '@/lib/forms'
 import FormLogo from '@/components/FormLogo'
 
 type EditableField = AdminPreviewField
@@ -46,7 +47,7 @@ const defaultLikertOptions = [
 
 const CONDITIONAL_ROUTE_SUBMIT = '__SUBMIT__'
 
-const fieldTypeOptions: Array<EditableField['type']> = ['text', 'textarea', 'radio', 'select', 'likert', 'signature', 'checkbox']
+const fieldTypeOptions: Array<EditableField['type']> = ['text', 'textarea', 'radio', 'select', 'likert', 'signature', 'checkbox', 'file']
 const fieldTypeLabels: Record<EditableField['type'], string> = {
   text: 'Teks Singkat',
   textarea: 'Teks Panjang',
@@ -86,6 +87,12 @@ function createPage(): EditablePage {
 }
 
 function createField(type: EditableField['type'], pageId: string): EditableField {
+  const fileDefaults = type === 'file' ? {
+    maxSizeMB: 5,
+    allowedPreset: 'images_and_pdf' as const,
+    maxFiles: 1,
+  } : {}
+
   return {
     id: `new-${crypto.randomUUID()}`,
     name: 'field_baru',
@@ -97,6 +104,7 @@ function createField(type: EditableField['type'], pageId: string): EditableField
     options: createOptionsForType(type),
     copyFromFieldId: '',
     copyFromLabel: '',
+    ...fileDefaults,
   }
 }
 
@@ -866,6 +874,9 @@ export default function AdminFormEditor({ formId }: Props) {
             options: field.options,
             copyFromFieldId: field.copyFromFieldId || undefined,
             copyFromLabel: field.copyFromLabel?.trim() || undefined,
+            maxSizeMB: field.type === 'file' ? (field.maxSizeMB ?? 5) : undefined,
+            allowedPreset: field.type === 'file' ? (field.allowedPreset ?? 'images_and_pdf') : undefined,
+            maxFiles: field.type === 'file' ? (field.maxFiles ?? 1) : undefined,
           })),
         }),
       })
@@ -1519,6 +1530,16 @@ export default function AdminFormEditor({ formId }: Props) {
                             {field.options.length} Opsi
                           </span>
                         )}
+                        {field.type === 'file' && (
+                          <>
+                            <span className="admin-builder-pill meta">
+                              {getFilePresetShortLabel(field.allowedPreset)}
+                            </span>
+                            <span className="admin-builder-pill meta">
+                              {getFileConstraintText(field.maxSizeMB, field.maxFiles)}
+                            </span>
+                          </>
+                        )}
                         {usesQuizScoring && field.type === 'radio' && (
                           <span className="admin-builder-pill score">
                             {field.options.find((o) => o.isCorrect) ? 'Kuis (1 Benar)' : 'Non-Skor'}
@@ -1601,20 +1622,27 @@ export default function AdminFormEditor({ formId }: Props) {
                         <span>Tipe Field</span>
                         <select
                           value={field.type}
-                          onChange={(e) => updateField(field.id, {
-                            type: e.target.value as EditableField['type'],
-                            options: createOptionsForType(
-                              e.target.value as EditableField['type'],
-                              field.options
-                            ),
-                            placeholder: e.target.value === 'signature'
-                              || e.target.value === 'radio'
-                              || e.target.value === 'select'
-                              || e.target.value === 'likert'
-                              || e.target.value === 'checkbox'
-                              ? ''
-                              : field.placeholder,
-                          })}
+                          onChange={(e) => {
+                            const newType = e.target.value as EditableField['type']
+                            updateField(field.id, {
+                              type: newType,
+                              options: createOptionsForType(
+                                newType,
+                                field.options
+                              ),
+                              placeholder: newType === 'signature'
+                                || newType === 'radio'
+                                || newType === 'select'
+                                || newType === 'likert'
+                                || newType === 'checkbox'
+                                || newType === 'file'
+                                ? ''
+                                : field.placeholder,
+                              maxSizeMB: newType === 'file' ? (field.maxSizeMB ?? 5) : field.maxSizeMB,
+                              allowedPreset: newType === 'file' ? (field.allowedPreset ?? 'images_and_pdf') : field.allowedPreset,
+                              maxFiles: newType === 'file' ? (field.maxFiles ?? 1) : field.maxFiles,
+                            })
+                          }}
                           className="admin-builder-select"
                         >
                           {fieldTypeOptions.map((type) => (
@@ -1845,6 +1873,65 @@ export default function AdminFormEditor({ formId }: Props) {
                               ? 'Untuk form multi-langkah, tiap opsi dropdown bisa diarahkan ke langkah berikutnya, ke langkah tertentu, atau langsung mengirim form.'
                               : 'Field Likert dapat diatur tingkatnya (misalnya 4 atau 5 pilihan). Anda bisa menambahkan atau menghapus tingkat/opsi, serta mengubah label tiap tingkat.'}
                         </small>
+                  </div>
+                )}
+
+                {field.type === 'file' && (
+                  <div className="admin-builder-field-grid" style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                    <label className="admin-builder-field">
+                      <span>Format Berkas yang Diizinkan</span>
+                      <select
+                        value={field.allowedPreset ?? 'images_and_pdf'}
+                        onChange={(e) => updateField(field.id, {
+                          allowedPreset: e.target.value as EditableField['allowedPreset'],
+                        })}
+                        className="admin-builder-select"
+                      >
+                        <option value="images_and_pdf">Gambar &amp; Dokumen PDF (PNG, JPG, WEBP, PDF)</option>
+                        <option value="images">Gambar saja (PNG, JPG, WEBP)</option>
+                        <option value="pdf">Dokumen PDF saja (PDF)</option>
+                        <option value="all">Semua format didukung (Maks 10 MB)</option>
+                      </select>
+                    </label>
+
+                    <label className="admin-builder-field">
+                      <span>Ukuran Maksimal Berkas</span>
+                      <select
+                        value={field.maxSizeMB ?? 5}
+                        onChange={(e) => updateField(field.id, {
+                          maxSizeMB: Number(e.target.value),
+                        })}
+                        className="admin-builder-select"
+                      >
+                        <option value={1}>1 MB</option>
+                        <option value={2}>2 MB</option>
+                        <option value={5}>5 MB (Standar)</option>
+                        <option value={10}>10 MB (Maksimal)</option>
+                      </select>
+                    </label>
+
+                    <label className="admin-builder-field">
+                      <span>Jumlah Maksimal Berkas</span>
+                      <select
+                        value={field.maxFiles ?? 1}
+                        onChange={(e) => updateField(field.id, {
+                          maxFiles: Number(e.target.value),
+                        })}
+                        className="admin-builder-select"
+                      >
+                        <option value={1}>1 berkas</option>
+                        <option value={2}>2 berkas</option>
+                        <option value={3}>3 berkas</option>
+                        <option value={4}>4 berkas</option>
+                        <option value={5}>5 berkas</option>
+                      </select>
+                    </label>
+
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <p className="admin-builder-option-helper" style={{ margin: '4px 0 0 0' }}>
+                        Berkas yang diunggah responden akan disimpan secara aman di penyimpanan objek privat. Batas maksimal ukuran berkas sistem adalah 10 MB.
+                      </p>
+                    </div>
                   </div>
                 )}
 
