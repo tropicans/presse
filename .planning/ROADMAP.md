@@ -29,7 +29,7 @@
 ## Phases
 
 - [x] **Phase 46: Foundation - Schema, Field Plumbing, MinIO Client & Credentials** - Prove real MinIO upload works end-to-end before any feature code
-- [ ] **Phase 47: File Field Config, Builder, Editor & Renderer** - Admin can add and configure a file field; it renders in editor, preview, and public form
+- [x] **Phase 47: File Field Config, Builder, Editor & Renderer** - Admin can add and configure a file field; it renders in editor, preview, and public form
 - [ ] **Phase 48: Storage Abstraction & Postgres bytea Spool Layer** - Raw-SQL domain module owns file records, queue records, and bytea spool lifecycle
 - [ ] **Phase 49: Public Upload API & Client Upload Component** - Anonymous participants upload files on `/f/[slug]` without blocking on storage availability
 - [ ] **Phase 50: Sync Worker, Queue Processing, Retry & Orphan GC** - Queued files sync to MinIO idempotently with capped retry; orphans expire
@@ -79,7 +79,7 @@ Plans:
 **Plans:** 2 plans
 Plans:
 - [x] 47-01-PLAN.md — Domain model, serialization parity, and Admin Form Editor builder controls
-- [ ] 47-02-PLAN.md — Monochrome inert dropzone renderer in live preview, public form, and automated tests
+- [x] 47-02-PLAN.md — Monochrome inert dropzone renderer in live preview, public form, and automated tests
 **Research flag**: no — mirrors the proven v2.2 `CHECKBOX` enum + editor-config pattern.
 
 ### Phase 48: Storage Abstraction & Postgres bytea Spool Layer
@@ -191,7 +191,7 @@ Phases execute in numeric order: 46 → 47 ∥ 48 → 49 → 50 → 51 → 52 �
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 46. Foundation - Schema, Field Plumbing, MinIO Client & Credentials | 4/4 | Complete (46-03 closed; 46-04 delivered MinIO) | 2026-11-16 |
-| 47. File Field Config, Builder, Editor & Renderer | 1/2 | In Progress | - |
+| 47. File Field Config, Builder, Editor & Renderer | 2/2 | Complete | 2026-11-16 |
 | 48. Storage Abstraction & Postgres bytea Spool Layer | 0/TBD | Not started | - |
 | 49. Public Upload API & Client Upload Component | 0/TBD | Not started | - |
 | 50. Sync Worker, Queue Processing, Retry & Orphan GC | 0/TBD | Not started | - |

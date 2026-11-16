@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v2.3
 current_phase: 47
 current_phase_name: File Field Builder Configuration
-status: in_progress
-stopped_at: Completed 47-01-PLAN.md
-last_updated: "2026-11-16T07:38:00.000Z"
+status: complete
+stopped_at: Completed 47-02-PLAN.md
+last_updated: "2026-11-16T07:54:00.000Z"
 last_activity: 2026-11-16
-last_activity_desc: Phase 47 plan 01 executed - FileField domain model, serialization parity, and AdminFormEditor controls
-state_head: bcd122e065b61a6ea8429906714f98767d719dbc
+last_activity_desc: Phase 47 plan 02 executed - Monochrome inert dropzone renderer in live preview, public form, and automated tests
+state_head: a4b9763d596677f54460d6a2f3f9e98e7225dc6c
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
   completed_plans: 4
-  percent: 13
+  percent: 25
 milestone_name: File Upload & MinIO Object Storage
 ---
 
@@ -32,9 +32,9 @@ Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jot
 ## Current Position
 
 Phase: 47 — File Field Builder Configuration
-Plan: 47-01-PLAN.md
-Status: In progress — 47-01 executed (1/2 plans complete)
-Last activity: 2026-11-16 — Phase 47 plan 01 executed: FileField domain model, serialization parity, and AdminFormEditor controls delivered and tested
+Plan: 47-02-PLAN.md
+Status: Complete — 47-02 executed (2/2 plans complete)
+Last activity: 2026-11-16 — Phase 47 plan 02 executed: Monochrome inert dropzone renderer in live preview, public form, and automated tests
 
 ## Phases Summary
 
@@ -44,6 +44,7 @@ Last activity: 2026-11-16 — Phase 47 plan 01 executed: FileField domain model,
 - [x] Phase 44: Submissions, Excel Export & Analytics Integration (AGREE-06) (Completed 2026-10-01)
 - [x] Phase 45: Multi-Tier Verification, Automated Testing & Container Health (AGREE-07) (Completed 2026-10-01)
 - [x] Phase 46: Foundation — Schema, Field Plumbing, MinIO Client & Credentials (FILE-01..FILE-05) (Completed 2026-11-16)
+- [x] Phase 47: File Field Config, Builder, Editor & Renderer (FILE-06, FILE-07) (Completed 2026-11-16)
 
 ## Key Decisions
 
@@ -58,6 +59,7 @@ Last activity: 2026-11-16 — Phase 47 plan 01 executed: FileField domain model,
 | Degraded-Only Storage Probe (D-01 revisi) | MinIO hidup di stack yang sama, jadi tidak ada kelas kegagalan boot yang layak membuat proses crash. Kredensial invalid atau bucket absen → degraded + re-probe 60 detik; spool `file_upload_jobs` menyerap submission | Diterapkan (Phase 46-04) |
 | Deterministic Object Key (D-13) | `buildObjectKey(fileId)` = `files/<fileId>`, tanpa timestamp atau suffix acak; PUT S3 idempoten per key, retry menimpa objek yang sama sehingga rekonsiliasi duplikat tidak pernah diperlukan | Diterapkan (Phase 46-04) |
 | Object Identity = `(bucket, object_key)` (D-14) | Unique index parsial `submission_files_bucket_object_key_key` mencerminkan identitas objek sebenarnya, bukan key saja | Diterapkan (Phase 46-04) |
+| Monochrome Inert File Dropzone (D-05, D-06) | Render file field as dashed monochrome dropzone with SVG upload icon, label, format & size instruction, inert 'Pilih Berkas' button, and footnote notice | Diterapkan (Phase 47-02) |
 | MinIO Tanpa Port Host | Console dan API tidak boleh publik; service `minio` tidak punya `ports:` mapping dan hanya terjangkau di network compose | Diterapkan (Phase 46-04) |
 | FileField Lossless Settings (D-01..D-08) | `fileConfigs` disimpan di `settings_json` dengan batas `maxSizeMB` 10 MB, 4 preset format, dan mapping preview parity | Diterapkan (Phase 47-01) |
 | Decoupled Preset Helper Exports | `getFilePresetLabel`, `getFilePresetShortLabel`, dan `getFileConstraintText` ditempatkan di `admin-form-preview.ts` dan dire-export di `forms.ts` untuk mencegah bundel browser mengimpor dependensi server Node.js | Diterapkan (Phase 47-01) |

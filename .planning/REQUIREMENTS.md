@@ -19,7 +19,7 @@
 ### Form Builder
 
 - [x] **FILE-06**: Admin dapat menambahkan field `File Upload` di `AdminFormEditor` dengan konfigurasi: label, wajib/tidak, batas ukuran (maks 10 MB), preset tipe diizinkan (gambar + PDF), dan jumlah file maksimum
-- [ ] **FILE-07**: Field `File Upload` tampil di live preview admin dan form publik sebagai dropzone/placeholder yang konsisten dengan design system monochrome
+- [x] **FILE-07**: Field `File Upload` tampil di live preview admin dan form publik sebagai dropzone/placeholder yang konsisten dengan design system monochrome
 
 ### Public Upload Flow
 
@@ -108,7 +108,7 @@ Deferred — tidak masuk roadmap v2.3.
 | FILE-04 | TBD | Complete |
 | FILE-05 | TBD | Complete |
 | FILE-06 | Phase 47 | Complete |
-| FILE-07 | TBD | Pending |
+| FILE-07 | Phase 47 | Complete |
 | FILE-08 | TBD | Pending |
 | FILE-09 | TBD | Pending |
 | FILE-10 | TBD | Pending |
