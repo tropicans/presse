@@ -50,11 +50,11 @@
   4. Startup probe fails hard and loudly when `GOOGLE_DRIVE_FOLDER_ID` points at a non-Shared-Drive folder or credentials are invalid — the app does not boot into a permanent silent-spool state
   5. New env vars (`GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`) are documented in `.env.example` and validated at boot; the service-account key is never reachable from the client bundle or logs
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 Plans:
 
 - [x] 46-01-PLAN.md — Migration (FILE enum + submission_files + file_upload_jobs + bytea spool), Prisma parity, `FILE` field plumbing in `src/lib/forms.ts`, `src/lib/file-jobs.ts` bytea helpers; live-DB `prisma migrate deploy` proof
-- [ ] 46-02-PLAN.md — Package legitimacy checkpoint, `getDriveConfig` + `.env.example`, `src/lib/drive.ts` (probe, classifier, re-probe timer), degraded health branch, `src/instrumentation.ts` boot wire, standalone build/boot smoke
+- [x] 46-02-PLAN.md — Package legitimacy checkpoint, `getDriveConfig` + `.env.example`, `src/lib/drive.ts` (probe, classifier, re-probe timer), degraded health branch, `src/instrumentation.ts` boot wire, standalone build/boot smoke
 - [ ] 46-03-PLAN.md — Shared Drive prerequisites checkpoint, `scripts/ci-drive-smoke.mjs` (contractual exit codes), real live upload proof inside Shared Drive (W1)
 
 **Research flag**: yes — Shared Drive provisioning, service-account membership, and `supportsAllDrives`/`driveId`/`appProperties` specifics must be confirmed against live Google Workspace before coding (SUMMARY.md Research Flags: F1).
@@ -183,7 +183,7 @@ Phases execute in numeric order: 46 → 47 ∥ 48 → 49 → 50 → 51 → 52 �
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 46. Foundation — Schema, Field Plumbing, Drive Client & Credentials | 1/3 | In Progress|  |
+| 46. Foundation — Schema, Field Plumbing, Drive Client & Credentials | 2/3 | In Progress|  |
 | 47. File Field Config, Builder, Editor & Renderer | 0/TBD | Not started | - |
 | 48. Storage Abstraction & Postgres bytea Spool Layer | 0/TBD | Not started | - |
 | 49. Public Upload API & Client Upload Component | 0/TBD | Not started | - |

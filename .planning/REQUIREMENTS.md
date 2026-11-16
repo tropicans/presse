@@ -13,8 +13,8 @@
 - [x] **FILE-01**: Tipe field `FILE` tersedia end-to-end pada enum PostgreSQL `FieldType`, union TypeScript di `src/lib/forms.ts`, dan model domain form field
 - [x] **FILE-02**: Tabel `submission_files` menyimpan metadata file (id, submission_id nullable, field_id nullable, original filename, sanitized filename, mime, size, checksum, storage status, drive_file_id, timestamps) via migrasi SQL
 - [x] **FILE-03**: Tabel `file_upload_jobs` menyimpan payload bytes (`bytea`) sebagai spool lokal dengan status antrian (PENDING/CLAIMED/DONE/FAILED), attempt counter, dan next_attempt_at — tanpa volume filesystem
-- [ ] **FILE-04**: Klien Google Drive berfungsi via service account dengan scope `drive.file`, upload ke **Shared Drive** folder memakai `supportsAllDrives: true` + `driveId`, dan probe startup yang gagal keras bila folder bukan Shared Drive
-- [ ] **FILE-05**: Konfigurasi env baru (`GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`) terdaftar di `.env.example` dan divalidasi saat boot
+- [x] **FILE-04**: Klien Google Drive berfungsi via service account dengan scope `drive.file`, upload ke **Shared Drive** folder memakai `supportsAllDrives: true` + `driveId`, dan probe startup yang gagal keras bila folder bukan Shared Drive
+- [x] **FILE-05**: Konfigurasi env baru (`GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`) terdaftar di `.env.example` dan divalidasi saat boot
 
 ### Form Builder
 
@@ -104,8 +104,8 @@ Deferred — tidak masuk roadmap v2.3.
 | FILE-01 | TBD | Complete |
 | FILE-02 | TBD | Complete |
 | FILE-03 | TBD | Complete |
-| FILE-04 | TBD | Pending |
-| FILE-05 | TBD | Pending |
+| FILE-04 | TBD | Complete |
+| FILE-05 | TBD | Complete |
 | FILE-06 | TBD | Pending |
 | FILE-07 | TBD | Pending |
 | FILE-08 | TBD | Pending |
