@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import AttendanceForm from '@/components/AttendanceForm'
 import FormDescription from '@/components/FormDescription'
-import HimpunLogo from '@/components/HimpunLogo'
+import FormLogo from '@/components/FormLogo'
 import type { PublicFormDefinition } from '@/lib/forms'
 
 interface PublicFormShellProps {
@@ -35,7 +35,7 @@ export default function PublicFormShell({ form }: PublicFormShellProps) {
           <AttendanceForm form={form} />
         </div>
         <div style={{ padding: '14px 24px 20px', textAlign: 'center', opacity: 0.65, fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-          <HimpunLogo size={16} />
+          <FormLogo size={16} />
           <span>Powered by <strong style={{ color: 'var(--text-primary)' }}>Form</strong></span>
         </div>
       </div>

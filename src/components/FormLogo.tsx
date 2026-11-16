@@ -1,6 +1,6 @@
 import React from 'react'
 
-export interface HimpunLogoProps {
+export interface FormLogoProps {
   size?: 'sm' | 'md' | 'lg' | number
   className?: string
   showText?: boolean
@@ -14,13 +14,13 @@ const SIZE_MAP = {
   lg: 44,
 }
 
-export default function HimpunLogo({
+export default function FormLogo({
   size = 'md',
   className = '',
   showText = false,
   subtitle,
   style,
-}: HimpunLogoProps) {
+}: FormLogoProps) {
   const pixelSize = typeof size === 'number' ? size : SIZE_MAP[size] ?? 28
 
   const mark = (
@@ -30,7 +30,7 @@ export default function HimpunLogo({
       alt="Form"
       width={pixelSize}
       height={pixelSize}
-      className="form-logo-img himpun-logo-svg"
+      className="form-logo-img"
       style={{
         width: pixelSize,
         height: pixelSize,
@@ -44,7 +44,7 @@ export default function HimpunLogo({
 
   if (!showText) {
     return (
-      <div className={`himpun-logo-wrap form-logo-wrap ${className}`} style={{ display: 'inline-flex', alignItems: 'center', ...style }}>
+      <div className={`form-logo-wrap ${className}`} style={{ display: 'inline-flex', alignItems: 'center', ...style }}>
         {mark}
       </div>
     )
@@ -52,7 +52,7 @@ export default function HimpunLogo({
 
   return (
     <div
-      className={`himpun-logo-brand form-logo-brand ${className}`}
+      className={`form-logo-brand ${className}`}
       style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', minWidth: 0, ...style }}
     >
       {mark}
@@ -70,5 +70,4 @@ export default function HimpunLogo({
   )
 }
 
-export { HimpunLogo as FormLogo }
-
+export { FormLogo }

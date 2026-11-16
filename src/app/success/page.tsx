@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import HimpunLogo from '@/components/HimpunLogo'
+import FormLogo from '@/components/FormLogo'
 import { getPublicFormBySlug, getPublicSubmissionSummary } from '@/lib/forms'
 
 interface SuccessPageProps {
@@ -97,7 +97,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           )}
         </div>
         <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: 0.6, fontSize: '0.78rem' }}>
-          <HimpunLogo size={16} />
+          <FormLogo size={16} />
           <span>Powered by <strong style={{ color: 'var(--text-primary)' }}>Form</strong></span>
         </div>
       </div>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import HimpunLogo from '@/components/HimpunLogo'
+import FormLogo from '@/components/FormLogo'
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
         <div className="admin-login-card">
           <div className="admin-login-header">
             <div className="admin-login-brand">
-              <HimpunLogo size={28} />
+              <FormLogo size={28} />
               <span className="admin-login-brand-name">Form</span>
             </div>
             <span className="admin-login-badge">PORTAL ADMIN</span>

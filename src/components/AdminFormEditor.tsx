@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import FormDescription from '@/components/FormDescription'
 import { getAdminFormStatusLabel } from '@/lib/admin-display'
 import { getAdminPreviewStorageKey, type AdminPreviewField, type AdminPreviewForm, type AdminPreviewPage } from '@/lib/admin-form-preview'
-import HimpunLogo from '@/components/HimpunLogo'
+import FormLogo from '@/components/FormLogo'
 
 type EditableField = AdminPreviewField
 type EditablePage = AdminPreviewPage
@@ -932,7 +932,7 @@ export default function AdminFormEditor({ formId }: Props) {
       <header className="editorial-form-editor-topbar">
         <div className="editorial-form-editor-topbar-left">
           <div className="forms-dashboard-brand">
-            <HimpunLogo size="sm" />
+            <FormLogo size="sm" />
             <div>
               <strong>Form</strong>
               <span>Ruang kerja penyusunan formulir</span>

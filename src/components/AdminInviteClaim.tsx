@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
-import HimpunLogo from '@/components/HimpunLogo'
+import FormLogo from '@/components/FormLogo'
 
 interface InviteInfo {
   valid: boolean
@@ -47,7 +47,7 @@ export default function AdminInviteClaim({
           {/* Header */}
           <div className="admin-login-header">
             <div className="admin-login-brand">
-              <HimpunLogo size={28} />
+              <FormLogo size={28} />
               <span className="admin-login-brand-name">Form</span>
             </div>
             <span className="admin-login-badge">UNDANGAN ADMIN</span>

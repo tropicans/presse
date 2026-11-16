@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { signOut } from 'next-auth/react'
-import HimpunLogo from '@/components/HimpunLogo'
+import FormLogo from '@/components/FormLogo'
 
 interface SuperadminItem {
   id: string
@@ -190,7 +190,7 @@ export default function AdminUsersManagement({ currentUserEmail }: { currentUser
       {/* Topbar */}
       <header className="forms-dashboard-topbar">
         <div className="forms-dashboard-brand">
-          <HimpunLogo size="sm" />
+          <FormLogo size="sm" />
           <div>
             <strong>Form</strong>
             <span>Manajemen Akses & Tim</span>

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { signOut } from 'next-auth/react'
 import { getAdminFormModeLabel, getAdminFormStatusLabel } from '@/lib/admin-display'
 import { getDeleteDisabledReason } from '@/lib/form-delete-utils'
-import HimpunLogo from '@/components/HimpunLogo'
+import FormLogo from '@/components/FormLogo'
 
 interface AdminFormListItem {
   id: string
@@ -284,7 +284,7 @@ export default function AdminFormsList() {
     <div className="forms-dashboard-shell">
       <header className="forms-dashboard-topbar">
         <div className="forms-dashboard-brand">
-          <HimpunLogo size="sm" />
+          <FormLogo size="sm" />
           <div>
             <strong>Form</strong>
             <span>Dashboard admin formulir</span>
