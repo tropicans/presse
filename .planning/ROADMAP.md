@@ -76,7 +76,7 @@ Plans:
   3. The collapsed field card and outline panel show a coherent summary (type pill, required badge, file-count and size-limit hints)
   4. Field config round-trips through the existing field-JSON/settings path (CHECKBOX precedent) — saved, reloaded, and previewed without data loss
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 47-01-PLAN.md — Domain model, serialization parity, and Admin Form Editor builder controls
 - [x] 47-02-PLAN.md — Monochrome inert dropzone renderer in live preview, public form, and automated tests
