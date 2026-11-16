@@ -32,7 +32,7 @@
 - [x] **Phase 47: File Field Config, Builder, Editor & Renderer** - Admin can add and configure a file field; it renders in editor, preview, and public form
 - [x] **Phase 48: Storage Abstraction & Postgres bytea Spool Layer** - Raw-SQL domain module owns file records, queue records, and bytea spool lifecycle
 - [x] **Phase 49: Public Upload API & Client Upload Component** - Anonymous participants upload files on `/f/[slug]` without blocking on storage availability
-- [ ] **Phase 50: Sync Worker, Queue Processing, Retry & Orphan GC** - Queued files sync to MinIO idempotently with capped retry; orphans expire
+- [x] **Phase 50: Sync Worker, Queue Processing, Retry & Orphan GC** - Queued files sync to MinIO idempotently with capped retry; orphans expire
 - [ ] **Phase 51: Private File Serving Route** - Authenticated admins download files through the app only, never via storage links
 - [ ] **Phase 52: Admin Surfaces & Export Integration** - Attachment panel, extra admin uploads, submissions table, and Excel export use app URLs
 - [ ] **Phase 53: Hardening, GC Tuning & QA** - OOM-safe limits, EXIF stripping, full test suite, and container rebuild verified
@@ -135,10 +135,9 @@ Plans:
   4. After a file reaches `SYNCED`, its `bytea` payload is nulled so database size stays bounded
   5. A file uploaded but never attached to a submission is swept to `ORPHANED` after its TTL, and its MinIO object and spool bytes are cleaned up
 
-**Plans:** 2/2 plans complete
+**Plans:** 1/1 plan complete
 Plans:
-- [x] 49-01-PLAN.md — Public Upload API Route, Magic-Byte MIME Validation, and Automated Tests
-- [x] 49-02-PLAN.md — Interactive Client Upload UI, Submission Linking in forms.ts, and Verification
+- [x] 50-01-PLAN.md — Background Sync Engine, Queue Processing, Retry Backoff, Orphan GC, and Worker Integration
 **Research flag**: no — mirrors the proven `submission_jobs` claim loop while keeping tables separate.
 **Threats closed**: W9 (no duplicate objects, no starvation), W8 (orphan/TTL sweep).
 
@@ -154,10 +153,7 @@ Plans:
   3. A request without a session, with a nonexistent ID, with an ID belonging to a file outside the admin's scope, or with a traversal attempt (`../`) is rejected
   4. No file URL ever points at MinIO or any storage host; the bucket stays private and files are reachable only through the app
 
-**Plans:** 2/2 plans complete
-Plans:
-- [x] 49-01-PLAN.md — Public Upload API Route, Magic-Byte MIME Validation, and Automated Tests
-- [x] 49-02-PLAN.md — Interactive Client Upload UI, Submission Linking in forms.ts, and Verification
+**Plans**: TBD
 **Research flag**: no — auth-gated route + `Content-Disposition` recipe is documented in PITFALLS.md.
 **Threats closed**: W4 (IDOR, traversal, inline-XSS — negative tests required).
 
@@ -174,10 +170,7 @@ Plans:
   4. Excel export writes `filename + app URL`, prefixes filenames starting with `=`, `+`, `-`, or `@` to defuse formula injection, and the existing 500-row split still holds
   5. Deleting a submission or form removes its file records, spool payloads, and MinIO objects
 
-**Plans:** 2/2 plans complete
-Plans:
-- [x] 49-01-PLAN.md — Public Upload API Route, Magic-Byte MIME Validation, and Automated Tests
-- [x] 49-02-PLAN.md — Interactive Client Upload UI, Submission Linking in forms.ts, and Verification
+**Plans**: TBD
 **Research flag**: no — export/table formatting follows existing `forms.ts` formatter patterns.
 **Threats closed**: W5 (app URLs only, formula sanitize, 500-row split), W8 (delete purges blobs).
 **UI hint**: yes
@@ -194,10 +187,7 @@ Plans:
   3. Unit tests cover a valid PNG, a valid PDF, a spoofed extension, an oversize file, storage-down → spool → sync, retry with no duplication, and GC TTL — and `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build` all pass
   4. `app` and `worker` rebuild per the AGENTS.md protocol (including the new `minio` service with a persisted volume) and `/api/health` returns `status: ok` with the feature live
 
-**Plans:** 2/2 plans complete
-Plans:
-- [x] 49-01-PLAN.md — Public Upload API Route, Magic-Byte MIME Validation, and Automated Tests
-- [x] 49-02-PLAN.md — Interactive Client Upload UI, Submission Linking in forms.ts, and Verification
+**Plans**: TBD
 **Research flag**: no — cross-cutting verification pass.
 **Threats closed**: full W1-W10 re-verification, especially W2 (memory under parallel load) and W7 (EXIF).
 
@@ -210,9 +200,9 @@ Phases execute in numeric order: 46 → 47 ∥ 48 → 49 → 50 → 51 → 52 �
 |-------|----------------|--------|-----------|
 | 46. Foundation - Schema, Field Plumbing, MinIO Client & Credentials | 4/4 | Complete (46-03 closed; 46-04 delivered MinIO) | 2026-11-16 |
 | 47. File Field Config, Builder, Editor & Renderer | 2/2 | Complete | 2026-11-16 |
-| 48. Storage Abstraction & Postgres bytea Spool Layer | 0/TBD | Not started | - |
-| 49. Public Upload API & Client Upload Component | 0/TBD | Not started | - |
-| 50. Sync Worker, Queue Processing, Retry & Orphan GC | 0/TBD | Not started | - |
+| 48. Storage Abstraction & Postgres bytea Spool Layer | 2/2 | Complete | 2026-11-16 |
+| 49. Public Upload API & Client Upload Component | 2/2 | Complete | 2026-11-16 |
+| 50. Sync Worker, Queue Processing, Retry & Orphan GC | 1/1 | Complete | 2026-11-16 |
 | 51. Private File Serving Route | 0/TBD | Not started | - |
 | 52. Admin Surfaces & Export Integration | 0/TBD | Not started | - |
 | 53. Hardening, GC Tuning & QA | 0/TBD | Not started | - |

@@ -32,11 +32,31 @@ async function processBatch() {
   return Number(payload.processed || 0)
 }
 
+async function processFileJobsBatch() {
+  const response = await fetch(`${baseUrl}/api/internal/file-jobs/process?batch=${batchSize}`, {
+    method: 'POST',
+    headers: {
+      'x-worker-token': workerToken,
+      Accept: 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const body = await response.text()
+    throw new Error(`Worker file-jobs process route failed: ${response.status} ${body}`)
+  }
+
+  const payload = await response.json()
+  return Number(payload.synced || 0)
+}
+
 async function main() {
   while (true) {
     try {
-      const processed = await processBatch()
-      await sleep(processed > 0 ? 25 : idleMs)
+      const processedSubmissions = await processBatch()
+      const processedFiles = await processFileJobsBatch()
+      const hasWork = processedSubmissions > 0 || processedFiles > 0
+      await sleep(hasWork ? 25 : idleMs)
     } catch (error) {
       console.error('[submission-worker]', error)
       await sleep(errorMs)
