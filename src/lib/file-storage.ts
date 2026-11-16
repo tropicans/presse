@@ -363,6 +363,213 @@ export async function insertFileUploadJob(input: InsertFileUploadJobInput): Prom
   `
 }
 
+export interface ClaimedJobRow {
+  jobId: string
+  fileId: string
+  payload: Buffer | null
+  payloadMime: string
+  payloadSize: number
+  attempts: number
+  originalFilename: string
+  sanitizedFilename: string
+  mime: string
+  size: number
+}
+
+// T-48-07: Clamp batchSize to prevent unbounded buffer allocation
+const MAX_CLAIM_BATCH = 50
+
+interface RawClaimedJobRow {
+  job_id: string
+  file_id: string
+  payload: Uint8Array | Buffer | null
+  payload_mime: string
+  payload_size: number
+  attempts: number
+  original_filename: string
+  sanitized_filename: string
+  mime: string
+  size: number
+}
+
+function normalizePayload(raw: Uint8Array | Buffer | null): Buffer | null {
+  if (!raw) return null
+  if (Buffer.isBuffer(raw)) return raw
+  if (raw instanceof Uint8Array) {
+    return Buffer.from(raw.buffer, raw.byteOffset, raw.byteLength)
+  }
+  return Buffer.from(raw)
+}
+
+// T-48-05: SELECT ... FOR UPDATE SKIP LOCKED ensures race-free concurrent claiming
+export async function claimUploadJobs(batchSize: number = 10): Promise<ClaimedJobRow[]> {
+  const clampedBatchSize = Math.max(1, Math.min(batchSize, MAX_CLAIM_BATCH))
+
+  return prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<RawClaimedJobRow[]>`
+      SELECT
+        j.id AS job_id,
+        j.file_id,
+        j.payload,
+        j.payload_mime,
+        j.payload_size,
+        j.attempts,
+        sf.original_filename,
+        sf.sanitized_filename,
+        sf.mime,
+        sf.size
+      FROM "file_upload_jobs" j
+      JOIN "submission_files" sf ON sf.id = j.file_id
+      WHERE j.status = 'PENDING'
+        AND j.next_attempt_at <= NOW() AT TIME ZONE 'UTC'
+      FOR UPDATE SKIP LOCKED
+      LIMIT ${clampedBatchSize}
+    `
+
+    if (rows.length === 0) return []
+
+    const jobIds = rows.map((r) => r.job_id)
+
+    await tx.$executeRaw`
+      UPDATE "file_upload_jobs"
+      SET
+        status = 'CLAIMED',
+        attempts = attempts + 1,
+        updated_at = NOW() AT TIME ZONE 'UTC'
+      WHERE id = ANY(${jobIds})
+    `
+
+    return rows.map((row) => ({
+      jobId: row.job_id,
+      fileId: row.file_id,
+      payload: normalizePayload(row.payload),
+      payloadMime: row.payload_mime,
+      payloadSize: Number(row.payload_size),
+      attempts: Number(row.attempts),
+      originalFilename: row.original_filename,
+      sanitizedFilename: row.sanitized_filename,
+      mime: row.mime,
+      size: Number(row.size),
+    }))
+  })
+}
+
+// T-48-06: Set payload = NULL on DONE to reclaim database storage
+export async function markFileJobSynced(params: {
+  jobId: string
+  fileId: string
+  bucket: string
+  objectKey: string
+}): Promise<void> {
+  const { jobId, fileId, bucket, objectKey } = params
+
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`
+      UPDATE "file_upload_jobs"
+      SET
+        status = 'DONE',
+        payload = NULL,
+        processed_at = NOW() AT TIME ZONE 'UTC',
+        updated_at = NOW() AT TIME ZONE 'UTC'
+      WHERE id = ${jobId}
+    `
+
+    await tx.$executeRaw`
+      UPDATE "submission_files"
+      SET
+        status = 'SYNCED',
+        bucket = ${bucket},
+        object_key = ${objectKey},
+        updated_at = NOW() AT TIME ZONE 'UTC'
+      WHERE id = ${fileId}
+    `
+  })
+}
+
+export async function markFileJobFailed(params: {
+  jobId: string
+  fileId: string
+  error: string
+  nextAttemptAt?: Date
+  isTerminal: boolean
+}): Promise<void> {
+  const { jobId, fileId, error, nextAttemptAt, isTerminal } = params
+
+  await prisma.$transaction(async (tx) => {
+    if (!isTerminal) {
+      const nextAt = nextAttemptAt ?? new Date()
+      await tx.$executeRaw`
+        UPDATE "file_upload_jobs"
+        SET
+          status = 'PENDING',
+          last_error = ${error},
+          next_attempt_at = ${nextAt},
+          updated_at = NOW() AT TIME ZONE 'UTC'
+        WHERE id = ${jobId}
+      `
+    } else {
+      await tx.$executeRaw`
+        UPDATE "file_upload_jobs"
+        SET
+          status = 'FAILED',
+          last_error = ${error},
+          updated_at = NOW() AT TIME ZONE 'UTC'
+        WHERE id = ${jobId}
+      `
+
+      await tx.$executeRaw`
+        UPDATE "submission_files"
+        SET
+          status = 'FAILED',
+          last_error = ${error},
+          updated_at = NOW() AT TIME ZONE 'UTC'
+        WHERE id = ${fileId}
+      `
+    }
+  })
+}
+
+// T-48-08: UTC interval ensures consistent GC regardless of server timezone
+export async function cleanupOrphanedFiles(
+  maxAgeHours: number = 24,
+): Promise<{ orphanedCount: number; purgedPayloadCount: number }> {
+  return prisma.$transaction(async (tx) => {
+    const orphanRows = await tx.$queryRaw<{ id: string }[]>`
+      SELECT id FROM "submission_files"
+      WHERE submission_id IS NULL
+        AND status = 'PENDING_UPLOAD'
+        AND created_at < NOW() AT TIME ZONE 'UTC' - (${maxAgeHours} || ' hours')::interval
+    `
+
+    if (orphanRows.length === 0) {
+      return { orphanedCount: 0, purgedPayloadCount: 0 }
+    }
+
+    const orphanIds = orphanRows.map((r) => r.id)
+
+    const orphanedCount = await tx.$executeRaw`
+      UPDATE "submission_files"
+      SET
+        status = 'ORPHANED',
+        updated_at = NOW() AT TIME ZONE 'UTC'
+      WHERE id = ANY(${orphanIds})
+    `
+
+    const purgedPayloadCount = await tx.$executeRaw`
+      UPDATE "file_upload_jobs"
+      SET
+        payload = NULL,
+        updated_at = NOW() AT TIME ZONE 'UTC'
+      WHERE file_id = ANY(${orphanIds})
+    `
+
+    return {
+      orphanedCount: Number(orphanedCount),
+      purgedPayloadCount: Number(purgedPayloadCount),
+    }
+  })
+}
+
 export interface FileUploadPayloadRow {
   payload: Buffer | null
   mime: string

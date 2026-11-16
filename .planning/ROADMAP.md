@@ -30,7 +30,7 @@
 
 - [x] **Phase 46: Foundation - Schema, Field Plumbing, MinIO Client & Credentials** - Prove real MinIO upload works end-to-end before any feature code
 - [x] **Phase 47: File Field Config, Builder, Editor & Renderer** - Admin can add and configure a file field; it renders in editor, preview, and public form
-- [ ] **Phase 48: Storage Abstraction & Postgres bytea Spool Layer** - Raw-SQL domain module owns file records, queue records, and bytea spool lifecycle
+- [x] **Phase 48: Storage Abstraction & Postgres bytea Spool Layer** - Raw-SQL domain module owns file records, queue records, and bytea spool lifecycle
 - [ ] **Phase 49: Public Upload API & Client Upload Component** - Anonymous participants upload files on `/f/[slug]` without blocking on storage availability
 - [ ] **Phase 50: Sync Worker, Queue Processing, Retry & Orphan GC** - Queued files sync to MinIO idempotently with capped retry; orphans expire
 - [ ] **Phase 51: Private File Serving Route** - Authenticated admins download files through the app only, never via storage links
@@ -94,10 +94,10 @@ Plans:
   3. File bytes live in `file_upload_jobs.payload bytea` only — no filesystem path, no volume mount, and a record survives a container recreate because the bytes are in Postgres
   4. All timestamps are stored and compared in a single UTC/TIMESTAMPTZ convention, so expiry and GC decisions do not drift by a day
 
-**Plans:** 1/2 plans complete
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 48-01-PLAN.md — Core persistence, state machine, submission linking, and serving lookup
-- [ ] 48-02-PLAN.md — Queue primitives, payload nulling on sync, retry backoff, orphan GC, and live DB test
+- [x] 48-02-PLAN.md — Queue primitives, payload nulling on sync, retry backoff, orphan GC, and live DB test
 **Research flag**: no — raw-SQL module mirrors the existing `src/lib/forms.ts` pattern.
 **Threats closed**: W3 (Postgres is the fallback store — no volume), W7 (single UTC convention).
 

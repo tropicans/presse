@@ -1,20 +1,20 @@
 ---
 gsd_state_version: "1.0"
 milestone: v2.3
-current_phase: 48
-current_phase_name: Storage Abstraction & Postgres bytea Spool Layer
-status: in_progress
-stopped_at: Completed 48-01-PLAN.md
-last_updated: "2026-11-16T08:29:00.000Z"
+current_phase: 49
+current_phase_name: Public Upload API & Client Upload Component
+status: planned
+stopped_at: Completed Phase 48
+last_updated: "2026-11-16T09:30:00.000Z"
 last_activity: 2026-11-16
-last_activity_desc: Plan 48-01 complete - raw-SQL file persistence, state machine, and submission linking
-state_head: 7d6a87bd9c7ab544d832073e76bf1915297bab7b
+last_activity_desc: Phase 48 complete - Storage abstraction & Postgres bytea spool layer verified
+state_head: HEAD
 progress:
   total_phases: 8
-  completed_phases: 2
-  total_plans: 6
-  completed_plans: 5
-  percent: 31
+  completed_phases: 3
+  total_plans: 8
+  completed_plans: 8
+  percent: 38
 milestone_name: File Upload & MinIO Object Storage
 ---
 
@@ -31,10 +31,10 @@ Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jot
 
 ## Current Position
 
-Phase: 48 — Storage Abstraction & Postgres bytea Spool Layer
-Plan: 48-01 complete (ready for 48-02)
-Status: in_progress
-Last activity: 2026-11-16 — Plan 48-01 complete: raw-SQL file persistence domain module, state machine, and submission linking
+Phase: 49 — Public Upload API & Client Upload Component
+Plan: Ready for research / discussion / planning
+Status: ready
+Last activity: 2026-11-16 — Phase 48 verified: queue primitives, payload nulling on sync, retry backoff, orphan GC, and live DB test
 
 ## Phases Summary
 
@@ -43,6 +43,9 @@ Last activity: 2026-11-16 — Plan 48-01 complete: raw-SQL file persistence doma
 - [x] Phase 43: Public Form & Live Preview Renderer (AGREE-04, AGREE-05) (Completed 2026-10-01)
 - [x] Phase 44: Submissions, Excel Export & Analytics Integration (AGREE-06) (Completed 2026-10-01)
 - [x] Phase 45: Multi-Tier Verification, Automated Testing & Container Health (AGREE-07) (Completed 2026-10-01)
+- [x] Phase 46: Foundation — Schema, Field Plumbing, MinIO Client & Credentials (FILE-01..FILE-05) (Completed 2026-11-16)
+- [x] Phase 47: File Field Config, Builder, Editor & Renderer (FILE-06, FILE-07) (Completed 2026-11-16)
+- [x] Phase 48: Storage Abstraction & Postgres bytea Spool Layer (Completed 2026-11-16)
 - [x] Phase 46: Foundation — Schema, Field Plumbing, MinIO Client & Credentials (FILE-01..FILE-05) (Completed 2026-11-16)
 - [x] Phase 47: File Field Config, Builder, Editor & Renderer (FILE-06, FILE-07) (Completed 2026-11-16)
 
