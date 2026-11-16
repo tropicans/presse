@@ -153,7 +153,9 @@ Plans:
   3. A request without a session, with a nonexistent ID, with an ID belonging to a file outside the admin's scope, or with a traversal attempt (`../`) is rejected
   4. No file URL ever points at MinIO or any storage host; the bucket stays private and files are reachable only through the app
 
-**Plans**: TBD
+**Plans:** 1/1 plan complete
+Plans:
+- [x] 51-01-PLAN.md — Private File Serving Route, Dual-Source Streaming, and Security Verification
 **Research flag**: no — auth-gated route + `Content-Disposition` recipe is documented in PITFALLS.md.
 **Threats closed**: W4 (IDOR, traversal, inline-XSS — negative tests required).
 

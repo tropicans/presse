@@ -1,20 +1,20 @@
 ---
 gsd_state_version: "1.0"
 milestone: v2.3
-current_phase: 51
-current_phase_name: Private File Serving Route
+current_phase: 52
+current_phase_name: Admin Surfaces & Export Integration
 status: planned
-stopped_at: Completed Phase 50
-last_updated: "2026-11-16T09:46:00.000Z"
+stopped_at: Completed Phase 51
+last_updated: "2026-11-16T09:57:00.000Z"
 last_activity: 2026-11-16
-last_activity_desc: Phase 50 complete - Sync worker, queue processing, retry & orphan GC verified
+last_activity_desc: Phase 51 complete - Private file serving route verified with dual-source streaming and strict security headers
 state_head: HEAD
 progress:
   total_phases: 8
-  completed_phases: 5
-  total_plans: 11
-  completed_plans: 11
-  percent: 63
+  completed_phases: 6
+  total_plans: 12
+  completed_plans: 12
+  percent: 75
 milestone_name: File Upload & MinIO Object Storage
 ---
 
@@ -31,10 +31,10 @@ Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jot
 
 ## Current Position
 
-Phase: 51 — Private File Serving Route
+Phase: 52 — Admin Surfaces & Export Integration
 Plan: Ready for research / discussion / planning
 Status: ready
-Last activity: 2026-11-16 — Phase 50 verified: background sync engine, retry backoff, orphan GC sweep, internal processing endpoint, and unified operational worker integration
+Last activity: 2026-11-16 — Phase 51 verified: private file serving route (GET /api/files/[id]), dual-source streaming, attachment forcing, and nosniff protection
 
 ## Phases Summary
 
@@ -48,6 +48,7 @@ Last activity: 2026-11-16 — Phase 50 verified: background sync engine, retry b
 - [x] Phase 48: Storage Abstraction & Postgres bytea Spool Layer (Completed 2026-11-16)
 - [x] Phase 49: Public Upload API & Client Upload Component (Completed 2026-11-16)
 - [x] Phase 50: Sync Worker, Queue Processing, Retry & Orphan GC (Completed 2026-11-16)
+- [x] Phase 51: Private File Serving Route (FILE-17, FILE-18, FILE-19) (Completed 2026-11-16)
 - [x] Phase 46: Foundation — Schema, Field Plumbing, MinIO Client & Credentials (FILE-01..FILE-05) (Completed 2026-11-16)
 - [x] Phase 47: File Field Config, Builder, Editor & Renderer (FILE-06, FILE-07) (Completed 2026-11-16)
 
