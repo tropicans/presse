@@ -24,11 +24,11 @@ const ATTENDANCE_FORM_ID = 'attendance-template-form'
 const ATTENDANCE_PARTICIPANT_TYPE_OPTIONS = ['Internal', 'Eksternal'] as const
 const WEBINAR_CORE_FIELD_ID_PREFIX = 'webinar-core-'
 
-type FieldType = 'SHORT_TEXT' | 'LONG_TEXT' | 'RADIO' | 'SELECT' | 'YES_NO' | 'SIGNATURE' | 'CHECKBOX'
+type FieldType = 'SHORT_TEXT' | 'LONG_TEXT' | 'RADIO' | 'SELECT' | 'YES_NO' | 'SIGNATURE' | 'CHECKBOX' | 'FILE'
 export type FormWorkflow = 'STANDARD' | 'WEBINAR'
 export type FormMode = 'STANDARD' | 'QUIZ' | 'ATTENDANCE'
 
-export type FormFieldType = 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature' | 'yes_no' | 'checkbox'
+export type FormFieldType = 'text' | 'textarea' | 'radio' | 'select' | 'likert' | 'signature' | 'yes_no' | 'checkbox' | 'file'
 
 const CONDITIONAL_ROUTE_SUBMIT = '__SUBMIT__'
 
@@ -75,7 +75,11 @@ export interface CheckboxField extends BaseField {
   placeholder?: string | null
 }
 
-export type FormField = TextField | RadioField | SelectField | SignatureField | YesNoField | CheckboxField
+export interface FileField extends BaseField {
+  type: 'file'
+}
+
+export type FormField = TextField | RadioField | SelectField | SignatureField | YesNoField | CheckboxField | FileField
 
 export interface FormPageDefinition {
   id: string
@@ -512,6 +516,8 @@ function mapFieldType(type: FieldType): FormFieldType | null {
       return 'yes_no'
     case 'CHECKBOX':
       return 'checkbox'
+    case 'FILE':
+      return 'file'
     default:
       return null
   }
@@ -1796,6 +1802,17 @@ function mapPublicFormRowsToDefinition(rows: PublicFormRowsResult): PublicFormDe
       }]
     }
 
+    if (mappedType === 'file') {
+      return [{
+        id: field.id,
+        name,
+        label: field.label,
+        type: mappedType,
+        required: field.required,
+        ...copyProps,
+      }]
+    }
+
     return [{
       id: field.id,
       name,
@@ -2684,6 +2701,8 @@ function mapFormFieldTypeToDb(type: FormFieldType): FieldType {
       return 'YES_NO'
     case 'checkbox':
       return 'CHECKBOX'
+    case 'file':
+      return 'FILE'
   }
 }
 
@@ -2812,7 +2831,7 @@ export async function updateAdminForm(id: string, payload: UpdateAdminFormPayloa
   const normalizedPayloadFields = payload.fields
 
   const editableFieldIds = new Set(current.fields.map((field) => field.id))
-  const allowedTypes = new Set<FormFieldType>(['text', 'textarea', 'radio', 'select', 'likert', 'signature', 'yes_no', 'checkbox'])
+  const allowedTypes = new Set<FormFieldType>(['text', 'textarea', 'radio', 'select', 'likert', 'signature', 'yes_no', 'checkbox', 'file'])
 
   if (normalizedPayloadFields.length === 0) {
     throw new FormSubmissionError('Form harus memiliki minimal satu field', 400)

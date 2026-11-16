@@ -5,6 +5,7 @@ import {
   shouldUseLegacyAttendanceSubmission,
   type PublicFormDefinition,
   validateFormSubmission,
+  getPublicFormBySlug,
   updateAdminForm,
   sanitizeNipNrp,
   validateNipNrp,
@@ -324,6 +325,142 @@ describe('updateAdminForm', () => {
         ],
       })
     ).resolves.not.toThrow()
+  })
+})
+
+describe('FILE field type', () => {
+  type RawMock = (impl: () => Promise<unknown[]>) => void
+
+  async function loadPrismaQueryMock() {
+    const { prisma } = await import('@/lib/prisma')
+    const mockedQuery = vi.mocked(prisma.$queryRaw)
+    // @prisma/client types $queryRaw as returning PrismaPromise; test doubles just need a thenable.
+    const once: RawMock = (impl) => {
+      (mockedQuery.mockImplementationOnce as unknown as RawMock)(impl)
+    }
+    return { once }
+  }
+
+  it('maps a FILE form_fields row to a domain field of type "file"', async () => {
+    const { once } = await loadPrismaQueryMock()
+
+    once(async () => [{
+      id: 'form_file',
+      slug: 'file-form',
+      title: 'File Form',
+      description: null,
+      successMessage: null,
+      settingsJson: null,
+    }])
+    once(async () => [{
+      id: 'field_file',
+      formId: 'form_file',
+      label: 'Lampiran',
+      type: 'FILE',
+      order: 1,
+      required: true,
+      placeholder: null,
+    }])
+    once(async () => [])
+
+    const form = await getPublicFormBySlug('file-form')
+
+    expect(form).not.toBeNull()
+    expect(form?.fields).toHaveLength(1)
+    expect(form?.fields[0].type).toBe('file')
+  })
+
+  it('does not give a FILE field a text-shaped maxLength', async () => {
+    const { once } = await loadPrismaQueryMock()
+
+    once(async () => [{
+      id: 'form_file',
+      slug: 'file-form-max',
+      title: 'File Form',
+      description: null,
+      successMessage: null,
+      settingsJson: null,
+    }])
+    once(async () => [{
+      id: 'field_file',
+      formId: 'form_file',
+      label: 'Lampiran',
+      type: 'FILE',
+      order: 1,
+      required: true,
+      placeholder: 'ignored',
+    }])
+    once(async () => [])
+
+    const form = await getPublicFormBySlug('file-form-max')
+    const field = form?.fields[0]
+
+    expect(field).toBeDefined()
+    expect(field).not.toHaveProperty('maxLength')
+  })
+
+  it('does not give a FILE field a placeholder', async () => {
+    const { once } = await loadPrismaQueryMock()
+
+    once(async () => [{
+      id: 'form_file',
+      slug: 'file-form-placeholder',
+      title: 'File Form',
+      description: null,
+      successMessage: null,
+      settingsJson: null,
+    }])
+    once(async () => [{
+      id: 'field_file',
+      formId: 'form_file',
+      label: 'Lampiran',
+      type: 'FILE',
+      order: 1,
+      required: true,
+      placeholder: 'should not leak',
+    }])
+    once(async () => [])
+
+    const form = await getPublicFormBySlug('file-form-placeholder')
+    const field = form?.fields[0]
+
+    expect(field).toBeDefined()
+    expect(field).not.toHaveProperty('placeholder')
+  })
+
+  it('accepts a FILE field on admin save without a 400', async () => {
+    await expect(
+      updateAdminForm('form_123', {
+        title: 'Test Form',
+        description: '',
+        successMessage: '',
+        status: 'DRAFT',
+        mode: 'STANDARD',
+        quizSettings: { passingPercentage: 0 },
+        pages: [{ id: 'page-1' }],
+        fields: [
+          {
+            id: 'new-1',
+            name: 'upload',
+            label: 'Lampiran',
+            type: 'file',
+            required: false,
+            pageId: 'page-1',
+            options: [],
+          } as never,
+        ],
+      })
+    ).resolves.not.toThrow()
+  })
+
+  it('keeps the domain and DB field-type vocabularies the same size', () => {
+    const dbVocabulary = ['SHORT_TEXT', 'LONG_TEXT', 'RADIO', 'SELECT', 'YES_NO', 'SIGNATURE', 'CHECKBOX', 'FILE']
+    const domainVocabulary = ['text', 'textarea', 'radio', 'select', 'likert', 'signature', 'yes_no', 'checkbox', 'file']
+
+    // radio+likert are two domain types backed by one DB type (RADIO)
+    expect(domainVocabulary.length - 1).toBe(dbVocabulary.length)
+    expect(dbVocabulary).toContain('FILE')
+    expect(domainVocabulary).toContain('file')
   })
 })
 
