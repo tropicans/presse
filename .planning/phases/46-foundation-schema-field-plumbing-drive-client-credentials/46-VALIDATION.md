@@ -45,8 +45,13 @@ created: 2026-11-16
 | 46-01-03 | 01 | 1 | FILE-03 | — | `bytea` round-trip preserves bytes exactly | unit (mocked prisma) | `npx vitest run src/lib/file-jobs.test.ts` | ❌ W0 | ⬜ pending |
 | 46-02-01 | 02 | 2 | FILE-05 | T-46-01 | Private key never logged; PEM header enforced; `\n` unescaped once | unit | `npx vitest run src/lib/env.test.ts -t 'Drive'` | ❌ W0 | ⬜ pending |
 | 46-02-02 | 02 | 2 | FILE-04 | T-46-02 | Permanent errors fail-fast, transient errors degrade — no silent spool | unit | `npx vitest run src/lib/drive-probe.test.ts` | ❌ W0 | ⬜ pending |
-| 46-02-03 | 02 | 2 | D-05 | T-46-03 | Health body stays exactly `{"status":"ok"}` when healthy | unit | `npx vitest run src/lib/health.test.ts` | ❌ W0 | ⬜ pending |
-| 46-03-01 | 03 | 3 | FILE-04 | T-46-04 | Real file lands in Shared Drive (not mocked) | manual `checkpoint:human-verify` | `node scripts/ci-drive-smoke.mjs` | ❌ W0 | ⬜ pending |
+| 46-02-03 | 02 | 2 | FILE-04 | T-46-02 | Drive client singleton + `drive.file` scope only | unit | `npx vitest run src/lib/drive-probe.test.ts -t 'scope'` | ❌ W0 | ⬜ pending |
+| 46-02-04 | 02 | 2 | D-05 | T-46-03 | Health body stays exactly `{"status":"ok"}` when healthy | unit | `npx vitest run src/lib/health.test.ts` | ❌ W0 | ⬜ pending |
+| 46-02-05 | 02 | 2 | D-06, FILE-05 | T-46-01 | Env contract documented; instrumentation boot guard | source assertion | `.env.example` contains 3 Drive vars; `src/instrumentation.ts` contains `NEXT_RUNTIME !== 'nodejs'` | ❌ W0 | ⬜ pending |
+| 46-02-06 | 02 | 2 | A1, A3, OQ-4 | — | Standalone build boots; probe fires; key absent from image layers | integration (build + boot) | `npm run build` then boot standalone and assert `/api/health` body; `docker history --no-trunc` grep fails on PEM match | ❌ W0 | ⬜ pending |
+| 46-03-01 | 03 | 3 | OQ-1, OQ-2, FILE-04 | — | Shared Drive provisioned, SA added as `writer`, env populated | manual `checkpoint:human-verify` | Operator confirms Shared Drive + SA membership + `.env.production` | ❌ W0 | ⬜ pending |
+| 46-03-02 | 03 | 3 | FILE-04 | T-46-04 | Smoke script contract: exit codes contractual, fails loud on every mismatch | unit (script source) | `node --check scripts/ci-drive-smoke.mjs` + guard presence grep | ❌ W0 | ⬜ pending |
+| 46-03-03 | 03 | 3 | FILE-04 (W1) | T-46-04 | Real file lands in Shared Drive (not mocked) | manual `checkpoint:human-verify` | `node scripts/ci-drive-smoke.mjs` exit 0 + operator opens Drive UI and confirms the file | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
