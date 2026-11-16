@@ -2,15 +2,17 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: File Upload & Google Drive Storage
-status: planning
-last_updated: "2026-11-16T03:40:00.000Z"
+current_phase: 46
+current_phase_name: Foundation — Schema, Field Plumbing, Drive Client & Credentials
+status: executing
+last_updated: "2026-11-16T11:00:00.000Z"
 last_activity: 2026-11-16
+last_activity_desc: Phase 46 plan 01 executed (3 tasks, commits 32d54e2, d5802e5, 6f45b91)
 progress:
-  total_phases: 8
+  total_phases: 1
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 3
+  completed_plans: 1
 ---
 
 # Project State: Agreement & Terms Checkbox Field Support
@@ -27,9 +29,9 @@ Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jot
 ## Current Position
 
 Phase: 46 — Foundation — Schema, Field Plumbing, Drive Client & Credentials
-Plan: —
-Status: Context captured, ready for planning
-Last activity: 2026-11-16 — Phase 46 discussion complete (CONTEXT.md + DISCUSSION-LOG.md, commit d3e58d5)
+Plan: 01 complete (of 03)
+Status: Executing — plan 01 done, plan 02 next
+Last activity: 2026-11-16 — Phase 46 plan 01 executed (3 tasks, commits 32d54e2, d5802e5, 6f45b91)
 
 ## Phases Summary
 
@@ -46,6 +48,8 @@ Last activity: 2026-11-16 — Phase 46 discussion complete (CONTEXT.md + DISCUSS
 | First-Class `CHECKBOX` Field Type | Menambahkan nilai `'CHECKBOX'` pada enum PostgreSQL `FieldType` dan `FormFieldType` agar tipe field persetujuan/checkbox menjadi first-class citizen tanpa merusak field yang sudah ada | Direncanakan (Phase 41) |
 | Normalized Boolean Consent Value | Menyimpan nilai jawaban sebagai `'true'` / `'Setuju'`, dan mewajibkan nilai truthy saat `required: true` | Direncanakan (Phase 41) |
 | Accessible Single-Checkbox Pattern | Menggunakan hidden native input `<input type="checkbox">` dengan custom box visual dan label klik penuh untuk mematuhi standar aksesibilitas WCAG dan keyboard navigation (Tab/Space) | Direncanakan (Phase 43) |
+| Single-Folder Migration (D-11) | Satu folder `20261116000000_add_file_upload_tables` berisi `ALTER TYPE FieldType ADD VALUE 'FILE'` + 2 `CREATE TABLE IF NOT EXISTS`; `prisma migrate deploy` menerima keduanya dalam satu transaksi | Risiko OQ-3 tidak terjadi, contingency split-folder tidak dipakai (Phase 46-01) |
+| BYTEA Read Normalized to Buffer | `@prisma/adapter-pg` mengembalikan BYTEA sebagai `Uint8Array`, bukan `Buffer`; `readFileUploadPayload` menormalkan via `Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength)` di batas helper | Diterapkan (Phase 46-01) |
 
 ## Quick Tasks Completed
 
@@ -57,3 +61,9 @@ Last activity: 2026-11-16 — Phase 46 discussion complete (CONTEXT.md + DISCUSS
 | `20260928-form-field-copy-from-feature` | 2026-09-28 | Fitur salin nilai pertanyaan (Checkbox 'Sama dengan...') pada Form Builder, Public Form, dan Live Preview | Complete ✓ |
 | `261116-d2w-ganti-dari-himpun-menjadi-form` | 2026-11-16 | Hapus sisa identitas Himpun di kode runtime: rename `HimpunLogo` → `FormLogo` di 12 konsumen, buang class `himpun-logo-*`, bersihkan nama DB default `himpun` di `vitest.config.ts` | Complete ✓ |
 | `261116-cfn-ganti-jangan-jadi-himpun-tapi-form-kemud` | 2026-11-16 | Finalisasi perubahan nama `HIMPUN` → `Form` di `package.json`, `README.md`, `AGENTS.md` serta analisis arsitektur fitur upload file ke Google Drive | Complete ✓ |
+
+## Performance Metrics
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 46 P01 | 1h 10m | 3 tasks | 8 files |
