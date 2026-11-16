@@ -39,6 +39,7 @@
 ### Phase 46: Foundation — Schema, Field Plumbing, Drive Client & Credentials
 **Goal**: The feature's storage backbone is real and proven: `FILE` field type exists in PostgreSQL and TypeScript, both file tables exist via migration, and a service-account client demonstrably uploads a real file into a **Shared Drive** folder.
 **Depends on**: Nothing (first phase of v2.3; builds on Phase 45 state)
+**UI hint**: no
 **Requirements**: FILE-01, FILE-02, FILE-03, FILE-04, FILE-05
 **Success Criteria** (what must be TRUE):
   1. A migration creates `submission_files` (id, submission_id nullable, field_id nullable, original/sanitized filename, mime, size, checksum, storage status, drive_file_id, timestamps) and `file_upload_jobs` (`payload bytea`, status PENDING/CLAIMED/DONE/FAILED, attempt counter, next_attempt_at), and `ALTER TYPE "FieldType" ADD VALUE 'FILE'` applies cleanly on an existing database
