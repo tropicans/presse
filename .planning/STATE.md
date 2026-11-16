@@ -1,18 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.2
-milestone_name: Agreement & Terms Checkbox Field Support
-status: completed
-last_updated: "2026-10-01T08:15:00.000Z"
+milestone: v2.3
+milestone_name: File Upload & Google Drive Storage
+status: planning
+last_updated: "2026-11-16T02:50:51.388Z"
 last_activity: 2026-11-16
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
-current_phase: none
-current_phase_name: none
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State: Agreement & Terms Checkbox Field Support
@@ -28,10 +26,10 @@ Roadmap: [.planning/ROADMAP.md](file:///c:/Users/yudhiar/Downloads/oprek/Dev/jot
 
 ## Current Position
 
-Phase: Milestone v2.2 Completed  
-Plan: —  
-Status: Shipped  
-Last activity: 2026-11-16 — Completed quick task 261116-d2w: ganti dari Himpun menjadi Form
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-11-16 — Milestone v2.3 started
 
 ## Phases Summary
 
