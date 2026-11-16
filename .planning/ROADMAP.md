@@ -53,12 +53,12 @@
   4. A connectivity probe runs at boot and reports degraded state (never a silent failure) when MinIO is unreachable, without preventing the app from booting into spool-only mode
   5. New env vars (`MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`) are documented in `.env.example` and validated at boot; the secret key is never reachable from the client bundle or logs
 
-**Plans:** 4/4 plans executed (46-01, 46-02, 46-04); 46-03 closed as blocked, superseded by the MinIO architecture revision
+**Plans:** 4/4 plans complete (46-01, 46-02, 46-04); 46-03 closed as blocked, superseded by the MinIO architecture revision
 Plans:
 
 - [x] 46-01-PLAN.md — Migration (FILE enum + submission_files + file_upload_jobs + bytea spool), Prisma parity, `FILE` field plumbing in `src/lib/forms.ts`, `src/lib/file-jobs.ts` bytea helpers; live-DB `prisma migrate deploy` proof
 - [x] 46-02-PLAN.md — ~~Drive client, credentials, probe, health branch, instrumentation wire~~ **superseded**: the Drive client, credentials, probe, health branch and instrumentation wire were removed in the MinIO revision; only the `FILE`-independent build/boot lessons carry forward
-- [ ] 46-03-PLAN.md — ~~Shared Drive prerequisites + live upload proof~~ **blocked and closed**: live API probe returned `NOT_SHARED_DRIVE` (folder `1JFVg1xu4jfFj3ZnOJgP3ShFFiT8dc6r0` has no `driveId`, owned by `kelehhadari@gmail.com`, `drives.list` empty, `canCreateDrives: false`, `storageQuota.limit: "0"`). No Workspace tenant exists, so the requirement cannot be met as written.
+- [x] 46-03-PLAN.md — ~~Shared Drive prerequisites + live upload proof~~ **blocked and closed**: live API probe returned `NOT_SHARED_DRIVE` (folder `1JFVg1xu4jfFj3ZnOJgP3ShFFiT8dc6r0` has no `driveId`, owned by `kelehhadari@gmail.com`, `drives.list` empty, `canCreateDrives: false`, `storageQuota.limit: "0"`). No Workspace tenant exists, so the requirement cannot be met as written.
 - [x] 46-04-PLAN.md - **MinIO replacement** (complete): Drive client/credentials/probe/packages removed; `src/lib/storage.ts` (S3 client, path-style, private bucket, put/get/delete/head, deterministic `buildObjectKey`), `src/lib/storage-probe.ts` + boot wire with degrade-never-crash 60 s re-probe, `/api/health` storage branch, in-place column swap migration, `minio` compose service (digest-pinned, no host port) with a persisted `minio_data` volume, and `scripts/ci-storage-smoke.mjs` — live round-trip byte-identical, anonymous GET refused (`SMOKE_EXIT=0`)
 
 **Research flag**: yes — MinIO container pinning, S3 client package choice (`@aws-sdk/client-s3` + presigner), path-style addressing requirement, and the private-bucket ACL model must be confirmed against a live container before coding (SUMMARY.md Research Flags: F1, rewritten).
@@ -187,7 +187,7 @@ Phases execute in numeric order: 46 → 47 ∥ 48 → 49 → 50 → 51 → 52 �
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 46. Foundation - Schema, Field Plumbing, MinIO Client & Credentials | 4/4 | Complete (46-03 closed; 46-04 delivered MinIO) |  |
+| 46. Foundation - Schema, Field Plumbing, MinIO Client & Credentials | 4/4 | Complete (46-03 closed; 46-04 delivered MinIO) | 2026-11-16 |
 | 47. File Field Config, Builder, Editor & Renderer | 0/TBD | Not started | - |
 | 48. Storage Abstraction & Postgres bytea Spool Layer | 0/TBD | Not started | - |
 | 49. Public Upload API & Client Upload Component | 0/TBD | Not started | - |
