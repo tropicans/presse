@@ -221,6 +221,9 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [copiedFields, setCopiedFields] = useState<Record<string, boolean>>({})
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { fileId: string; filename: string; size: number; mime: string }>>({})
+  const [uploadingFieldId, setUploadingFieldId] = useState<string | null>(null)
+  const [isDraggingFieldId, setIsDraggingFieldId] = useState<string | null>(null)
   const steps = useMemo(() => buildSteps(form, formData), [form, formData])
   const currentStep = steps[currentStepIndex] ?? steps[0]
   const isMultiStep = steps.length > 1
@@ -314,12 +317,72 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  const handleFileUpload = async (field: FormField, file: File) => {
+    setUploadingFieldId(field.id)
+    setFieldErrors((prev) => {
+      const next = { ...prev }
+      delete next[field.name]
+      return next
+    })
+
+    try {
+      const fd = new FormData()
+      fd.append('slug', form.slug)
+      fd.append('fieldId', field.id)
+      fd.append('file', file)
+
+      const res = await fetch('/api/public/files/upload', {
+        method: 'POST',
+        body: fd,
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal mengunggah berkas')
+      }
+
+      setUploadedFiles((prev) => ({
+        ...prev,
+        [field.name]: {
+          fileId: data.fileId,
+          filename: data.originalFilename,
+          size: data.size,
+          mime: data.mime,
+        },
+      }))
+      setFormData((prev) => ({
+        ...prev,
+        [field.name]: data.fileId,
+      }))
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal mengunggah berkas'
+      setFieldErrors((prev) => ({ ...prev, [field.name]: msg }))
+    } finally {
+      setUploadingFieldId(null)
+    }
+  }
+
+  const handleFileRemove = (fieldName: string) => {
+    setUploadedFiles((prev) => {
+      const next = { ...prev }
+      delete next[fieldName]
+      return next
+    })
+    setFormData((prev) => ({
+      ...prev,
+      [fieldName]: '',
+    }))
+  }
+
   const validateFields = (fieldsToValidate: FormField[]) => {
     const nextErrors: Record<string, string> = {}
 
     for (const field of fieldsToValidate) {
       if (field.type === 'file') {
-        // Inert in Phase 47; actual file upload activation in Phase 49
+        const fileVal = (formData[field.name] ?? '').trim()
+        if (field.required && !fileVal) {
+          nextErrors[field.name] = `${getDisplayLabel(field, formData, form)} wajib diunggah`
+        }
         continue
       }
 
@@ -1007,6 +1070,9 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
         if (field.type === 'file') {
           const presetLabel = getFilePresetLabel(field.allowedPreset)
           const constraintText = getFileConstraintText(field.maxSizeMB, field.maxFiles)
+          const uploaded = uploadedFiles[field.name]
+          const isUploading = uploadingFieldId === field.id
+          const isDragging = isDraggingFieldId === field.id
 
           return (
             <div key={field.id} className="form-group public-file-dropzone">
@@ -1014,40 +1080,124 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
                 {label}
                 {field.required ? ' *' : ''}
               </label>
-              <div className="public-file-dropzone-box" role="region" aria-label={label}>
-                <div className="public-file-dropzone-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                  </svg>
-                </div>
-                <div className="public-file-dropzone-label">
-                  {presetLabel}
-                </div>
-                <div className="public-file-dropzone-constraints">
-                  {constraintText}
-                </div>
-                <button
-                  type="button"
-                  disabled
-                  tabIndex={-1}
-                  className="public-file-dropzone-btn"
-                  aria-disabled="true"
+
+              {uploaded ? (
+                <div
+                  className="public-file-dropzone-box"
+                  style={{
+                    borderStyle: 'solid',
+                    borderColor: 'var(--text-primary, #000)',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '14px',
+                    textAlign: 'left',
+                  }}
                 >
-                  Pilih Berkas
-                </button>
-                <div className="public-file-dropzone-notice">
-                  Pengunggahan berkas aktif pada pengisian formulir
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                    <div className="public-file-dropzone-icon" style={{ margin: 0, flexShrink: 0 }} aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ width: 24, height: 24 }}>
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                      </svg>
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {uploaded.filename}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted, #64748b)' }}>
+                        {(uploaded.size / 1024).toFixed(0)} KB • {uploaded.mime}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleFileRemove(field.name)}
+                    className="submit-btn submit-btn-secondary"
+                    style={{ padding: '6px 14px', fontSize: '12px', flexShrink: 0, width: 'auto' }}
+                  >
+                    Hapus
+                  </button>
                 </div>
-              </div>
+              ) : (
+                <div
+                  className={`public-file-dropzone-box ${isDragging ? 'is-dragging' : ''}`}
+                  role="region"
+                  aria-label={label}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    setIsDraggingFieldId(field.id)
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault()
+                    setIsDraggingFieldId(null)
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    setIsDraggingFieldId(null)
+                    const f = e.dataTransfer.files?.[0]
+                    if (f) {
+                      handleFileUpload(field, f)
+                    }
+                  }}
+                >
+                  <input
+                    type="file"
+                    id={`file-input-${field.id}`}
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0]
+                      if (f) {
+                        handleFileUpload(field, f)
+                      }
+                      e.target.value = ''
+                    }}
+                  />
+                  <div className="public-file-dropzone-icon" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                  </div>
+                  <div className="public-file-dropzone-label">
+                    {presetLabel}
+                  </div>
+                  <div className="public-file-dropzone-constraints">
+                    {constraintText}
+                  </div>
+                  <button
+                    type="button"
+                    className="public-file-dropzone-btn"
+                    disabled={isUploading}
+                    onClick={() => {
+                      const el = document.getElementById(`file-input-${field.id}`) as HTMLInputElement | null
+                      el?.click()
+                    }}
+                    style={{ pointerEvents: 'auto', cursor: isUploading ? 'not-allowed' : 'pointer' }}
+                  >
+                    {isUploading ? 'Mengunggah...' : 'Pilih Berkas'}
+                  </button>
+                  <div className="public-file-dropzone-notice">
+                    {isUploading ? 'Sedang mengunggah berkas...' : 'Pengunggahan berkas aktif pada pengisian formulir'}
+                  </div>
+                </div>
+              )}
+
+              {fieldErrors[field.name] && (
+                <div className="field-error" style={{ marginTop: '6px' }}>{fieldErrors[field.name]}</div>
+              )}
             </div>
           )
         }

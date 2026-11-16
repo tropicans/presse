@@ -3,6 +3,7 @@ import type { JsonValue, Sql } from '@prisma/client/runtime/client'
 import { PrismaClientKnownRequestError, join, sqltag as sql } from '@prisma/client/runtime/client'
 import ExcelJS from 'exceljs'
 import { prisma } from '@/lib/prisma'
+import { linkFilesToSubmission, InvalidFileStatusTransitionError } from '@/lib/file-storage'
 import type { AdminPreviewField } from '@/lib/admin-form-preview'
 import {
   computeAnalyticsKPIs,
@@ -2026,6 +2027,14 @@ export function validateFormSubmission(form: PublicFormDefinition, payload: Reco
       continue
     }
 
+    if (field.type === 'file') {
+      if (field.required && !value) {
+        throw new FormSubmissionError(`Field "${field.label}" wajib diunggah`, 400)
+      }
+      values[field.name] = value
+      continue
+    }
+
     if (field.required && !value) {
       throw new FormSubmissionError(`Field "${field.label}" wajib diisi`, 400)
     }
@@ -2444,6 +2453,32 @@ function parseSubmissionJobPayload(payloadJson: JsonValue): SubmissionJobPayload
   }
 }
 
+async function linkSubmissionFileFields(
+  fields: FieldRow[],
+  values: Record<string, string>,
+  submissionId: string
+) {
+  const fileFields = fields.filter((f) => f.type === 'FILE')
+  for (const field of fileFields) {
+    const fieldName = mapFieldName(field)
+    const fileId = values[fieldName]?.trim()
+    if (fileId) {
+      try {
+        await linkFilesToSubmission({
+          submissionId,
+          fieldId: field.id,
+          fileIds: [fileId],
+        })
+      } catch (err) {
+        if (err instanceof InvalidFileStatusTransitionError) {
+          throw new FormSubmissionError('Berkas yang diunggah tidak valid atau sudah kedaluwarsa', 400)
+        }
+        throw err
+      }
+    }
+  }
+}
+
 async function createFormsEngineSubmission(
   rows: PublicFormRowsResult,
   values: Record<string, string>,
@@ -2452,6 +2487,7 @@ async function createFormsEngineSubmission(
   const submissionId = randomId('submission')
 
   await executeRawWithRetry(buildFormSubmissionMutation(rows, values, submissionId, path))
+  await linkSubmissionFileFields(rows.fields, values, submissionId)
 
   return {
     id: submissionId,
@@ -2486,6 +2522,8 @@ async function createWebinarSubmission(
     } else {
       await enqueueSubmissionJob(rows, values, submissionId, submissionMeta)
     }
+
+    await linkSubmissionFileFields(rows.fields, values, submissionId)
 
     return {
       id: submissionId,

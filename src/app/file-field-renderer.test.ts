@@ -90,9 +90,8 @@ describe('File Field Renderer (Plan 47-02)', () => {
       expect(attendanceSrc).toContain('Pengunggahan berkas aktif pada pengisian formulir')
     })
 
-    it('asserts AttendanceForm validation does not block submission for file fields in Phase 47', () => {
-      // In validateFields, field.type === 'file' must continue or be exempted
-      expect(attendanceSrc).toMatch(/if\s*\(\s*field\.type\s*===\s*['"]file['"]\s*\)\s*\{\s*(\/\/[^\n]*\n\s*)?continue\s*\}/)
+    it('asserts AttendanceForm validation handles file fields', () => {
+      expect(attendanceSrc).toMatch(/if\s*\(\s*field\.type\s*===\s*['"]file['"]\s*\)\s*\{[\s\S]*?continue\s*\}/)
     })
 
     it('asserts globals.css defines monochrome dropzone styling rules', () => {
