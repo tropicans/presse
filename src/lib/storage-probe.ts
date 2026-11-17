@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { getStorageConfig } from './env'
-import { headBucket } from './storage'
+import { ensureBucket } from './storage'
 
 const REPROBE_INTERVAL_MS = 60_000
 
@@ -75,7 +75,7 @@ export async function probeStorage(): Promise<StorageProbeResult> {
   const { bucket } = getStorageConfig()
 
   try {
-    await headBucket()
+    await ensureBucket()
     return { state: 'ok', bucket }
   } catch (err) {
     return { state: 'degraded', reason: describeStorageError(err) }

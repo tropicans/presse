@@ -1,6 +1,7 @@
 import 'server-only'
 
 import {
+  CreateBucketCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
@@ -41,11 +42,28 @@ export function getBucket(): string {
   return (g.__s3Config ??= getStorageConfig()).bucket
 }
 
+export async function ensureBucket(): Promise<void> {
+  const client = getStorageClient()
+  const bucket = getBucket()
+  try {
+    await client.send(new HeadBucketCommand({ Bucket: bucket }))
+  } catch (err: unknown) {
+    const errorName = (err as { name?: string })?.name
+    const status = (err as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode
+    if (errorName === 'NoSuchBucket' || errorName === 'NotFound' || status === 404) {
+      await client.send(new CreateBucketCommand({ Bucket: bucket }))
+      return
+    }
+    throw err
+  }
+}
+
 export async function putObject(
   key: string,
   body: Uint8Array,
   contentType: string,
 ): Promise<void> {
+  await ensureBucket()
   await getStorageClient().send(
     new PutObjectCommand({
       Bucket: getBucket(),
