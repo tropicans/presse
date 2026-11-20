@@ -357,6 +357,15 @@ export default function AttendanceForm({ form }: AttendanceFormProps) {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Gagal mengunggah berkas'
       setFieldErrors((prev) => ({ ...prev, [field.name]: msg }))
+      setUploadedFiles((prev) => {
+        const next = { ...prev }
+        delete next[field.name]
+        return next
+      })
+      setFormData((prev) => ({
+        ...prev,
+        [field.name]: '',
+      }))
     } finally {
       setUploadingFieldId(null)
     }

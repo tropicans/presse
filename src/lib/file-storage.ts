@@ -245,16 +245,17 @@ export async function linkFilesToSubmission(
     return 0
   }
 
-  // D-02 & D-03: Atomically update matching submission_files from PENDING_UPLOAD to QUEUED
+  // Atomically link matching submission_files (PENDING_UPLOAD -> QUEUED, or keep SYNCED)
   const updatedCount = await prisma.$executeRaw`
     UPDATE "submission_files"
     SET
       submission_id = ${input.submissionId},
       field_id = ${input.fieldId},
-      status = 'QUEUED',
+      status = CASE WHEN status = 'PENDING_UPLOAD' THEN 'QUEUED' ELSE status END,
       updated_at = NOW() AT TIME ZONE 'UTC'
     WHERE id = ANY(${input.fileIds})
-      AND status = 'PENDING_UPLOAD'
+      AND status IN ('PENDING_UPLOAD', 'SYNCED')
+      AND submission_id IS NULL
   `
 
   if (updatedCount !== input.fileIds.length) {

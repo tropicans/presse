@@ -252,8 +252,9 @@ describe('file-storage', () => {
       const [strings, ...values] = executeRawMock.mock.calls[0] as [TemplateStringsArray, ...unknown[]]
       const sql = strings.join('?')
       expect(sql).toContain('UPDATE "submission_files"')
-      expect(sql).toContain("status = 'QUEUED'")
-      expect(sql).toContain("status = 'PENDING_UPLOAD'")
+      expect(sql).toContain("CASE WHEN status = 'PENDING_UPLOAD' THEN 'QUEUED' ELSE status END")
+      expect(sql).toContain("status IN ('PENDING_UPLOAD', 'SYNCED')")
+      expect(sql).toContain('submission_id IS NULL')
       expect(sql).toContain("NOW() AT TIME ZONE 'UTC'")
       expect(values).toContain('sub_123')
       expect(values).toContain('field_abc')
@@ -270,6 +271,27 @@ describe('file-storage', () => {
           fileIds: ['file_1', 'file_2'],
         }),
       ).rejects.toThrow(InvalidFileStatusTransitionError)
+    })
+
+    it('successfully links files that are already SYNCED by background worker', async () => {
+      // Simulates real-world race condition where background worker syncs file to MinIO
+      // before user submits form, changing status from PENDING_UPLOAD to SYNCED.
+      executeRawMock.mockImplementation(async (strings: TemplateStringsArray) => {
+        const fullSql = Array.isArray(strings) ? strings.join('?') : String(strings)
+        // Current code has: AND status = 'PENDING_UPLOAD'
+        // If query only checks PENDING_UPLOAD, 0 rows match because file is already SYNCED
+        if (fullSql.includes("status = 'PENDING_UPLOAD'") && !fullSql.includes("'SYNCED'")) {
+          return 0
+        }
+        return 1
+      })
+
+      const count = await linkFilesToSubmission({
+        submissionId: 'sub_synced',
+        fieldId: 'field_file',
+        fileIds: ['file_already_synced'],
+      })
+      expect(count).toBe(1)
     })
   })
 

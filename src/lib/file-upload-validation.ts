@@ -4,9 +4,9 @@ import { fileTypeFromBuffer } from 'file-type'
 export const MAX_GLOBAL_FILE_SIZE_MB = 10
 
 export const ALLOWED_MIME_PRESETS: Record<string, string[]> = {
-  images: ['image/jpeg', 'image/png'],
+  images: ['image/jpeg', 'image/png', 'image/webp'],
   pdf: ['application/pdf'],
-  images_and_pdf: ['image/jpeg', 'image/png', 'application/pdf'],
+  images_and_pdf: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
 }
 
 export function sanitizeFilename(filename: string): string {

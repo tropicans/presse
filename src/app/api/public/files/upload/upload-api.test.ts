@@ -50,6 +50,19 @@ describe('file-upload-validation', () => {
     expect(res.detectedMime).toBe('application/pdf')
   })
 
+  it('validates genuine WebP buffer successfully under images preset', async () => {
+    // RIFF....WEBPVP8
+    const webpHeader = Buffer.from([0x52, 0x49, 0x46, 0x46, 0x20, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x00])
+    const res = await validateUploadFile({
+      buffer: webpHeader,
+      originalFilename: 'photo.webp',
+      allowedPreset: 'images',
+      maxSizeMB: 5,
+    })
+    expect(res.valid).toBe(true)
+    expect(res.detectedMime).toBe('image/webp')
+  })
+
   it('rejects spoofed file with fake extension', async () => {
     const fakePng = Buffer.from('this is just plain text masquerading as png')
     const res = await validateUploadFile({
