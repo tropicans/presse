@@ -396,6 +396,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
   const [search, setSearch] = useState('')
   const [exporting, setExporting] = useState(false)
   const [exportingPage, setExportingPage] = useState<number | null>(null)
+  const [exportingZip, setExportingZip] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [pendingBulkDelete, setPendingBulkDelete] = useState(false)
 
@@ -604,6 +605,96 @@ export default function AdminFormSubmissions({ formId }: Props) {
     } finally {
       setExporting(false)
       setExportingPage(null)
+    }
+  }
+
+  const handleExportZip = async () => {
+    if (exportingZip || !data) return
+    setExportingZip(true)
+    try {
+      const exportParams = new URLSearchParams({
+        participantType: participantFilter,
+        quizStatus: quizFilter,
+        sortBy: sortBy,
+      })
+      const href = `/api/admin/forms/${data.form.id}/export/files?${exportParams.toString()}`
+      const res = await fetch(href)
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null)
+        setFeedback({
+          type: 'error',
+          message: errJson?.error || 'Gagal mengekspor berkas ZIP',
+        })
+        return
+      }
+
+      const contentDisposition = res.headers.get('Content-Disposition')
+      let filename = `berkas-${data.form.slug}-${new Date().toISOString().split('T')[0]}.zip`
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+?)"/)
+        if (match && match[1]) {
+          filename = match[1]
+        }
+      }
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+      setFeedback({ type: 'success', message: `Berhasil mengunduh berkas ZIP ${filename}` })
+    } catch {
+      setFeedback({ type: 'error', message: 'Terjadi kesalahan saat mengunduh berkas ZIP' })
+    } finally {
+      setExportingZip(false)
+    }
+  }
+
+  const handleBulkExportZip = async () => {
+    if (exportingZip || selectedIds.length === 0 || !data) return
+    setExportingZip(true)
+    try {
+      const exportParams = new URLSearchParams({
+        submissionIds: selectedIds.join(','),
+      })
+      const href = `/api/admin/forms/${data.form.id}/export/files?${exportParams.toString()}`
+      const res = await fetch(href)
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null)
+        setFeedback({
+          type: 'error',
+          message: errJson?.error || 'Gagal mengekspor berkas ZIP terpilih',
+        })
+        return
+      }
+
+      const contentDisposition = res.headers.get('Content-Disposition')
+      let filename = `berkas-terpilih-${data.form.slug}-${new Date().toISOString().split('T')[0]}.zip`
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+?)"/)
+        if (match && match[1]) {
+          filename = match[1]
+        }
+      }
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+      setFeedback({ type: 'success', message: `Berhasil mengunduh berkas ZIP ${filename}` })
+    } catch {
+      setFeedback({ type: 'error', message: 'Terjadi kesalahan saat mengunduh berkas ZIP' })
+    } finally {
+      setExportingZip(false)
     }
   }
 
@@ -879,6 +970,7 @@ export default function AdminFormSubmissions({ formId }: Props) {
   const remainingAnswerColumns = answerColumns.slice(3)
   const hasParticipantType = data.hasParticipantType
   const hasQuiz = data.hasQuiz
+  const hasFileFields = data.columns.some((col) => col.type === 'file') || data.items.some((item) => (item.files?.length ?? 0) > 0)
   const quizItems = data.items.filter((item) => item.meta.quiz)
   const passedQuizCount = quizItems.filter((item) => item.meta.quiz?.passed).length
   const failedQuizCount = quizItems.filter((item) => item.meta.quiz && !item.meta.quiz.passed).length
@@ -961,6 +1053,32 @@ export default function AdminFormSubmissions({ formId }: Props) {
           <Link href={`/admin/forms/${data.form.id}`} className="editorial-form-editor-ghost-btn">
             Edit Formulir
           </Link>
+          {hasFileFields && (
+            <button
+              type="button"
+              disabled={exportingZip}
+              onClick={handleExportZip}
+              className="editorial-form-editor-ghost-btn"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              title="Unduh seluruh file lampiran peserta dalam satu arsip ZIP"
+            >
+              {exportingZip ? (
+                <>
+                  <span className="spinner" />
+                  <span>Mengunduh ZIP...</span>
+                </>
+              ) : (
+                <>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  <span>Download Berkas (ZIP)</span>
+                </>
+              )}
+            </button>
+          )}
           {exportPages === 1 ? (
             <button
               type="button"
@@ -1262,6 +1380,17 @@ export default function AdminFormSubmissions({ formId }: Props) {
                 >
                   {exporting ? 'Mengunduh...' : 'Ekspor Terpilih'}
                 </button>
+                {hasFileFields && (
+                  <button
+                    type="button"
+                    onClick={handleBulkExportZip}
+                    className="admin-bulk-action-btn primary"
+                    style={{ background: '#0d9488', borderColor: '#0d9488' }}
+                    disabled={exportingZip}
+                  >
+                    {exportingZip ? 'Mengunduh ZIP...' : 'Ekspor Berkas (ZIP)'}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setPendingBulkDelete(true)}
