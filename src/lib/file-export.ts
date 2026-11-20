@@ -43,8 +43,6 @@ export async function exportAdminFormFilesZip(
   const tasks: FileTask[] = []
   const usedEntryNames = new Set<string>()
 
-  const columnsById = new Map(data.columns.map((col) => [col.id, col]))
-
   data.items.forEach((item, index) => {
     const files = item.files ?? []
     if (files.length === 0) return
@@ -53,11 +51,11 @@ export async function exportAdminFormFilesZip(
     const submitter = getSubmitterIdentifier(item.answers)
 
     files.forEach((file) => {
-      const col = file.fieldId ? columnsById.get(file.fieldId) : undefined
-      const fieldLabel = col ? sanitizeFilename(col.label) : 'berkas'
-      const originalName = sanitizeFilename(file.sanitizedFilename || file.originalFilename || 'lampiran')
+      const originalName = sanitizeFilename(file.sanitizedFilename || file.originalFilename || 'berkas')
 
-      let candidateName = `${numPrefix}_${submitter ? submitter + '_' : ''}${fieldLabel}_${originalName}`
+      let candidateName = submitter
+        ? `${numPrefix}_${submitter}_${originalName}`
+        : `${numPrefix}_${originalName}`
       let counter = 1
       while (usedEntryNames.has(candidateName)) {
         const dotIdx = candidateName.lastIndexOf('.')
